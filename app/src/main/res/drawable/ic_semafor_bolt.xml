@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Logotip za zgornjo vrstico. Barva se nastavi v kodi (setTint) glede na trenutni blok. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="36dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <group
+        android:pivotX="50"
+        android:pivotY="50"
+        android:scaleX="0.6"
+        android:scaleY="0.6">
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M58,8 L28,55 L47,55 L35,92 L75,43 L54,43 L70,8 Z"
+            android:strokeWidth="8"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

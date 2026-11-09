@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Ikona v zgornji vrstici kot LayerDrawable: vsak sloj ima id, da ga je mogoče obarvati posebej.
+     Logotip (strela) nima ločljivih delov, zato je en sam sloj "bolt". -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/bolt"
+        android:drawable="@drawable/ic_semafor_bolt" />
+</layer-list>

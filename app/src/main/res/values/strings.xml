@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Tarifni semafor</string>
+    <string name="widget_description">Trenutni časovni blok omrežnine, čas naslednje spremembe in najugodnejši blok.</string>
+</resources>

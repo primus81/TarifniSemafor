@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!-- updatePeriodMillis="0": no system-driven polling; WorkManager (15 min periodic, block boundary, stale check) updates the widget. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_small"
+    android:maxResizeWidth="250dp"
+    android:minWidth="110dp"
+    android:minHeight="40dp"
+    android:minResizeWidth="110dp"
+    android:resizeMode="horizontal"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0" />

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tarifni semafor palette -->
+    <color name="semafor_bg_dark">#161C28</color>
+    <color name="semafor_body">#0C1018</color>
+    <color name="semafor_red">#E53935</color>
+    <color name="semafor_yellow">#FDD835</color>
+    <color name="semafor_green">#43A047</color>
+    <color name="semafor_accent">#42A5F5</color>
+    <color name="semafor_text_primary">#FFFFFF</color>
+    <color name="semafor_text_secondary">#C8D2DC</color>
+
+    <!-- Semantic aliases -->
+    <color name="tariff_favorable">@color/semafor_green</color>
+    <color name="tariff_medium">@color/semafor_yellow</color>
+    <color name="tariff_unfavorable">@color/semafor_red</color>
+</resources>
