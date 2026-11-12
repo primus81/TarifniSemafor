@@ -225,9 +225,11 @@ class SemaforWidget : AppWidgetProvider() {
 class UpdateWorker(ctx: Context, p: WorkerParameters) : Worker(ctx, p) {
     override fun doWork(): Result {
         val info = Repo.load(applicationContext)
+        // Failed fetch: schedule the catch-up for when the network returns. Success: cancel a pending one.
+        val recovered = SyncRecovery.afterFetch(applicationContext, info)
         val best = Repo.findBestUpcoming(applicationContext, info)
         SemaforWidget.render(applicationContext, info, best)
-        Notifier.onData(applicationContext, info)
+        Notifier.onData(applicationContext, info, recovered)
         return Result.success()
     }
 }

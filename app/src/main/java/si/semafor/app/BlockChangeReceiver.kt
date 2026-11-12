@@ -9,12 +9,13 @@ class BlockChangeReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         Thread {
             try {
-                val enabled = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
-                    .getBoolean("notif_enabled", false)
-                if (enabled) {
+                // Needed if the block-change notification or the status bar icon is switched on.
+                if (AppSettings.alarmWanted(ctx)) {
                     val info = Repo.load(ctx)
-                    // Verified transition check + planning of the next alarm (single place, no duplicates).
-                    Notifier.onData(ctx, info)
+                    // Failed fetch (offline): schedule the catch-up for when the network returns. Success: cancel it.
+                    val recovered = SyncRecovery.afterFetch(ctx, info)
+                    // Verified transition check + planning of the next alarm + status bar icon (single place).
+                    Notifier.onData(ctx, info, recovered)
                     if (info != null && info.fresh) SemaforWidget.refreshNow(ctx)
                 }
             } finally {

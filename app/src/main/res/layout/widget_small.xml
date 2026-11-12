@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <!-- @android:id/background: Android 12+ launchers round this view to the system widget radius. -->
+    <FrameLayout
+        android:id="@android:id/background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:ignore="UselessParent">
 
     <ImageView
         android:id="@+id/bg"
@@ -12,6 +20,14 @@
         android:importantForAccessibility="no"
         android:scaleType="fitXY"
         android:src="@drawable/widget_bg" />
+
+    <!-- Thin edge line (Material You tint on Android 12+). A FrameLayout, not a View: RemoteViews cannot inflate
+         android.view.View (only a fixed list of layouts and widgets), which left the whole widget empty. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_border"
+        android:importantForAccessibility="no" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -67,7 +83,7 @@
         <FrameLayout
             android:layout_width="1dp"
             android:layout_height="match_parent"
-            android:background="#22000000" />
+            android:background="@drawable/widget_divider_soft_bg" />
 
         <!-- Right subcell -->
         <LinearLayout
@@ -109,4 +125,5 @@
                 android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
+    </FrameLayout>
 </FrameLayout>

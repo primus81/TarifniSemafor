@@ -11,8 +11,7 @@ class BootReceiver : BroadcastReceiver() {
         val enqueue = when (intent.action) {
             // Alarms do not survive a reboot or an app update: reschedule the block-change notification.
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED ->
-                ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
-                    .getBoolean("notif_enabled", false)
+                AppSettings.alarmWanted(ctx)
             // Device clock or time zone changed: widget and scheduled alarm may be outdated.
             Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> true
             else -> false

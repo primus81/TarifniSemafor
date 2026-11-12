@@ -1,7 +1,6 @@
 package si.semafor.app
 
 import android.Manifest
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -40,26 +39,32 @@ import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.animation.PathInterpolatorCompat
 import androidx.core.view.doOnLayout
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import si.semafor.app.ui.components.UiKit
+import si.semafor.app.ui.components.asButton
+import si.semafor.app.ui.components.asLink
+import si.semafor.app.ui.compose.ScreenInsets
+import si.semafor.app.ui.compose.composeScreen
+import si.semafor.app.ui.compose.screens.CalcScreen
+import si.semafor.app.ui.compose.screens.SettingsScreen
+import si.semafor.app.ui.compose.screens.SettingsUiState
+import si.semafor.app.ui.compose.screens.TipsScreen
+import si.semafor.app.ui.theme.Palette
 
-private object Palette {
-    val BG_SCREEN = Color.parseColor("#161C28")
-    val SURFACE = Color.parseColor("#1F2738")
-    val BORDER = Color.parseColor("#2E394E")
-    val DIVIDER = Color.parseColor("#33FFFFFF")
-    val TEXT_PRIMARY = Color.parseColor("#FFFFFF")
-    val TEXT_SECONDARY = Color.parseColor("#C8D2DC")
-    val BG_TOP_BAR = Color.parseColor("#0C1018")
-}
+enum class Screen { HOME, CALC, NEWS, PRICES, TIPS, SETTINGS }
 
-enum class Screen { HOME, CALC, NEWS, PRICES, TIPS, NOTIFICATIONS }
-
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
     private lateinit var box: LinearLayout
     private lateinit var status: TextView
     private var statusSizeSp = 12f
@@ -68,13 +73,29 @@ class MainActivity : Activity() {
 
     private lateinit var contentContainer: FrameLayout
     private lateinit var homeView: ScrollView
+
+    // Pull-to-refresh wrappers around the scrollable home and news content.
+    private lateinit var homeRefresh: SwipeRefreshLayout
+    private var newsRefresh: SwipeRefreshLayout? = null
+    private var newsScroll: ScrollView? = null
+
+    // News loads in flight; the pull spinner stays on until the last one has finished (success or error).
+    private var newsPending = 0
+
+    // The view currently shown in contentContainer (used by the screen transitions).
+    private var shownView: View? = null
+    private val motionInterpolator by lazy { PathInterpolatorCompat.create(0.4f, 0f, 0.2f, 1f) }
     private var calcView: View? = null
     private var newsView: View? = null
     private var pricesView: View? = null
     private var pricesBox: LinearLayout? = null
     private var tipsView: View? = null
-    private var notificationsView: View? = null
+    private var settingsView: View? = null
     private var currentBlockId: Int? = null
+
+    // Whether the two recommendation lists on the home screen are open (kept while the app runs, open at every start).
+    private var nowAdviceExpanded = true
+    private var nextAdviceExpanded = true
     private var newsContentBox: LinearLayout? = null
 
     private var currentScreen: Screen = Screen.HOME
@@ -104,8 +125,26 @@ class MainActivity : Activity() {
     @Volatile
     private var isFetchingData: Boolean = false
 
-    private var backCallback: android.window.OnBackInvokedCallback? = null
-    private var isCallbackRegistered = false
+    // Back goes to the home screen from every other screen; on the home screen it is disabled, so the system
+    // default (leave the app, with the predictive back animation) applies.
+    private val backCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            showScreen(Screen.HOME)
+        }
+    }
+
+    // System bar insets for the Compose screens (the View screens get them as padding in the listener below).
+    private val screenInsets = mutableStateOf(ScreenInsets.None)
+
+    // What the Settings screen shows; refreshed whenever the screen is opened and when the app comes back.
+    private val settingsState = mutableStateOf(SettingsUiState())
+
+    private companion object {
+        // Request codes of the notification permission: a switch the user turned on, and the first start.
+        const val REQ_BLOCK_NOTIFICATIONS = 1001
+        const val REQ_STATUS_ICON = 1002
+        const val REQ_FIRST_RUN = 1003
+    }
 
     private val handler = Handler(Looper.getMainLooper())
     private val tickRunnable = object : Runnable {
@@ -117,6 +156,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
+        onBackPressedDispatcher.addCallback(this, backCallback)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.setBackgroundDrawable(ColorDrawable(Palette.BG_SCREEN))
@@ -237,7 +277,9 @@ class MainActivity : Activity() {
         }
         homeView.addView(box)
         capContentWidth(box)
-        contentContainer.addView(homeView)
+        homeRefresh = createRefreshLayout(homeView) { fetchFreshData(force = true) }
+        contentContainer.addView(homeRefresh)
+        shownView = homeRefresh
 
         root.addView(contentContainer)
 
@@ -258,6 +300,9 @@ class MainActivity : Activity() {
                 sideInset.left, 0, sideInset.right,
                 insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
             )
+            // Keyboard: the content ends above it, so a focused field (calculator) is scrolled into view.
+            val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            contentContainer.setPadding(0, 0, 0, (imeBottom - navBarInset.bottom).coerceAtLeast(0))
 
             val topBarLp = topBar.layoutParams as LinearLayout.LayoutParams
             topBarLp.height = LinearLayout.LayoutParams.WRAP_CONTENT
@@ -278,17 +323,7 @@ class MainActivity : Activity() {
                 dp(24) + navBarInset.bottom
             )
 
-            (calcView as? ScrollView)?.clipToPadding = false
-            (calcView as? ViewGroup)?.getChildAt(0)?.let {
-                it.setPadding(
-                    dp(24) + navBarInset.left,
-                    dp(16),
-                    dp(24) + navBarInset.right,
-                    dp(24) + navBarInset.bottom
-                )
-            }
-
-            (newsView as? ScrollView)?.clipToPadding = false
+            newsScroll?.clipToPadding = false
             newsContentBox?.setPadding(
                 dp(24) + navBarInset.left,
                 dp(16),
@@ -304,25 +339,7 @@ class MainActivity : Activity() {
                 dp(24) + navBarInset.bottom
             )
 
-            (tipsView as? ScrollView)?.clipToPadding = false
-            (tipsView as? ViewGroup)?.getChildAt(0)?.let {
-                it.setPadding(
-                    dp(24) + navBarInset.left,
-                    dp(16),
-                    dp(24) + navBarInset.right,
-                    dp(24) + navBarInset.bottom
-                )
-            }
-
-            (notificationsView as? ScrollView)?.clipToPadding = false
-            (notificationsView as? ViewGroup)?.getChildAt(0)?.let {
-                it.setPadding(
-                    dp(24) + navBarInset.left,
-                    dp(16),
-                    dp(24) + navBarInset.right,
-                    dp(24) + navBarInset.bottom
-                )
-            }
+            screenInsets.value = ScreenInsets(navBarInset.left, navBarInset.right, navBarInset.bottom)
 
             insets
         }
@@ -333,11 +350,20 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
         }
         SemaforWidget.schedule(this)
+        maybeAskNotificationPermissionOnFirstRun()
     }
 
     override fun onResume() {
         super.onResume()
         handler.post(tickRunnable)
+        // The user may have changed the notification settings of the phone while the app was in the background.
+        refreshSettingsState()
+        // A catch-up after an offline period (SyncRecovery) refreshes the home screen straight away.
+        SyncRecovery.uiListener = { info ->
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) show(info, Repo.getMemoryCachedBest(), isOfflineFailure = false)
+            }
+        }
         ContextCompat.registerReceiver(
             this,
             timeChangeReceiver,
@@ -371,6 +397,7 @@ class MainActivity : Activity() {
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(tickRunnable)
+        SyncRecovery.uiListener = null
         try {
             unregisterReceiver(timeChangeReceiver)
         } catch (e: IllegalArgumentException) {
@@ -378,320 +405,275 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun handleBackNavigation(): Boolean {
-        if (currentScreen != Screen.HOME) {
-            showScreen(Screen.HOME)
-            return true
-        }
-        return false
-    }
-
     private fun updateBackCallback() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (currentScreen != Screen.HOME) {
-                if (!isCallbackRegistered) {
-                    if (backCallback == null) {
-                        backCallback = android.window.OnBackInvokedCallback {
-                            handleBackNavigation()
-                        }
-                    }
-                    onBackInvokedDispatcher.registerOnBackInvokedCallback(
-                        android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-                        backCallback!!
-                    )
-                    isCallbackRegistered = true
-                }
-            } else {
-                if (isCallbackRegistered && backCallback != null) {
-                    onBackInvokedDispatcher.unregisterOnBackInvokedCallback(backCallback!!)
-                    isCallbackRegistered = false
-                }
-            }
-        }
-    }
-
-    @android.annotation.SuppressLint("GestureBackNavigation")
-    override fun onBackPressed() {
-        if (!handleBackNavigation()) {
-            super.onBackPressed()
-        }
+        backCallback.isEnabled = currentScreen != Screen.HOME
     }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>,
+        permissions: Array<String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1001) {
-            val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                prefs.edit().putBoolean("notif_perm_denied", false).apply()
-                prefs.edit().putBoolean("notif_enabled", true).apply()
-                Notifier.createChannel(this)
-                val info = Repo.cached(this)
-                Notifier.scheduleNext(this, info)
-            } else {
-                // Remembered so the Obvestila screen can explain it; the system dialog is never shown again on its own.
-                prefs.edit().putBoolean("notif_perm_denied", true).apply()
-                prefs.edit().putBoolean("notif_enabled", false).apply()
-                Notifier.scheduleNext(this, null)
-                Toast.makeText(
-                    this,
-                    "Za obvestila dovoli obvestila v nastavitvah telefona.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            if (currentScreen == Screen.NOTIFICATIONS) {
-                notificationsView = null
-                showScreen(Screen.NOTIFICATIONS)
-            }
+        if (requestCode != REQ_BLOCK_NOTIFICATIONS && requestCode != REQ_STATUS_ICON && requestCode != REQ_FIRST_RUN) {
+            return
         }
+        val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            AppSettings.setPermissionDenied(this, false)
+            // The switch the user turned on is on now.
+            if (requestCode == REQ_BLOCK_NOTIFICATIONS) AppSettings.setBlockNotificationsEnabled(this, true)
+            if (requestCode == REQ_STATUS_ICON) AppSettings.setStatusIconEnabled(this, true)
+        } else {
+            // Remembered so the Settings screen can explain it; the system dialog is never shown again on its own.
+            AppSettings.setPermissionDenied(this, true)
+            // A switch the user tried to turn on goes back to off. At the first start the defaults stay as they are.
+            if (requestCode == REQ_BLOCK_NOTIFICATIONS) AppSettings.setBlockNotificationsEnabled(this, false)
+            if (requestCode == REQ_STATUS_ICON) AppSettings.setStatusIconEnabled(this, false)
+            Toast.makeText(
+                this,
+                "Za obvestila dovoli obvestila v nastavitvah telefona.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+        applyNotificationSettings()
+        refreshSettingsState()
+    }
+
+    private fun needsNotificationPermission(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+
+    private fun requestNotificationPermission(requestCode: Int) {
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), requestCode)
+    }
+
+    /**
+     * Notifications are on by default, so the first start asks for the permission once (Android 13+). If the user
+     * refuses, nothing is switched off: the Settings screen explains why no notification appears.
+     */
+    private fun maybeAskNotificationPermissionOnFirstRun() {
+        val wanted = AppSettings.blockNotificationsEnabled(this) || AppSettings.statusIconEnabled(this)
+        if (wanted && needsNotificationPermission() &&
+            !AppSettings.permissionAsked(this) && !AppSettings.permissionDenied(this)
+        ) {
+            AppSettings.setPermissionAsked(this, true)
+            requestNotificationPermission(REQ_FIRST_RUN)
+        }
+    }
+
+    /** Makes the alarm, the channels and the status bar icon follow the current settings. */
+    private fun applyNotificationSettings() {
+        val info = Repo.cached(this)
+        Notifier.createChannel(this)
+        Notifier.scheduleNext(this, info)
+        StatusIndicator.update(this, info)
+    }
+
+    /** Reads the settings and the state of the system notifications into what the Settings screen shows. */
+    private fun refreshSettingsState() {
+        val blockOn = AppSettings.blockNotificationsEnabled(this)
+        val statusOn = AppSettings.statusIconEnabled(this)
+        val canPostAny = Notifier.canPost(this) || Notifier.canPost(this, StatusIndicator.CHANNEL_ID)
+        settingsState.value = SettingsUiState(
+            blockNotifications = blockOn,
+            notificationMode = AppSettings.notificationMode(this),
+            statusIcon = statusOn,
+            notificationsBlocked = !canPostAny && (blockOn || statusOn || AppSettings.permissionDenied(this))
+        )
+    }
+
+    private fun onBlockNotificationsChange(enabled: Boolean) {
+        if (enabled && needsNotificationPermission()) {
+            // Switched on only once the user has allowed it (see onRequestPermissionsResult).
+            requestNotificationPermission(REQ_BLOCK_NOTIFICATIONS)
+            return
+        }
+        AppSettings.setBlockNotificationsEnabled(this, enabled)
+        applyNotificationSettings()
+        refreshSettingsState()
+    }
+
+    private fun onStatusIconChange(enabled: Boolean) {
+        if (enabled && needsNotificationPermission()) {
+            requestNotificationPermission(REQ_STATUS_ICON)
+            return
+        }
+        AppSettings.setStatusIconEnabled(this, enabled)
+        applyNotificationSettings()
+        refreshSettingsState()
+    }
+
+    private fun onNotificationModeChange(mode: Int) {
+        AppSettings.setNotificationMode(this, mode)
+        applyNotificationSettings()
+        refreshSettingsState()
     }
 
     private fun showScreen(s: Screen) {
+        val screenChanged = s != currentScreen
         currentScreen = s
-        contentContainer.removeAllViews()
 
-        when (s) {
-            Screen.HOME -> {
-                contentContainer.addView(homeView)
-            }
-
-            Screen.CALC -> {
-                val view = calcView ?: createCalcView().also { calcView = it }
-                contentContainer.addView(view)
-            }
-
-            Screen.NEWS -> {
-                val view = newsView ?: createNewsView().also { newsView = it }
-                contentContainer.addView(view)
-                loadNews()
-            }
-
-            Screen.PRICES -> {
-                val view = pricesView ?: createPricesView().also { pricesView = it }
-                contentContainer.addView(view)
-                renderPrices()
-            }
-
-            Screen.TIPS -> {
-                val view = tipsView ?: createTipsView().also { tipsView = it }
-                contentContainer.addView(view)
-            }
-
-            Screen.NOTIFICATIONS -> {
-                // Rebuilt on every visit so the switch and the permission explanation always match the real state.
-                val view = createNotificationsView().also { notificationsView = it }
-                contentContainer.addView(view)
+        val next: View = when (s) {
+            Screen.HOME -> homeRefresh
+            Screen.CALC -> calcView ?: composeScreen(this, screenInsets) {
+                CalcScreen(
+                    onNavigateHome = { showScreen(Screen.HOME) },
+                    onOpenUrl = ::openUrl,
+                    onSendMail = ::openMail
+                )
+            }.also { calcView = it }
+            Screen.NEWS -> newsView ?: createNewsView().also { newsView = it }
+            Screen.PRICES -> pricesView ?: createPricesView().also { pricesView = it }
+            Screen.TIPS -> tipsView ?: composeScreen(this, screenInsets) {
+                TipsScreen(
+                    onNavigateHome = { showScreen(Screen.HOME) },
+                    onOpenUrl = ::openUrl
+                )
+            }.also { tipsView = it }
+            Screen.SETTINGS -> {
+                // The state is read again on every visit, so the switches and the explanation match the real state.
+                refreshSettingsState()
+                settingsView ?: composeScreen(this, screenInsets) {
+                    SettingsScreen(
+                        state = settingsState.value,
+                        onNavigateHome = { showScreen(Screen.HOME) },
+                        onBlockNotificationsChange = ::onBlockNotificationsChange,
+                        onNotificationModeChange = ::onNotificationModeChange,
+                        onStatusIconChange = ::onStatusIconChange,
+                        onOpenNotificationSettings = ::openNotificationSettings
+                    )
+                }.also { settingsView = it }
             }
         }
+        // Rebuilding the same screen in place (e.g. after the permission result) is not animated.
+        swapContent(next, animate = screenChanged)
+
+        when (s) {
+            Screen.NEWS -> loadNews()
+            Screen.PRICES -> renderPrices()
+            else -> Unit
+        }
         updateBackCallback()
-        (contentContainer.getChildAt(0) as? ScrollView)?.getChildAt(0)?.let { capContentWidth(it) }
+        scrollContentOf(next)?.let { capContentWidth(it) }
         ViewCompat.requestApplyInsets(contentContainer.rootView)
     }
 
-    private fun createNotificationsView(): View {
-        val scroll = ScrollView(this).apply {
+    /**
+     * Puts [next] into contentContainer. With [animate] the new screen fades in with a small upward slide while the
+     * old one fades out (about 140-220 ms, Material "fast out, slow in" easing).
+     * Rapid consecutive switches are safe: at most the old and the new screen are ever attached, anything still
+     * fading out from an earlier switch is dropped, and a screen that comes back while it is fading out is simply
+     * faded in again from its current alpha (no re-adding, no flicker, no stacking).
+     */
+    private fun swapContent(next: View, animate: Boolean) {
+        val prev = shownView
+        shownView = next
+        if (prev === next) return
+
+        for (i in contentContainer.childCount - 1 downTo 0) {
+            val c = contentContainer.getChildAt(i)
+            if (c !== prev && c !== next) {
+                c.animate().cancel()
+                contentContainer.removeViewAt(i)
+                c.alpha = 1f
+                c.translationY = 0f
+            }
+        }
+
+        val animated = animate && android.animation.ValueAnimator.areAnimatorsEnabled()
+        if (!animated) {
+            if (prev != null) {
+                prev.animate().cancel()
+                contentContainer.removeView(prev)
+                prev.alpha = 1f
+                prev.translationY = 0f
+            }
+            next.animate().cancel()
+            next.alpha = 1f
+            next.translationY = 0f
+            if (next.parent == null) contentContainer.addView(next)
+            return
+        }
+
+        next.animate().cancel()
+        if (next.parent === contentContainer) {
+            // Still fading out from a previous quick switch: bring it back from where it is.
+            contentContainer.bringChildToFront(next)
+        } else {
+            next.alpha = 0f
+            next.translationY = dp(12).toFloat()
+            contentContainer.addView(next)
+        }
+        next.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(220L)
+            .setInterpolator(motionInterpolator)
+            .withLayer()
+            .start()
+
+        if (prev != null && prev.parent === contentContainer) {
+            prev.animate().cancel()
+            prev.animate()
+                .alpha(0f)
+                .setDuration(140L)
+                .setInterpolator(motionInterpolator)
+                .withLayer()
+                .withEndAction {
+                    // Not if it has been brought back as the current screen in the meantime.
+                    if (shownView !== prev && prev.parent === contentContainer) {
+                        contentContainer.removeView(prev)
+                    }
+                    prev.alpha = 1f
+                    prev.translationY = 0f
+                }
+                .start()
+        }
+    }
+
+    /**
+     * Text colour for content drawn on [background] (the block colour): the candidate with the higher WCAG contrast
+     * ratio, dark #111111 or white. If even the best one stays below 4.5:1 (AA for small text), pure black is used
+     * instead of #111111 because it gains a little more contrast.
+     *
+     * A fixed luminance threshold such as 0.5 is deliberately not used: with this palette it would pick white on
+     * the red, orange and green blocks, where dark text has the higher contrast.
+     */
+    private fun readableTextColor(background: Int): Int {
+        val dark = 0xFF111111.toInt()
+        val light = 0xFFFFFFFF.toInt()
+        val contrastDark = ColorUtils.calculateContrast(dark, background)
+        val contrastLight = ColorUtils.calculateContrast(light, background)
+        val darkWins = contrastDark >= contrastLight
+        if (maxOf(contrastDark, contrastLight) >= 4.5) return if (darkWins) dark else light
+        return if (darkWins) 0xFF000000.toInt() else light
+    }
+
+    /** Pull-to-refresh wrapper: the spinner uses the app accent colour on the card surface colour. */
+    private fun createRefreshLayout(scroll: ScrollView, onRefresh: () -> Unit): SwipeRefreshLayout =
+        SwipeRefreshLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-        }
-        val boxLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(16), dp(24), dp(24))
-        }
-        scroll.addView(boxLayout)
-
-        val homeBtn = Button(this).apply {
-            text = "← Domov"
-            contentDescription = "Nazaj na domači zaslon"
-            textSize = 13f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isAllCaps = false
-            minimumHeight = dp(48)
-            elevation = 0f
-            stateListAnimator = null
-            background = GradientDrawable().apply {
-                setColor(Palette.BORDER)
-                cornerRadius = dp(20).toFloat()
-            }
-            setPadding(dp(16), dp(4), dp(16), dp(4))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(16) }
-            setOnClickListener { showScreen(Screen.HOME) }
-        }
-        boxLayout.addView(homeBtn)
-
-        val titleTv = TextView(this).apply {
-            text = "Obvestila"
-            ViewCompat.setAccessibilityHeading(this, true)
-            textSize = 18f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Palette.TEXT_PRIMARY)
-        }
-        boxLayout.addView(titleTv)
-
-        val subTitleTv = TextView(this).apply {
-            text = "Nastavitve opozoril ob menjavi časovnega bloka"
-            textSize = 12f
-            setTextColor(Palette.TEXT_SECONDARY)
-            setPadding(0, dp(2), 0, dp(12))
-        }
-        boxLayout.addView(subTitleTv)
-
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(14), dp(14), dp(14))
-            background = cardBackground()
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(8) }
+            setColorSchemeColors(ContextCompat.getColor(this@MainActivity, R.color.semafor_accent))
+            setProgressBackgroundColorSchemeColor(Palette.SURFACE)
+            setOnRefreshListener { onRefresh() }
+            addView(
+                scroll,
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            )
         }
 
-        val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val initialEnabled = prefs.getBoolean("notif_enabled", false)
-        val initialMode = prefs.getInt("notif_mode", 0)
-
-        val switchNotif = Switch(this).apply {
-            text = "Obvestilo ob menjavi bloka"
-            textSize = 15f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isChecked = initialEnabled
-        }
-        card.addView(switchNotif)
-
-        val divider = View(this).apply {
-            setBackgroundColor(Palette.DIVIDER)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(1)
-            ).apply {
-                setMargins(0, dp(12), 0, dp(12))
-            }
-        }
-        card.addView(divider)
-
-        val radioGroup = RadioGroup(this).apply {
-            orientation = RadioGroup.VERTICAL
-        }
-
-        val radioAll = RadioButton(this).apply {
-            id = View.generateViewId()
-            text = "Ob vsaki menjavi"
-            textSize = 14f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isEnabled = initialEnabled
-        }
-
-        val radio12 = RadioButton(this).apply {
-            id = View.generateViewId()
-            text = "Samo ob prehodu v blok 1 ali 2"
-            textSize = 14f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isEnabled = initialEnabled
-        }
-
-        radioGroup.addView(radioAll)
-        radioGroup.addView(radio12)
-
-        if (initialMode == 1) {
-            radioGroup.check(radio12.id)
-        } else {
-            radioGroup.check(radioAll.id)
-        }
-
-        card.addView(radioGroup)
-
-        val noteTv = TextView(this).apply {
-            text =
-                "Obvestila se ustvarijo v telefonu. Aplikacija zaradi njih ne pošilja nobenih podatkov. Zaradi varčevanja z baterijo lahko obvestilo zamuja za nekaj minut."
-            textSize = 12f
-            setTextColor(Palette.TEXT_SECONDARY)
-            setLineSpacing(0f, 1.15f)
-            setPadding(0, dp(16), 0, 0)
-        }
-        card.addView(noteTv)
-
-        // Explain (once, on this screen) why no notification will appear when Android blocks them.
-        if (!Notifier.canPost(this) && (initialEnabled || prefs.getBoolean(
-                "notif_perm_denied",
-                false
-            ))
-        ) {
-            card.addView(
-                text(
-                    "Obvestila so za to aplikacijo v telefonu izklopljena, zato ne prejmeš opozoril. Dovoli jih v nastavitvah telefona.",
-                    12f, false, 0xFFFDD835.toInt()
-                ).apply {
-                    setLineSpacing(0f, 1.15f)
-                    setPadding(0, dp(12), 0, 0)
-                })
-            card.addView(Button(this).apply {
-                text = "Odpri nastavitve obvestil"
-                textSize = 13f
-                setTextColor(Palette.TEXT_PRIMARY)
-                isAllCaps = false
-                minimumHeight = dp(48)
-                elevation = 0f
-                stateListAnimator = null
-                background = GradientDrawable().apply {
-                    setColor(Palette.BORDER)
-                    cornerRadius = dp(20).toFloat()
-                }
-                setPadding(dp(20), dp(8), dp(20), dp(8))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dp(8) }
-                setOnClickListener { openNotificationSettings() }
-            })
-        }
-
-        boxLayout.addView(card)
-
-        switchNotif.setOnCheckedChangeListener { _, isChecked ->
-            radioAll.isEnabled = isChecked
-            radio12.isEnabled = isChecked
-
-            if (isChecked) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                    ContextCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.POST_NOTIFICATIONS
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    ActivityCompat.requestPermissions(
-                        this,
-                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                        1001
-                    )
-                } else {
-                    prefs.edit().putBoolean("notif_enabled", true).apply()
-                    Notifier.createChannel(this)
-                    val info = Repo.cached(this)
-                    Notifier.scheduleNext(this, info)
-                }
-            } else {
-                prefs.edit().putBoolean("notif_enabled", false).apply()
-                Notifier.scheduleNext(this, null)
-            }
-        }
-
-        radioGroup.setOnCheckedChangeListener { _, checkedId ->
-            val mode = if (checkedId == radio12.id) 1 else 0
-            prefs.edit().putInt("notif_mode", mode).apply()
-            if (switchNotif.isChecked) {
-                val info = Repo.cached(this)
-                Notifier.scheduleNext(this, info)
-            }
-        }
-
-        return scroll
+    /** The content view inside a screen's scroll view (also when the scroll view sits in a SwipeRefreshLayout). */
+    private fun scrollContentOf(screen: View): View? {
+        val scroll = if (screen is SwipeRefreshLayout) screen.getChildAt(0) else screen
+        return (scroll as? ScrollView)?.getChildAt(0)
     }
 
     private fun createPricesView(): View {
@@ -710,131 +692,22 @@ class MainActivity : Activity() {
         return scroll
     }
 
-    private fun createTipsView(): View {
-        val scroll = ScrollView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-        val boxLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(16), dp(24), dp(24))
-        }
-        scroll.addView(boxLayout)
-
-        val homeBtn = Button(this).apply {
-            text = "← Domov"
-            contentDescription = "Nazaj na domači zaslon"
-            textSize = 13f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isAllCaps = false
-            minimumHeight = dp(48)
-            elevation = 0f
-            stateListAnimator = null
-            background = GradientDrawable().apply {
-                setColor(Palette.BORDER)
-                cornerRadius = dp(20).toFloat()
-            }
-            setPadding(dp(16), dp(4), dp(16), dp(4))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(16) }
-            setOnClickListener { showScreen(Screen.HOME) }
-        }
-        boxLayout.addView(homeBtn)
-
-        boxLayout.addView(text(Tips.TITLE, 18f, true, Palette.TEXT_PRIMARY).apply {
-            ViewCompat.setAccessibilityHeading(this, true)
-        })
-
-        boxLayout.addView(text(Tips.INTRO, 13f, false, Palette.TEXT_SECONDARY).apply {
-            setLineSpacing(0f, 1.15f)
-            setPadding(0, dp(6), 0, dp(12))
-        })
-
-        for ((title, body) in Tips.ALL) {
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(14), dp(14), dp(14), dp(14))
-                background = cardBackground()
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { bottomMargin = dp(8) }
-            }
-            card.addView(text(title, 15f, true, Palette.TEXT_PRIMARY).apply {
-                setPadding(0, 0, 0, dp(6))
-            })
-            card.addView(text(body, 13f, false, Palette.TEXT_SECONDARY).apply {
-                setLineSpacing(0f, 1.15f)
-            })
-            boxLayout.addView(card)
-        }
-
-        boxLayout.addView(text(Tips.NOTE, 12f, false, Palette.TEXT_SECONDARY).apply {
-            setPadding(0, dp(8), 0, 0)
-        })
-
-        boxLayout.addView(text(Tips.MORE_LABEL, 13f, false, Palette.TEXT_PRIMARY).apply {
-            paintFlags = paintFlags or Paint.UNDERLINE_TEXT_FLAG
-            minimumHeight = dp(48)
-            gravity = Gravity.CENTER_VERTICAL
-            setOnClickListener { openUrl(Tips.MORE_URL) }
-            asLink()
-        })
-
-        return scroll
-    }
-
-    private fun cardBackground() = GradientDrawable().apply {
-        setColor(Palette.SURFACE)
-        cornerRadius = dp(16).toFloat()
-        setStroke(dp(1), Palette.BORDER)
-    }
+    private fun cardBackground() = UiKit.cardBackground(this)
 
     private fun renderPrices() {
         val boxLayout = pricesBox ?: return
         boxLayout.removeAllViews()
 
-        val homeBtn = Button(this).apply {
-            text = "← Domov"
-            contentDescription = "Nazaj na domači zaslon"
-            textSize = 13f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isAllCaps = false
-            minimumHeight = dp(48)
-            elevation = 0f
-            stateListAnimator = null
-            background = GradientDrawable().apply {
-                setColor(Palette.BORDER)
-                cornerRadius = dp(20).toFloat()
-            }
-            setPadding(dp(16), dp(4), dp(16), dp(4))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(16) }
-            setOnClickListener { showScreen(Screen.HOME) }
-        }
-        boxLayout.addView(homeBtn)
-
-        boxLayout.addView(text("Cenik omrežnine", 18f, true, Palette.TEXT_PRIMARY).apply {
-            ViewCompat.setAccessibilityHeading(this, true)
-        })
-
         val list = PriceLists.current()
 
         boxLayout.addView(
-            text(
+            UiKit.screenHeader(
+                this,
+                "Cenik omrežnine",
                 "Uporabniška skupina 0 (gospodinjstva in nizka napetost)",
-                12f,
-                false,
-                Palette.TEXT_SECONDARY
-            ).apply {
-                setPadding(0, dp(2), 0, if (list == null) dp(12) else 0)
-            })
+                bottomMarginDp = if (list == null) 12 else 2
+            ) { showScreen(Screen.HOME) }
+        )
 
         if (list == null) {
             val card = LinearLayout(this).apply {
@@ -1021,235 +894,6 @@ class MainActivity : Activity() {
         })
     }
 
-    private fun createCalcView(): View {
-        val scroll = ScrollView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-        val boxLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(16), dp(24), dp(24))
-        }
-        scroll.addView(boxLayout)
-
-        val homeBtn = Button(this).apply {
-            text = "← Domov"
-            contentDescription = "Nazaj na domači zaslon"
-            textSize = 13f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isAllCaps = false
-            minimumHeight = dp(48)
-            elevation = 0f
-            stateListAnimator = null
-            background = GradientDrawable().apply {
-                setColor(Palette.BORDER)
-                cornerRadius = dp(20).toFloat()
-            }
-            setPadding(dp(16), dp(4), dp(16), dp(4))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dp(16)
-            }
-            setOnClickListener { showScreen(Screen.HOME) }
-        }
-        boxLayout.addView(homeBtn)
-
-        val titleTv = TextView(this).apply {
-            text = "Kalkulator"
-            ViewCompat.setAccessibilityHeading(this, true)
-            textSize = 18f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Palette.TEXT_PRIMARY)
-        }
-        boxLayout.addView(titleTv)
-
-        val subTitleTv = TextView(this).apply {
-            text = "Primerjalnik stroškov oskrbe"
-            textSize = 12f
-            setTextColor(Palette.TEXT_SECONDARY)
-            setPadding(0, dp(2), 0, dp(12))
-        }
-        boxLayout.addView(subTitleTv)
-
-        fun addInfoCard(
-            cardTitle: String,
-            cardText: String,
-            setupCustomView: ((LinearLayout) -> Unit)? = null
-        ) {
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(14), dp(14), dp(14), dp(14))
-                background = cardBackground()
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    bottomMargin = dp(8)
-                }
-            }
-
-            val headTv = TextView(this).apply {
-                text = cardTitle
-                textSize = 15f
-                setTypeface(null, Typeface.BOLD)
-                setTextColor(Palette.TEXT_PRIMARY)
-                setPadding(0, 0, 0, dp(6))
-            }
-            card.addView(headTv)
-
-            val bodyTv = TextView(this).apply {
-                text = cardText
-                textSize = 13f
-                setTextColor(Palette.TEXT_PRIMARY)
-                setLineSpacing(0f, 1.15f)
-            }
-            card.addView(bodyTv)
-
-            setupCustomView?.invoke(card)
-
-            boxLayout.addView(card)
-        }
-
-        addInfoCard(
-            "Kaj je to?",
-            "Brezplačno orodje Agencije za energijo, s katerim gospodinjski in mali poslovni odjemalci primerjajo ponudbe dobaviteljev elektrike in zemeljskega plina. Orodje obstaja od odprtja trga leta 2007, prenovljena različica pa zajema tudi ponudbe z dinamičnimi cenami elektrike."
-        )
-
-        addInfoCard(
-            "Kako deluje?",
-            "Vneseš svojo letno porabo elektrike (ali plina) v kWh in izbereš lokalno skupnost. Druga polja so neobvezna in služijo natančnejši prilagoditvi izračuna tvoji porabi. Za dinamične cene so na voljo različni urni profili odjema, ki bolje odražajo porabo po urah."
-        )
-
-        addInfoCard(
-            "Katere ponudbe so vključene?",
-            "V primerjavo so zajeti vsi ceniki, ki so jih dobavitelji vnesli v aplikacijo in jih je potrdila Agencija za energijo. Za ažurnost in pravilnost podatkov so odgovorni dobavitelji, Agencija pa opravi osnovno preverjanje. Seznam dobaviteljev najdeš v samem kalkulatorju (»Prikaz tržnih udeležencev«)."
-        )
-
-        addInfoCard(
-            "Osebni podatki",
-            "Kalkulator deluje na spletni strani Agencije za energijo, ne v aplikaciji Tarifni semafor. Aplikacija tvojih vnosov ne vidi, ne zbira in ne shranjuje. Z vpisom letnih agregatov porabe v kalkulator soglašaš z njihovo obdelavo s strani Agencije za namen primerjave ponudb. Pred uporabo preberi pravila in pogoje uporabe; če se z njimi ne strinjaš, podatkov ne vnašaj."
-        ) { cardContainer ->
-            val linksLayout = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(0, dp(10), 0, 0)
-            }
-
-            val linkTerms = TextView(this).apply {
-                text = "Pravila in pogoji uporabe"
-                textSize = 13f
-                setTextColor(Palette.TEXT_PRIMARY)
-                paintFlags = paintFlags or Paint.UNDERLINE_TEXT_FLAG
-                minimumHeight = dp(48)
-                gravity = Gravity.CENTER_VERTICAL
-                setOnClickListener { openUrl(Links.CALC_TERMS) }
-                asLink()
-            }
-            linksLayout.addView(linkTerms)
-
-            val linkInfo = TextView(this).apply {
-                text = "Splošne informacije o primerjalniku"
-                textSize = 13f
-                setTextColor(Palette.TEXT_PRIMARY)
-                paintFlags = paintFlags or Paint.UNDERLINE_TEXT_FLAG
-                minimumHeight = dp(48)
-                gravity = Gravity.CENTER_VERTICAL
-                setOnClickListener { openUrl(Links.CALC_INFO) }
-                asLink()
-            }
-            linksLayout.addView(linkInfo)
-
-            cardContainer.addView(linksLayout)
-        }
-
-        val openCalcBtn = Button(this).apply {
-            text = "Odpri kalkulator"
-            textSize = 15f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.parseColor("#111111"))
-            isAllCaps = false
-            minimumHeight = dp(48)
-            elevation = 0f
-            stateListAnimator = null
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#43A047"))
-                cornerRadius = dp(24).toFloat()
-            }
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = dp(16)
-                bottomMargin = dp(12)
-            }
-            setOnClickListener { openUrl(Links.CALC_URL) }
-        }
-        boxLayout.addView(openCalcBtn)
-
-        val browserInfoTv = TextView(this).apply {
-            text = "Odpre se v brskalniku (aplikacije.agen-rs.si)."
-            textSize = 12f
-            setTextColor(Palette.TEXT_SECONDARY)
-            gravity = Gravity.CENTER
-        }
-        boxLayout.addView(browserInfoTv)
-
-        val helpEmailText = SpannableStringBuilder().apply {
-            append("Pomoč pri uporabi kalkulatorja: ")
-            val startBold = length
-            val email = "primerjalnik@agen-rs.si"
-            append(email)
-            val endBold = length
-            setSpan(
-                object : URLSpan("mailto:primerjalnik@agen-rs.si") {
-                    override fun onClick(widget: View) {
-                        try {
-                            val intent = Intent(
-                                Intent.ACTION_SENDTO,
-                                Uri.parse("mailto:primerjalnik@agen-rs.si")
-                            )
-                            startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(
-                                this@MainActivity,
-                                "Povezave ni mogoče odpreti.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                },
-                startBold,
-                endBold,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-
-        val helpTv = TextView(this).apply {
-            text = helpEmailText
-            movementMethod = LinkMovementMethod.getInstance()
-            textSize = 12f
-            setTextColor(Palette.TEXT_SECONDARY)
-            gravity = Gravity.CENTER
-            setPadding(0, dp(4), 0, dp(12))
-        }
-        boxLayout.addView(helpTv)
-
-        val bottomTv = TextView(this).apply {
-            text =
-                "Povzeto po opisu na strani kalkulatorja (stanje: november 2026). Aplikacija Tarifni semafor ni uradna aplikacija Agencije za energijo."
-            textSize = 12f
-            setTextColor(Palette.TEXT_SECONDARY)
-            gravity = Gravity.CENTER
-            setPadding(0, dp(4), 0, dp(16))
-        }
-        boxLayout.addView(bottomTv)
-
-        return scroll
-    }
-
     private fun createNewsView(): View {
         val scroll = ScrollView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
@@ -1263,53 +907,33 @@ class MainActivity : Activity() {
         }
         scroll.addView(boxLayout)
         newsContentBox = boxLayout
-        return scroll
+        newsScroll = scroll
+        // Pull down to reload the news; the Osveži button on the screen stays as the accessible fallback.
+        return createRefreshLayout(scroll) { loadNews() }.also { newsRefresh = it }
     }
 
     private fun loadNews() {
         val boxLayout = newsContentBox ?: return
         boxLayout.removeAllViews()
 
-        val homeBtn = Button(this).apply {
-            text = "← Domov"
-            contentDescription = "Nazaj na domači zaslon"
-            textSize = 13f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isAllCaps = false
-            minimumHeight = dp(48)
-            elevation = 0f
-            stateListAnimator = null
-            background = GradientDrawable().apply {
-                setColor(Palette.BORDER)
-                cornerRadius = dp(20).toFloat()
-            }
-            setPadding(dp(16), dp(4), dp(16), dp(4))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dp(16)
-            }
-            setOnClickListener { showScreen(Screen.HOME) }
-        }
-        boxLayout.addView(homeBtn)
-
-        val titleTv = TextView(this).apply {
-            text = "Novice"
-            ViewCompat.setAccessibilityHeading(this, true)
-            textSize = 18f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Palette.TEXT_PRIMARY)
-        }
-        boxLayout.addView(titleTv)
+        boxLayout.addView(UiKit.screenHeader(this, "Novice") { showScreen(Screen.HOME) })
 
         boxLayout.addView(stateCard("Nalagam novice …"))
 
+        newsPending++
         Thread {
-            val result = NewsRepo.fetchNews(this)
-            runOnUiThread {
-                if (!isFinishing && !isDestroyed) {
-                    renderNewsScreen(result)
+            var result: NewsResult? = null
+            try {
+                result = NewsRepo.fetchNews(this)
+            } finally {
+                // The pull spinner is dismissed on success and on error alike, once the last load has finished.
+                runOnUiThread {
+                    newsPending = (newsPending - 1).coerceAtLeast(0)
+                    if (newsPending == 0) newsRefresh?.isRefreshing = false
+                    val loaded = result
+                    if (loaded != null && !isFinishing && !isDestroyed) {
+                        renderNewsScreen(loaded)
+                    }
                 }
             }
         }.start()
@@ -1319,51 +943,12 @@ class MainActivity : Activity() {
         val boxLayout = newsContentBox ?: return
         boxLayout.removeAllViews()
 
-        val homeBtn = Button(this).apply {
-            text = "← Domov"
-            contentDescription = "Nazaj na domači zaslon"
-            textSize = 13f
-            setTextColor(Palette.TEXT_PRIMARY)
-            isAllCaps = false
-            minimumHeight = dp(48)
-            elevation = 0f
-            stateListAnimator = null
-            background = GradientDrawable().apply {
-                setColor(Palette.BORDER)
-                cornerRadius = dp(20).toFloat()
-            }
-            setPadding(dp(16), dp(4), dp(16), dp(4))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dp(16)
-            }
-            setOnClickListener { showScreen(Screen.HOME) }
-        }
-        boxLayout.addView(homeBtn)
-
-        val titleTv = TextView(this).apply {
-            text = "Novice"
-            ViewCompat.setAccessibilityHeading(this, true)
-            textSize = 18f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Palette.TEXT_PRIMARY)
-        }
-        boxLayout.addView(titleTv)
-
         val subTitleText = if (result.isOffline) {
             "Agencija za energijo · Shranjene novice (brez povezave)"
         } else {
             "Agencija za energijo"
         }
-        val subTitleTv = TextView(this).apply {
-            text = subTitleText
-            textSize = 12f
-            setTextColor(Palette.TEXT_SECONDARY)
-            setPadding(0, dp(2), 0, dp(12))
-        }
-        boxLayout.addView(subTitleTv)
+        boxLayout.addView(UiKit.screenHeader(this, "Novice", subTitleText) { showScreen(Screen.HOME) })
 
         val items = result.items
         if (items.isNullOrEmpty()) {
@@ -1597,6 +1182,9 @@ class MainActivity : Activity() {
         Thread {
             try {
                 val freshInfo = Repo.load(this)
+                // Failed fetch: schedule the catch-up for when the network returns. Success (also a manual
+                // refresh): cancel a pending one.
+                val recovered = SyncRecovery.afterFetch(this, freshInfo)
                 val memBest = Repo.getMemoryCachedBest()
 
                 if (freshInfo != null && freshInfo.fresh) {
@@ -1619,7 +1207,7 @@ class MainActivity : Activity() {
                 val targetInfo = freshInfo ?: Repo.cached(this)
                 val best = if (targetInfo != null) Repo.findBestUpcoming(this, targetInfo) else null
                 SemaforWidget.render(this, targetInfo, best)
-                Notifier.onData(this, targetInfo)
+                Notifier.onData(this, targetInfo, recovered)
 
                 if (targetInfo != null) {
                     runOnUiThread {
@@ -1628,6 +1216,9 @@ class MainActivity : Activity() {
                 }
             } finally {
                 isFetchingData = false
+                // Dismiss the pull-to-refresh spinner on success and on error alike. A pull that arrives while another
+                // fetch is running is covered too: it returns early above and this finally ends the spinner.
+                runOnUiThread { homeRefresh.isRefreshing = false }
             }
         }.start()
     }
@@ -1701,7 +1292,8 @@ class MainActivity : Activity() {
         if (currentScreen == Screen.PRICES) renderPrices()
         val n = info.now
         updateTopIcon(n.id)
-        val dark = Color.parseColor("#111111")
+        // Text colour follows the block colour: whichever of dark / white reads better on it (WCAG contrast).
+        val onCard = readableTextColor(Repo.color(n.id))
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(16), dp(20), dp(16))
@@ -1710,8 +1302,8 @@ class MainActivity : Activity() {
             }
         }
         // Text label as well as colour: the active block is recognisable without relying on colour.
-        card.addView(text("Trenutni časovni blok", 11f, true, dark))
-        card.addView(text("${n.id}. blok", 43f, true, dark).apply {
+        card.addView(text("Trenutni časovni blok", 11f, true, onCard))
+        card.addView(text("${n.id}. blok", 43f, true, onCard).apply {
             maxLines = 1
             setAutoSizeTextTypeUniformWithConfiguration(
                 27,
@@ -1720,13 +1312,13 @@ class MainActivity : Activity() {
                 android.util.TypedValue.COMPLEX_UNIT_SP
             )
         })
-        card.addView(text(n.load, 19f, true, dark))
-        card.addView(text("${n.from}–${n.to} h · ${seasonLabel(n.season)}", 13f, false, dark))
+        card.addView(text(n.load, 19f, true, onCard))
+        card.addView(text("${n.from}–${n.to} h · ${seasonLabel(n.season)}", 13f, false, onCard))
 
         // Must always stay on ONE line. The minimum is 10 sp; with a large system font it is lowered so that the
         // longest text ("čez 23 h 59 min 59 s") still fits instead of being cut off.
         val cdMinSp = (10f / maxOf(1f, resources.configuration.fontScale)).toInt().coerceAtLeast(1)
-        val cdTv = text(countdown(info.next.from), 12f, false, dark).apply {
+        val cdTv = text(countdown(info.next.from), 12f, false, onCard).apply {
             setTypeface(null, Typeface.ITALIC)
             setPadding(0, dp(10), 0, 0)
             maxLines = 1
@@ -1789,7 +1381,9 @@ class MainActivity : Activity() {
 
         val refreshBtn = ImageButton(this).apply {
             setImageResource(R.drawable.ic_refresh)
-            scaleType = ImageView.ScaleType.CENTER
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            // Same colour as the card above: the colour of the current block.
+            setColorFilter(Repo.color(n.id))
             contentDescription = "Osveži"
             setPadding(dp(6), dp(6), dp(6), dp(6))
             elevation = 0f
@@ -1815,9 +1409,9 @@ class MainActivity : Activity() {
         box.addView(bestCard)
 
         box.addView(createDivider())
-        section("Priporočila zdaj", n)
+        section("Priporočila zdaj", n, nowAdviceExpanded) { nowAdviceExpanded = it }
         box.addView(createDivider())
-        section("Priporočila za naslednji časovni blok", info.next)
+        section("Priporočila za naslednji časovni blok", info.next, nextAdviceExpanded) { nextAdviceExpanded = it }
 
         val donationCard = createDonationSection()
         if (donationCard != null) {
@@ -2168,8 +1762,8 @@ class MainActivity : Activity() {
             showScreen(Screen.NEWS)
         })
 
-        popupLayout.addView(createMenuItem("Obvestila") {
-            showScreen(Screen.NOTIFICATIONS)
+        popupLayout.addView(createMenuItem("Nastavitve", "Obvestila in druge nastavitve") {
+            showScreen(Screen.SETTINGS)
         })
 
         popupLayout.addView(createMenuDivider())
@@ -2194,6 +1788,15 @@ class MainActivity : Activity() {
         } catch (e: Exception) {
             Toast.makeText(this, "Nastavitev obvestil ni mogoče odpreti.", Toast.LENGTH_SHORT)
                 .show()
+        }
+    }
+
+    /** Opens the mail app for [address]; same behaviour as the link used to have inside the Calculator screen. */
+    private fun openMail(address: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$address")))
+        } catch (e: Exception) {
+            Toast.makeText(this, "Povezave ni mogoče odpreti.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -2364,11 +1967,51 @@ class MainActivity : Activity() {
         })
     }
 
-    private fun section(title: String, blk: Block) {
-        box.addView(text(title, 15f, true, Palette.TEXT_PRIMARY).apply {
-            setPadding(0, 0, 0, dp(8))
-            ViewCompat.setAccessibilityHeading(this, true)
-        })
+    /**
+     * A list of recommendations that can be folded: the heading row (name + chevron) is one button; tapping it shows
+     * or hides the list. [expanded] is the state to start with, [onExpandedChange] reports every change so the caller
+     * can keep it when the screen is rebuilt. This is not a setting: both lists are open at every start.
+     */
+    private fun section(title: String, blk: Block, expanded: Boolean, onExpandedChange: (Boolean) -> Unit) {
+        val rows = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = if (expanded) View.VISIBLE else View.GONE
+        }
+        val chevron = ImageView(this).apply {
+            setImageResource(R.drawable.ic_expand_more)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            rotation = if (expanded) 180f else 0f
+        }
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(48)
+            isClickable = true
+            addView(
+                text(title, 15f, true, Palette.TEXT_PRIMARY).apply {
+                    ViewCompat.setAccessibilityHeading(this, true)
+                },
+                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            )
+            addView(chevron, LinearLayout.LayoutParams(dp(24), dp(24)))
+        }
+        var open = expanded
+        fun describe() {
+            header.contentDescription = title + ", " + (if (open) "razširjeno" else "strnjeno") +
+                ". Dotakni se za " + (if (open) "strnitev" else "razširitev") + "."
+        }
+        describe()
+        header.asButton()
+        header.setOnClickListener {
+            open = !open
+            onExpandedChange(open)
+            android.transition.TransitionManager.beginDelayedTransition(box)
+            rows.visibility = if (open) View.VISIBLE else View.GONE
+            chevron.animate().rotation(if (open) 180f else 0f).setDuration(150L).start()
+            describe()
+        }
+        box.addView(header)
+        box.addView(rows)
         for (a in blk.advice) {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -2413,7 +2056,7 @@ class MainActivity : Activity() {
             // One spoken item per recommendation, with the state in words (the symbol/colour are not read separately).
             row.isFocusable = true
             row.contentDescription = "$description. ${a.device}: ${a.use}"
-            box.addView(row)
+            rows.addView(row)
         }
     }
 
@@ -2427,39 +2070,6 @@ class MainActivity : Activity() {
         return "Sprememba časovnega bloka čez $h h $m min $s s"
     }
 
-    /** Clickable non-Button views announce themselves as buttons and are reachable with keyboard / switch access. */
-    private fun View.asButton(description: String? = null) {
-        isFocusable = true
-        if (description != null) contentDescription = description
-        ViewCompat.setAccessibilityDelegate(
-            this,
-            object : androidx.core.view.AccessibilityDelegateCompat() {
-                override fun onInitializeAccessibilityNodeInfo(
-                    host: View,
-                    info: androidx.core.view.accessibility.AccessibilityNodeInfoCompat
-                ) {
-                    super.onInitializeAccessibilityNodeInfo(host, info)
-                    info.className = Button::class.java.name
-                }
-            })
-    }
-
-    /** Clickable text that opens a web page: announced as a link ("povezava"), focusable for keyboard / switch access. */
-    private fun View.asLink() {
-        isFocusable = true
-        ViewCompat.setAccessibilityDelegate(
-            this,
-            object : androidx.core.view.AccessibilityDelegateCompat() {
-                override fun onInitializeAccessibilityNodeInfo(
-                    host: View,
-                    info: androidx.core.view.accessibility.AccessibilityNodeInfoCompat
-                ) {
-                    super.onInitializeAccessibilityNodeInfo(host, info)
-                    info.roleDescription = "povezava"
-                }
-            })
-    }
-
     /** On tablets and landscape the content keeps a readable width (max 640 dp) and is centred. */
     private fun capContentWidth(content: View) {
         val maxPx = dp(640)
@@ -2469,32 +2079,10 @@ class MainActivity : Activity() {
         ).apply { gravity = Gravity.CENTER_HORIZONTAL }
     }
 
-    /** One look for loading, offline and error states: card with a title, an optional explanation and an optional warning. */
-    private fun stateCard(title: String, detail: String? = null, warning: String? = null): View {
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(16), dp(16), dp(16))
-            background = cardBackground()
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(8) }
-        }
-        card.addView(text(title, 16f, true, Palette.TEXT_PRIMARY))
-        if (detail != null) {
-            card.addView(text(detail, 13f, false, Palette.TEXT_SECONDARY).apply {
-                setLineSpacing(0f, 1.15f)
-                setPadding(0, dp(6), 0, 0)
-            })
-        }
-        if (warning != null) {
-            card.addView(text(warning, 13f, true, 0xFFFDD835.toInt()).apply {
-                setLineSpacing(0f, 1.15f)
-                setPadding(0, dp(8), 0, 0)
-            })
-        }
-        return card
-    }
+    // Thin wrappers over the shared UI kit (ui/components/UiKit.kt). They disappear screen by screen as the
+    // remaining screens move out of this file.
+    private fun stateCard(title: String, detail: String? = null, warning: String? = null): View =
+        UiKit.stateCard(this, title, detail, warning)
 
     /** The API names the seasons "visoka"/"nizka"; the app consistently says "višja"/"nižja" sezona. */
     private fun seasonLabel(raw: String): String =
@@ -2502,11 +2090,7 @@ class MainActivity : Activity() {
             .replace(Regex("(?i)nizka sezona"), "nižja sezona")
 
     private fun text(s: String, size: Float, bold: Boolean = false, color: Int? = null) =
-        TextView(this).apply {
-            text = s; textSize = size
-            if (bold) setTypeface(null, Typeface.BOLD)
-            if (color != null) setTextColor(color)
-        }
+        UiKit.text(this, s, size, bold, color)
 
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    private fun dp(v: Int) = UiKit.dp(this, v)
 }

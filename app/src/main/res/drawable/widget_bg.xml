@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Widget background; the colour filter set in code gives it the block colour.
+     Radius: 24dp up to Android 11, the system widget radius on Android 12+ (see values-v31/dimens.xml). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <solid android:color="#FFFFFF" />
-    <corners android:radius="24dp" />
+    <corners android:radius="@dimen/widget_corner_radius" />
 </shape>

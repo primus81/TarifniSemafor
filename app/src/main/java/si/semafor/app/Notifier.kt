@@ -26,6 +26,12 @@ internal fun transitionMessage(newId: Int, previousId: Int, latenessMs: Long): S
     else -> "Začel se je časovni blok $newId."
 }
 
+/**
+ * True if a block boundary announced by the last scheduled alarm ([expectedStart], 0 = none) has already passed,
+ * i.e. a block change really was missed (the device could not fetch data when it happened).
+ */
+internal fun isMissedBoundary(expectedStart: Long, now: Long): Boolean = expectedStart in 1L..now
+
 object Notifier {
     const val CHANNEL_ID = "block_changes"
     private const val NOTIFICATION_ID = 2001
@@ -36,7 +42,9 @@ object Notifier {
     private const val KEY_EXP_FROM = "notif_exp_from_id"
     private const val KEY_EXP_TO = "notif_exp_to_id"
 
+    /** Creates all notification channels of the app: block change and status bar indicator. */
     fun createChannel(ctx: Context) {
+        StatusIndicator.createChannel(ctx)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
@@ -51,13 +59,16 @@ object Notifier {
         }
     }
 
-    /** True if Android will actually show our notifications (permission granted, not blocked, channel not off). */
-    fun canPost(ctx: Context): Boolean {
+    /**
+     * True if Android will actually show notifications of the channel [channelId] (permission granted, notifications
+     * not blocked, channel not switched off). Default channel: block change.
+     */
+    fun canPost(ctx: Context, channelId: String = CHANNEL_ID): Boolean {
         createChannel(ctx)
         if (!NotificationManagerCompat.from(ctx).areNotificationsEnabled()) return false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (nm.getNotificationChannel(CHANNEL_ID)?.importance == NotificationManager.IMPORTANCE_NONE) return false
+            if (nm.getNotificationChannel(channelId)?.importance == NotificationManager.IMPORTANCE_NONE) return false
         }
         return true
     }
@@ -65,15 +76,20 @@ object Notifier {
     /**
      * Single entry point for every place that obtains data. Fresh data first checks whether a verified
      * block transition happened (exactly once per transition, whoever sees it first), then the next alarm is planned.
+     *
+     * [recovered] = this fresh data is the catch-up after a failed fetch (see [SyncRecovery]): a missed block change
+     * is then announced once for the current block even if the schedule that produced the alarm is several blocks old.
      */
-    fun onData(ctx: Context, info: Info?) {
-        if (info != null && info.fresh) checkTransition(ctx, info)
+    fun onData(ctx: Context, info: Info?, recovered: Boolean = false) {
+        if (info != null && info.fresh) checkTransition(ctx, info, recovered)
         scheduleNext(ctx, info)
+        // The status bar icon always follows the latest data (it removes itself if the data cannot be trusted).
+        StatusIndicator.update(ctx, info)
     }
 
-    private fun checkTransition(ctx: Context, info: Info) {
+    private fun checkTransition(ctx: Context, info: Info, recovered: Boolean) {
         val prefs = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("notif_enabled", false)) return
+        if (!AppSettings.blockNotificationsEnabled(ctx)) return
         // Data that contradicts the Slovenian clock is not verified.
         if (!Repo.coversNow(info.now)) return
 
@@ -89,18 +105,23 @@ object Notifier {
         val verified =
             expectedTo == info.now.id && kotlin.math.abs(expectedStart - blockStart) < 60_000L
 
-        prefs.edit().putString(KEY_LAST, key).apply() // never notify twice for the same transition
-        if (!verified) return
+        // Offline at the boundary: the expectation may be several blocks old, so it does not match the current block.
+        // The user still gets ONE notification, for the current block only, never one per block that was missed.
+        val missed = recovered && !verified && isMissedBoundary(expectedStart, now)
 
-        val mode = prefs.getInt("notif_mode", 0)
-        val isBlockMatch = (mode == 0) || (info.now.id == 1 || info.now.id == 2)
+        prefs.edit().putString(KEY_LAST, key).apply() // never notify twice for the same transition
+        if (!verified && !missed) return
+
+        val mode = AppSettings.notificationMode(ctx)
+        val isBlockMatch = (mode == AppSettings.MODE_ALL) || (info.now.id == 1 || info.now.id == 2)
         if (!isBlockMatch) return
         if (!canPost(ctx)) return
 
-        post(ctx, info, previousId, now - blockStart)
+        // After a missed boundary the previous block is unknown, so no direction (cheaper / dearer) is claimed.
+        post(ctx, info, if (verified) previousId else -1, now - blockStart, recovered)
     }
 
-    private fun post(ctx: Context, info: Info, previousId: Int, latenessMs: Long) {
+    private fun post(ctx: Context, info: Info, previousId: Int, latenessMs: Long, recovered: Boolean) {
         val openIntent = Intent(ctx, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             ctx, 0, openIntent,
@@ -113,12 +134,14 @@ object Notifier {
         if (price != null) {
             details += ". Omrežnina za energijo: " + PriceLists.formatKwh(price)
         }
+        if (recovered) details += ". Posodobljeno ob ponovni povezavi."
 
         // The notification disappears when this block ends, so it never shows outdated information.
         val untilBlockEnd = Repo.nextStartMillis(info.next.from) - System.currentTimeMillis()
 
         val builder = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_semafor)
+            .setColor(Repo.color(info.now.id)) // colour of the current block
             .setContentTitle("Tarifni Semafor")
             .setContentText(headline)
             .setStyle(NotificationCompat.BigTextStyle().bigText(headline + "\n" + details))
@@ -133,9 +156,13 @@ object Notifier {
         }
     }
 
+    /** The block-change alarm is only worth waking the device for if a switched-on feature can actually show something. */
+    private fun alarmUseful(ctx: Context): Boolean =
+        (AppSettings.blockNotificationsEnabled(ctx) && canPost(ctx)) ||
+            (AppSettings.statusIconEnabled(ctx) && canPost(ctx, StatusIndicator.CHANNEL_ID))
+
     fun scheduleNext(ctx: Context, info: Info?) {
         val prefs = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val enabled = prefs.getBoolean("notif_enabled", false)
 
         val am = ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent = PendingIntent.getBroadcast(
@@ -145,10 +172,8 @@ object Notifier {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        if (!enabled) {
-            am.cancel(pendingIntent)
-        } else if (!canPost(ctx)) {
-            // Notifications are blocked in the phone settings: do not wake the device for nothing.
+        if (!alarmUseful(ctx)) {
+            // Both features are off, or Android blocks their notifications: do not wake the device for nothing.
             am.cancel(pendingIntent)
         } else if (info != null && Repo.dataState(info) != DataState.UNVERIFIED && Repo.coversNow(
                 info.now
