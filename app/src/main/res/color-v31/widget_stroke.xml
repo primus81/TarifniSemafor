@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material You: the edge line takes the wallpaper tint (accent palette, dark tone). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:alpha="0.30"
+        android:color="@android:color/system_accent1_800" />
+</selector>

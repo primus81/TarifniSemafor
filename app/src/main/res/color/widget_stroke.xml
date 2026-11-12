@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thin edge line around the widget (Android 11 and older: neutral dark line). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="#1F000000" />
+</selector>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Divider line between the cells; inner radius = system inner radius on Android 12+. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/widget_divider_soft" />
+    <corners android:radius="@dimen/widget_inner_radius" />
+</shape>
