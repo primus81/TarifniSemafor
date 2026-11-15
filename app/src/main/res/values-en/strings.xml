@@ -120,7 +120,8 @@
     <string name="sources_usage_link">Moj Elektro API</string>
     <string name="about_title">About the app</string>
     <string name="about_disclaimer">Tarifni semafor is an unofficial app. It is not affiliated with the Energy Agency, SODO or any other operator. The data is taken from public sources (see Data sources); its accuracy is not guaranteed, and the valid data is published by the official sources.</string>
-    <string name="about_developer">"Developer: "</string>
+    <string name="about_developer">"Developed by: "</string>
+    <string name="about_and">" and "</string>
     <string name="about_version">Version: %1$s</string>
     <string name="about_privacy_policy">Privacy policy</string>
 </resources>

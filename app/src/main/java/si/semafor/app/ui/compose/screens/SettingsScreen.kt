@@ -312,7 +312,7 @@ private fun SettingsScreenPreview() {
     AppTheme(dark = false) {
         Box(Modifier.background(MaterialTheme.colorScheme.background)) {
             SettingsScreen(
-                state = SettingsUiState(notificationsBlocked = true, mojElektroEimm = "3-1234567", version = "2.2.2"),
+                state = SettingsUiState(notificationsBlocked = true, mojElektroEimm = "3-1234567", version = "2.2.3"),
                 actions = SettingsActions()
             )
         }

@@ -122,9 +122,9 @@ fun SourcesDialog(onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
 /** "O aplikaciji": disclaimer, developer, version and the privacy policy. */
 @Composable
 fun AboutDialog(version: String, onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
-    val developerUrl = "https://bsky.app/profile/primush.bsky.social"
     val style = linkStyle()
     val developer = stringResource(R.string.about_developer)
+    val andText = stringResource(R.string.about_and)
     val privacy = stringResource(R.string.about_privacy_policy)
     val privacySpoken = stringResource(R.string.common_link_suffix, privacy)
     AppDialog(stringResource(R.string.about_title), onDismiss) {
@@ -137,7 +137,9 @@ fun AboutDialog(version: String, onDismiss: () -> Unit, onOpenUrl: (String) -> U
         Text(
             text = buildAnnotatedString {
                 append(developer)
-                withLink(LinkAnnotation.Url(developerUrl, style) { onOpenUrl(developerUrl) }) { append("Primus") }
+                withLink(LinkAnnotation.Url(Links.DEVELOPER, style) { onOpenUrl(Links.DEVELOPER) }) { append("primus") }
+                append(andText)
+                withLink(LinkAnnotation.Url(Links.ANTHROPIC, style) { onOpenUrl(Links.ANTHROPIC) }) { append("Claude") }
             },
             fontSize = 15.sp,
             color = AppColors.TextPrimary

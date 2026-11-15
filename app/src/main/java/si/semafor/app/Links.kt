@@ -13,6 +13,10 @@ object Links {
     // Portal of the distribution operators where the user creates the read-only API token (optional connection).
     const val MOJ_ELEKTRO = "https://mojelektro.si"
 
+    // "O aplikaciji": the developer's site and the maker of Claude, the AI assistant the app was built with.
+    const val DEVELOPER = "https://primush.online"
+    const val ANTHROPIC = "https://www.anthropic.com/"
+
     // Icons of the app (Material Symbols, Apache License 2.0).
     const val MATERIAL_SYMBOLS = "https://fonts.google.com/icons"
 

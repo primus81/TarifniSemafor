@@ -1,21 +1,43 @@
-<?xml version="1.0" encoding="utf-8"?><!-- Ospredje adaptivne ikone (logotip iz mape Slike). Obris strele je skaliran (0,68), da ostane znotraj
-     varnega območja 66dp od 108dp. Barva = zeleni blok (Repo.color(5)). -->
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon foreground: the app logo (ring of the five official uro.si block colours + bolt), inside the 66 dp safe zone. Same design as SemaforLogo in the app. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="100"
-    android:viewportHeight="100">
-    <group
-        android:pivotX="50"
-        android:pivotY="50"
-        android:scaleX="0.68"
-        android:scaleY="0.68">
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M56.628,28.992 A25.146,25.146 0 0,1 76.972,43.772"
+        android:strokeColor="#F1690F"
+        android:strokeWidth="5.610"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M78.596,48.772 A25.146,25.146 0 0,1 70.826,72.687"
+        android:strokeColor="#F9C212"
+        android:strokeWidth="5.610"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M66.573,75.777 A25.146,25.146 0 0,1 41.427,75.777"
+        android:strokeColor="#8F8F8F"
+        android:strokeWidth="5.610"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M37.174,72.687 A25.146,25.146 0 0,1 29.404,48.772"
+        android:strokeColor="#A1D09E"
+        android:strokeWidth="5.610"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M31.028,43.772 A25.146,25.146 0 0,1 51.372,28.992"
+        android:strokeColor="#54C9E3"
+        android:strokeWidth="5.610"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <group android:translateX="38.409" android:translateY="38.409" android:scaleX="0.3118" android:scaleY="0.3118">
         <path
-            android:fillColor="#00000000"
             android:pathData="M58,8 L28,55 L47,55 L35,92 L75,43 L54,43 L70,8 Z"
-            android:strokeWidth="5.5"
-            android:strokeColor="#43A047"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
+            android:fillColor="#FFFFFF" />
     </group>
 </vector>

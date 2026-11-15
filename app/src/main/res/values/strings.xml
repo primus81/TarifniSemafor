@@ -120,7 +120,8 @@
     <string name="sources_usage_link">Moj Elektro API</string>
     <string name="about_title">O aplikaciji</string>
     <string name="about_disclaimer">Tarifni semafor je neuradna aplikacija. Ni povezana z Agencijo za energijo, SODO ali drugimi operaterji. Podatki so povzeti iz javnih virov (glej Viri podatkov); njihova točnost ni zagotovljena, veljavne podatke objavljajo uradni viri.</string>
-    <string name="about_developer">"Razvijalec: "</string>
+    <string name="about_developer">"Aplikacijo razvila: "</string>
+    <string name="about_and">" in "</string>
     <string name="about_version">Verzija: %1$s</string>
     <string name="about_privacy_policy">Politika zasebnosti</string>
 </resources>

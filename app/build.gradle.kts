@@ -28,8 +28,8 @@ android {
         applicationId = "si.semafor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
-        versionName = "2.2.2"
+        versionCode = 19
+        versionName = "2.2.3"
     }
     signingConfigs {
         if (hasReleaseSigning) {

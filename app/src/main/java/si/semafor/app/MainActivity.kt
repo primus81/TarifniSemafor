@@ -148,7 +148,7 @@ class MainActivity : AppCompatActivity() {
         val MotionEasing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
 
         // Only shown if PackageManager cannot report the version (keep in step with versionName).
-        const val FALLBACK_VERSION = "2.2.2"
+        const val FALLBACK_VERSION = "2.2.3"
 
         const val PAGE_HOME = 0
         const val PAGE_USAGE = 1
