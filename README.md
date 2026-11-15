@@ -69,7 +69,7 @@ Kode registrov (A+, A-, A+_T0, A-_T0) se preberejo iz uradnega kataloga `GET /re
 
 ## Opombe izdaje
 
-Podrobne opombe vsake izdaje so v mapi `store_assets/` (`release_notes_<verzija>.md`).
+Izdaje so objavljene na GitHubu: https://github.com/primus81/TarifniSemafor/releases (oznake `v<verzija>`, verzije po [SemVer](https://semver.org/)). Podrobne opombe vsake izdaje so v mapi `store_assets/` (`release_notes_<verzija>.md`), besedilo izdaje za GitHub pa v `docs/releases/`.
 
 ### 2.2.3 (versionCode 19)
 
@@ -83,7 +83,6 @@ Spremembe od verzije 2.2.2 (versionCode 18):
 - Prenovljene Nastavitve: videz in jezik, povezava Moj Elektro z enim dotikom za izbris, obvestila, nasveti in orodja, zasebnost, pravno.
 - Okno o zasebnosti ob prvem zagonu: brez računa, oglasov in piškotkov; izbira o analitiki je privzeto izklopljena (analitika ni vgrajena).
 - Nov logotip (obroč petih časovnih blokov s strelo), ki v aplikaciji sledi trenutnemu bloku; nova ikona aplikacije.
-- O aplikaciji: »Aplikacijo razvila: primus in Claude«.
 - Okostja z lesketanjem med nalaganjem, rahla vibracija ob menjavi zavihka in ob drsenju po grafu.
 - Podpora uradni specifikaciji API Moj Elektro (opisi statusov meritev), šifriranje Keystore varno tudi ob sočasnem prvem zapisu, hitrejša analiza 15-minutnih meritev.
 
