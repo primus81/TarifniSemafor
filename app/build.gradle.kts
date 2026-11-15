@@ -65,20 +65,18 @@ android {
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
-    // Home screen state: HomeViewModel (viewModelScope), lifecycleScope/repeatOnLifecycle and by viewModels().
-    // These versions were already on the classpath through activity-compose; now they are declared explicitly.
+    // ViewModels of the screens (viewModelScope) and by viewModels().
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
     implementation("androidx.activity:activity-ktx:1.13.0")
-    // Pull-to-refresh on the home and news screens.
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0")
+    // collectAsStateWithLifecycle: the screens collect the ViewModel state only while the Activity is started.
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
 
-    // Jetpack Compose (hybrid migration, screen by screen). All Compose versions come from the BOM.
+    // Jetpack Compose: the whole UI (the home screen widget stays RemoteViews). All Compose versions come from the BOM.
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
-    // ComponentActivity (ViewTree owners for ComposeView, OnBackPressedDispatcher) + setContent.
+    // ComponentActivity + setContent and BackHandler.
     implementation("androidx.activity:activity-compose:1.13.0")
     // Android Studio @Preview support; the tooling itself is a debug-only dependency.
     implementation("androidx.compose.ui:ui-tooling-preview")

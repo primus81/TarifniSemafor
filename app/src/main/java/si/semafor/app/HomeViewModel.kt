@@ -1,6 +1,7 @@
 package si.semafor.app
 
 import android.app.Application
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -12,14 +13,26 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 /** What the home screen shows. Kept in [HomeViewModel], so it survives rotation and other configuration changes. */
 sealed interface HomeUiState {
     /** No trusted data yet; a load is running or about to run. */
     data object Loading : HomeUiState
 
-    /** [offlineFailure] = the last refresh failed and [info] is the stored data that can still be trusted. */
-    data class Content(val info: Info, val best: BestBlock?, val offlineFailure: Boolean) : HomeUiState
+    /**
+     * [offlineFailure] = the last refresh failed and [info] is the stored data that can still be trusted.
+     * [nextChangeMillis] (start of the next block) and [shownDate] (Slovenian day) are fixed when the data is
+     * first shown; a copy with a new best block keeps them.
+     */
+    @Immutable
+    data class Content(
+        val info: Info,
+        val best: BestBlock?,
+        val offlineFailure: Boolean,
+        val nextChangeMillis: Long = Repo.nextStartMillis(info.next.from),
+        val shownDate: LocalDate = SloTime.today()
+    ) : HomeUiState
 
     /** Nothing that can be trusted; [lastUpdate] = time of the last successful update, if any. */
     data class Error(val lastUpdate: Long?) : HomeUiState
@@ -41,15 +54,19 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
-    /** True while phase 1 runs. The Activity only uses the end (false) to dismiss the pull-to-refresh spinner. */
-    private val _loading = MutableStateFlow(false)
-    val loading: StateFlow<Boolean> = _loading.asStateFlow()
+    /**
+     * True from a pull-to-refresh gesture until phase 1 of the load has ended (success and error alike): drives the
+     * pull-to-refresh spinner only.
+     */
+    private val _pullRefreshing = MutableStateFlow(false)
+    val pullRefreshing: StateFlow<Boolean> = _pullRefreshing.asStateFlow()
 
     // Main thread only (viewModelScope uses Dispatchers.Main.immediate).
     private var loadJob: Job? = null
     private var lastFreshFetch = 0L
     private var lagRetryJob: Job? = null
     private var lagRetries = 0
+    private var lastTickReload = 0L
 
     /**
      * Called by the Activity in onResume. If the screen was not refreshed within the last minute, the stored data is
@@ -72,15 +89,38 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         refresh(force = false)
     }
 
-    /** Device clock or time zone changed: drop the throttle and re-validate the shown data. */
+    /** Device clock or time zone changed: drop the throttles and re-validate the shown data. */
     fun onClockChanged() {
         lastFreshFetch = 0L
+        lastTickReload = 0L
         refresh(force = true)
+    }
+
+    /**
+     * Called every second while the home screen is visible. Reloads (at most every 5 s) when the shown block has
+     * ended, when the best upcoming block has started, or when a new Slovenian day has begun (price list validity).
+     */
+    fun onTick(nowMs: Long) {
+        val shown = _state.value as? HomeUiState.Content ?: return
+        val best = shown.best
+        val due = nowMs >= shown.nextChangeMillis ||
+            (best != null && nowMs >= best.startMillis) ||
+            shown.shownDate != SloTime.today()
+        if (due && nowMs - lastTickReload >= TICK_RELOAD_MS) {
+            lastTickReload = nowMs
+            refresh(force = true)
+        }
     }
 
     /** Fresh data delivered by the offline catch-up worker ([SyncRecovery]). */
     fun onRecovered(info: Info) {
         _state.value = HomeUiState.Content(info, Repo.getMemoryCachedBest(), offlineFailure = false)
+    }
+
+    /** Refresh started by pulling the home screen down; a load that is already running covers it. */
+    fun pullRefresh() {
+        _pullRefreshing.value = true
+        refresh(force = true)
     }
 
     /**
@@ -91,7 +131,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         if (loadJob?.isActive == true) return
         if (!force && System.currentTimeMillis() - lastFreshFetch in 0 until THROTTLE_MS) return
 
-        _loading.value = true
         loadJob = viewModelScope.launch {
             val appCtx = ctx
             var phase1: Phase1? = null
@@ -124,7 +163,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 if (lagging) scheduleLagRetry() else lagRetries = 0
             } finally {
-                _loading.value = false
+                _pullRefreshing.value = false
             }
 
             // Phase 2: best block, widget, alarm and status bar icon.
@@ -160,5 +199,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         const val THROTTLE_MS = 60_000L
         const val LAG_RETRY_MS = 30_000L
         const val MAX_LAG_RETRIES = 3
+        const val TICK_RELOAD_MS = 5_000L
     }
 }

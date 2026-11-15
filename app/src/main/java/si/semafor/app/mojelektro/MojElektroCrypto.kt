@@ -46,6 +46,7 @@ internal object MojElektroCrypto {
     }
 
     /** Deletes the key: everything encrypted with it becomes unreadable. */
+    @Synchronized
     fun deleteKey() {
         try {
             keyStore().deleteEntry(KEY_ALIAS)
@@ -58,6 +59,9 @@ internal object MojElektroCrypto {
 
     private fun existingKey(): SecretKey? = keyStore().getKey(KEY_ALIAS, null) as? SecretKey
 
+    // Synchronized: two first-time writers on different threads must not each generate a key (the second would
+    // replace the first and make what was just encrypted with it unreadable).
+    @Synchronized
     private fun key(): SecretKey = existingKey() ?: KeyGenerator.getInstance(
         KeyProperties.KEY_ALGORITHM_AES,
         ANDROID_KEYSTORE

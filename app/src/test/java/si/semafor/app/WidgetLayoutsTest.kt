@@ -53,7 +53,4 @@ class WidgetLayoutsTest {
 
     @Test
     fun wideWidgetLayoutIsInflatableByRemoteViews() = assertRemoteViewsSafe("widget_wide")
-
-    @Test
-    fun legacyWidgetLayoutIsInflatableByRemoteViews() = assertRemoteViewsSafe("widget")
 }

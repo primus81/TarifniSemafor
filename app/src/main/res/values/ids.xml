@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Fixed ids of the Compose screens: the key under which each screen's saveable state is kept on recreation. -->
-<resources>
-    <item name="compose_calc" type="id" />
-    <item name="compose_tips" type="id" />
-    <item name="compose_settings" type="id" />
-    <item name="compose_mojelektro" type="id" />
-    <item name="compose_usage" type="id" />
-</resources>

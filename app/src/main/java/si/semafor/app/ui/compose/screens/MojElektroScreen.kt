@@ -47,6 +47,7 @@ import si.semafor.app.ui.compose.components.ScreenScaffold
 import si.semafor.app.ui.compose.components.SectionHeading
 import si.semafor.app.ui.compose.components.SwitchRow
 import si.semafor.app.ui.compose.theme.AppTheme
+import si.semafor.app.ui.compose.theme.AppColors
 import si.semafor.app.ui.compose.theme.BodyLineHeight
 
 /**
@@ -267,13 +268,12 @@ private fun StatusMessage(message: MojElektroMessage) {
             text = message.text,
             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight),
             // Colours of the app: yellow for warnings (as in Nastavitve), green block colour for success.
-            color = if (message.isError) WarningColor else SuccessColor,
+            color = if (message.isError) AppColors.Warning else SuccessColor,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
         )
     }
 }
 
-private val WarningColor = Color(0xFFFDD835)
 private val SuccessColor = Color(0xFF9CCC4F)
 
 @Preview(showBackground = true, backgroundColor = 0xFF161C28)

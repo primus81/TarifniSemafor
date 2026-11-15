@@ -13,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import si.semafor.app.AppSettings
@@ -25,6 +24,7 @@ import si.semafor.app.ui.compose.components.ScreenScaffold
 import si.semafor.app.ui.compose.components.SectionHeading
 import si.semafor.app.ui.compose.components.SwitchRow
 import si.semafor.app.ui.compose.theme.AppTheme
+import si.semafor.app.ui.compose.theme.AppColors
 import si.semafor.app.ui.compose.theme.BodyLineHeight
 
 /** What the Settings screen shows. The host reads it from [AppSettings] and from the system on every visit. */
@@ -69,10 +69,10 @@ fun SettingsScreen(
                 Text(
                     text = "Obvestila so za to aplikacijo v telefonu izklopljena, zato ne prejmeš opozoril. Dovoli jih v nastavitvah telefona.",
                     style = note,
-                    color = WarningColor
+                    color = AppColors.Warning
                 )
                 Spacer(Modifier.height(8.dp))
-                ActionButton("Odpri nastavitve obvestil", onOpenNotificationSettings)
+                ActionButton("Odpri nastavitve obvestil", onClick = onOpenNotificationSettings)
             }
         }
 
@@ -143,14 +143,12 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             ActionButton(
                 if (state.mojElektroConnected) "Upravljaj povezavo" else "Poveži merilno mesto",
-                onOpenMojElektro
+                onClick = onOpenMojElektro
             )
         }
     }
 }
 
-/** Colour of warnings (the yellow of the middle tariff block, as everywhere else in the app). */
-private val WarningColor = Color(0xFFFDD835)
 
 @Preview(showBackground = true, backgroundColor = 0xFF161C28)
 @Composable

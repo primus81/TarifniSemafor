@@ -48,6 +48,7 @@ import si.semafor.app.ui.compose.components.PrimaryButton
 import si.semafor.app.ui.compose.components.ScreenHeader
 import si.semafor.app.ui.compose.components.ScreenScaffold
 import si.semafor.app.ui.compose.components.SectionHeading
+import si.semafor.app.ui.compose.theme.AppColors
 import si.semafor.app.ui.compose.theme.BodyLineHeight
 import java.time.format.DateTimeFormatter
 
@@ -76,13 +77,13 @@ fun UsageScreen(
             UsageUiState.NotConnected -> InfoCard {
                 Body("Za prikaz tvoje porabe najprej poveži svoje merilno mesto z žetonom API portala Moj Elektro. Povezava je neobvezna; podatki ostanejo v telefonu.")
                 Spacer(Modifier.height(10.dp))
-                ActionButton("Poveži merilno mesto", onOpenConnection)
+                ActionButton("Poveži merilno mesto", onClick = onOpenConnection)
             }
 
             is UsageUiState.Loading -> InfoCard { Body(state.step) }
 
             is UsageUiState.Error -> {
-                InfoCard { Body(state.message, color = WarningColor) }
+                InfoCard { Body(state.message, color = AppColors.Warning) }
                 PrimaryButton("Poskusi znova", onRefresh)
             }
 
@@ -97,7 +98,7 @@ private fun DelayNotice(data: UsageData?) {
         Text(
             text = "Podatki niso v realnem času",
             style = MaterialTheme.typography.titleSmall,
-            color = WarningColor
+            color = AppColors.Warning
         )
         Spacer(Modifier.height(4.dp))
         val last = data?.lastDay?.let { " Zadnji dan z vsemi podatki: ${it.format(DAY)}." } ?: ""
@@ -115,14 +116,14 @@ private fun Content(
     onRangeChange: (Int) -> Unit
 ) {
     if (data.fromCacheAfterError) {
-        InfoCard { Body("Osvežitev ni uspela, zato so prikazani shranjeni podatki.", color = WarningColor) }
+        InfoCard { Body("Osvežitev ni uspela, zato so prikazani shranjeni podatki.", color = AppColors.Warning) }
     }
     if (data.label == IntervalLabel.UNKNOWN) {
         InfoCard {
             Body(
                 "Časovnih oznak 15-minutnih meritev ni bilo mogoče zanesljivo razvrstiti, zato meritve niso " +
                     "razdeljene po časovnih blokih.",
-                color = WarningColor
+                color = AppColors.Warning
             )
         }
     }
@@ -299,4 +300,3 @@ private fun Body(text: String, small: Boolean = false, color: Color = MaterialTh
     )
 }
 
-private val WarningColor = Color(0xFFFDD835)

@@ -31,6 +31,8 @@ object PriceLists {
         )
     )
 
+    private val SL: Locale = Locale.forLanguageTag("sl-SI")
+
     const val SOURCE_ALL = "https://www.sodo.si/ceniki"
 
     /** The list with validFrom <= d <= validTo; if several, the latest validFrom; else null. */
@@ -44,7 +46,7 @@ object PriceLists {
     fun energyPrice(list: PriceList?, block: Int): Double? =
         list?.rows?.firstOrNull { it.block == block }?.energyEurPerKwh
 
-    fun formatKwh(v: Double): String = String.format(Locale("sl", "SI"), "%.5f", v) + "€/kWh"
+    fun formatKwh(v: Double): String = String.format(SL, "%.5f", v) + "€/kWh"
 
-    fun formatNumber(v: Double): String = String.format(Locale("sl", "SI"), "%.5f", v)
+    fun formatNumber(v: Double): String = String.format(SL, "%.5f", v)
 }

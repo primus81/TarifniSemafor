@@ -98,6 +98,12 @@ object UsageAnalysis {
         val readings = fifteen.filter { it.value != null }.sortedBy { it.timestampMillis }
         if (readings.isEmpty()) return IntervalLabel.UNKNOWN
 
+        // Sorted timestamps + prefix sums: every window below is two binary searches instead of a scan of all
+        // readings (a month of 15-minute values against 30 daily states).
+        val ts = LongArray(readings.size) { readings[it].timestampMillis }
+        val prefix = DoubleArray(readings.size + 1)
+        for (i in readings.indices) prefix[i + 1] = prefix[i] + readings[i].value!!.toDouble()
+
         var startVotes = 0
         var endVotes = 0
         val states = dailyStates.filter { it.value != null }.sortedBy { it.timestampMillis }
@@ -107,11 +113,14 @@ object UsageAnalysis {
             val diff = states[i + 1].value!!.toDouble() - states[i].value!!.toDouble()
             if (t1 <= t0 || diff < 0) continue
             val expected = ((t1 - t0) / INTERVAL_MS).toInt()
-            val asStart = readings.filter { it.timestampMillis >= t0 && it.timestampMillis < t1 }
-            val asEnd = readings.filter { it.timestampMillis > t0 && it.timestampMillis <= t1 }
-            if (asStart.size != expected || asEnd.size != expected) continue
-            val errStart = abs(asStart.sumOf { it.value!!.toDouble() } - diff)
-            val errEnd = abs(asEnd.sumOf { it.value!!.toDouble() } - diff)
+            // "start" labelled: t0 <= t < t1; "end" labelled: t0 < t <= t1.
+            val startFrom = firstIndex(ts, t0, inclusive = true)
+            val startTo = firstIndex(ts, t1, inclusive = true)
+            val endFrom = firstIndex(ts, t0, inclusive = false)
+            val endTo = firstIndex(ts, t1, inclusive = false)
+            if (startTo - startFrom != expected || endTo - endFrom != expected) continue
+            val errStart = abs(prefix[startTo] - prefix[startFrom] - diff)
+            val errEnd = abs(prefix[endTo] - prefix[endFrom] - diff)
             // Only a clear difference counts, and only if the better variant really matches the meter.
             val tolerance = maxOf(1.0, diff * 0.02)
             if (abs(errStart - errEnd) < 0.0005 || minOf(errStart, errEnd) > tolerance) continue
@@ -127,6 +136,17 @@ object UsageAnalysis {
             if (minuteOfDay == 15) return IntervalLabel.END
         }
         return IntervalLabel.UNKNOWN
+    }
+
+    /** First index of sorted [ts] with a value >= [t] ([inclusive]) or > [t]; [ts].size if there is none. */
+    private fun firstIndex(ts: LongArray, t: Long, inclusive: Boolean): Int {
+        var lo = 0
+        var hi = ts.size
+        while (lo < hi) {
+            val mid = (lo + hi) ushr 1
+            if (if (inclusive) ts[mid] < t else ts[mid] <= t) lo = mid + 1 else hi = mid
+        }
+        return lo
     }
 
     /** Start of the interval a reading belongs to ([IntervalLabel.UNKNOWN] uses the timestamp as it is). */

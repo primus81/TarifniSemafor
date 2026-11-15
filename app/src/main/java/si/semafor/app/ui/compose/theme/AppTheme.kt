@@ -8,27 +8,39 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import si.semafor.app.ui.theme.Palette
 
-/**
- * The app is dark only. The colours are the very same values the View-based screens use ([Palette]), so Compose
- * screens and legacy screens look identical while the migration is in progress.
- */
+/** The fixed colours of the app (dark only). The values are the ones the app has always used. */
+internal object AppColors {
+    val BgScreen = Color(0xFF161C28)
+    val Surface = Color(0xFF1F2738)
+    val Border = Color(0xFF2E394E)
+    val Divider = Color(0x33FFFFFF)
+    val TextPrimary = Color(0xFFFFFFFF)
+    val TextSecondary = Color(0xFFC8D2DC)
+    val TopBar = Color(0xFF0C1018)
+
+    /** Warnings: the yellow of the middle tariff block, as everywhere else in the app. */
+    val Warning = Color(0xFFFDD835)
+
+    /** Accent colour (pull-to-refresh spinner). */
+    val Accent = Color(0xFF42A5F5)
+}
+
 private val AppColorScheme = darkColorScheme(
     primary = Color(0xFF43A047), // green block colour, also the main call-to-action button
     onPrimary = Color(0xFF111111),
-    secondary = Color(0xFF42A5F5), // accent colour (pull-to-refresh spinner)
+    secondary = AppColors.Accent,
     onSecondary = Color(0xFF111111),
     error = Color(0xFFE53935), // red block colour
     onError = Color(0xFFFFFFFF),
-    background = Color(Palette.BG_SCREEN),
-    onBackground = Color(Palette.TEXT_PRIMARY),
-    surface = Color(Palette.SURFACE),
-    onSurface = Color(Palette.TEXT_PRIMARY),
-    surfaceVariant = Color(Palette.SURFACE),
-    onSurfaceVariant = Color(Palette.TEXT_SECONDARY),
-    outline = Color(Palette.BORDER),
-    outlineVariant = Color(Palette.DIVIDER)
+    background = AppColors.BgScreen,
+    onBackground = AppColors.TextPrimary,
+    surface = AppColors.Surface,
+    onSurface = AppColors.TextPrimary,
+    surfaceVariant = AppColors.Surface,
+    onSurfaceVariant = AppColors.TextSecondary,
+    outline = AppColors.Border,
+    outlineVariant = AppColors.Divider
 )
 
 /**

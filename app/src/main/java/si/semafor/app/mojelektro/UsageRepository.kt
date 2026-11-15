@@ -70,9 +70,9 @@ class UsageRepository(context: Context) {
                     // Daily states one day earlier, so the first day has a starting state as well. Not essential.
                     val daily = (repository.dailyStates(start.minusDays(1), end) as? MojElektroResult.Success)?.data
                         ?: MeterReadings(null, null, emptyList())
-                    val agreedFresh = cached != null && (now - cached.agreedFetchedAtMillis) in 0 until AGREED_MAX_AGE_MS
-                    val (agreed, agreedTime) = if (agreedFresh && cached != null) {
-                        cached.agreed to cached.agreedFetchedAtMillis
+                    val freshAgreed = cached?.takeIf { (now - it.agreedFetchedAtMillis) in 0 until AGREED_MAX_AGE_MS }
+                    val (agreed, agreedTime) = if (freshAgreed != null) {
+                        freshAgreed.agreed to freshAgreed.agreedFetchedAtMillis
                     } else {
                         onProgress("Prenašam dogovorjeno moč …")
                         when (val a = repository.currentAgreedPower(now)) {
