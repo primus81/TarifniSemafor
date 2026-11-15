@@ -13,6 +13,12 @@ object Links {
     // Portal of the distribution operators where the user creates the read-only API token (optional connection).
     const val MOJ_ELEKTRO = "https://mojelektro.si"
 
+    // Icons of the app (Material Symbols, Apache License 2.0).
+    const val MATERIAL_SYMBOLS = "https://fonts.google.com/icons"
+
+    // Official description of the Moj Elektro API (the only server the optional connection talks to).
+    const val MOJ_ELEKTRO_API_DOCS = "https://docs.informatika.si/mojelektro/api/"
+
     // Sem vpiši pravi naslov objavljene politike zasebnosti (npr. stran na GitHub Pages).
     // Če vrednost vsebuje "REPLACE_WITH", se vrstica v pogovornem oknu "O aplikaciji" ne prikaže.
     const val PRIVACY_POLICY = "https://primus81.github.io/Tarifni-semafor-pravilnik-zasebnosti/"

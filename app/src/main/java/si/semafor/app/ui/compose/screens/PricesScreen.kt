@@ -29,7 +29,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import si.semafor.app.PriceList
+import si.semafor.app.R
+import si.semafor.app.SloTime
+import si.semafor.app.ui.compose.LocalLang
+import si.semafor.app.ui.compose.currentLocale
 import si.semafor.app.PriceLists
 import si.semafor.app.Repo
 import si.semafor.app.ui.compose.components.ActionButton
@@ -38,9 +43,7 @@ import si.semafor.app.ui.compose.components.LinkText
 import si.semafor.app.ui.compose.components.ScreenHeader
 import si.semafor.app.ui.compose.components.ScreenScaffold
 import si.semafor.app.ui.compose.theme.AppTheme
-import java.time.format.DateTimeFormatter
 
-private val DATE = DateTimeFormatter.ofPattern("d. M. yyyy")
 private const val W_BLOCK = 1.3f
 private const val W_POWER = 1.5f
 private const val W_ENERGY = 1.3f
@@ -57,10 +60,11 @@ fun PricesScreen(
     onOpenUrl: (String) -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
+    val lang = LocalLang.current
     ScreenScaffold {
         ScreenHeader(
-            title = "Cenik omrežnine",
-            subtitle = "Uporabniška skupina 0 (gospodinjstva in nizka napetost)",
+            title = stringResource(R.string.prices_title),
+            subtitle = stringResource(R.string.prices_subtitle),
             onBack = onBack,
             bottomPadding = if (list == null) 12.dp else 2.dp
         )
@@ -68,12 +72,12 @@ fun PricesScreen(
         if (list == null) {
             InfoCard {
                 Text(
-                    text = "Cenik za trenutno obdobje še ni vnesen.",
+                    text = stringResource(R.string.prices_missing),
                     style = MaterialTheme.typography.bodyLarge,
                     color = colors.onSurface
                 )
                 ActionButton(
-                    label = "Odpri cenike SODO",
+                    label = stringResource(R.string.prices_open_sodo),
                     onClick = { onOpenUrl(PriceLists.SOURCE_ALL) },
                     modifier = Modifier.padding(top = 12.dp),
                     textStyle = MaterialTheme.typography.bodyLarge,
@@ -84,7 +88,11 @@ fun PricesScreen(
         }
 
         Text(
-            text = "Velja od ${list.validFrom.format(DATE)} do ${list.validTo.format(DATE)}",
+            text = stringResource(
+                R.string.prices_valid,
+                SloTime.formatLocalDate(list.validFrom, lang),
+                SloTime.formatLocalDate(list.validTo, lang)
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
@@ -93,12 +101,12 @@ fun PricesScreen(
         PriceTable(list, currentBlockId)
 
         val notes = buildList {
-            add("Cenik velja za uporabniško skupino 0 (gospodinjski odjemalci in drugi odjemalci na nizkonapetostnem omrežju). Uporabniki brez 15-minutnih meritev imajo drugačen obračun in tu niso prikazani.")
-            add("Zneski so brez davkov, taks, trošarin in drugih dajatev.")
-            add("Tarifna postavka za moč se obračunava glede na dogovorjeno (in morebitno presežno) obračunsko moč v posameznem časovnem bloku, ne glede na porabo kWh. Tarifna postavka za energijo se obračunava glede na prevzeto energijo v kWh.")
-            add("Blok 1 velja samo ob delavnikih v višji sezoni (november–februar).")
-            list.note?.let { add(it) }
-            add("Cenik je informativen. Veljavne postavke objavlja operater (SODO).")
+            add(stringResource(R.string.prices_note_group))
+            add(stringResource(R.string.prices_note_taxes))
+            add(stringResource(R.string.prices_note_power))
+            add(stringResource(R.string.prices_note_block1))
+            list.noteIn(lang)?.let { add(it) }
+            add(stringResource(R.string.prices_note_info))
         }
         InfoCard {
             notes.forEachIndexed { i, n ->
@@ -111,7 +119,7 @@ fun PricesScreen(
             }
         }
 
-        LinkText("Uradni cenik (SODO)") { onOpenUrl(list.sourceUrl) }
+        LinkText(stringResource(R.string.prices_official)) { onOpenUrl(list.sourceUrl) }
     }
 }
 
@@ -128,36 +136,33 @@ private fun PriceTable(list: PriceList, currentBlockId: Int?) {
             .padding(8.dp)
     ) {
         // One spoken item for the header; each data row is one item with units (cells alone would be bare numbers).
+        val headerSpoken = stringResource(R.string.prices_header_spoken)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 8.dp, top = 6.dp, end = 8.dp, bottom = 8.dp)
-                .clearAndSetSemantics {
-                    contentDescription =
-                        "Stolpci: blok, moč v evrih na kilovat na mesec, energija v evrih na kilovatno uro."
-                }
+                .clearAndSetSemantics { contentDescription = headerSpoken }
         ) {
-            HeaderCell("Blok", W_BLOCK, TextAlign.Start)
-            HeaderCell("Moč [€/kW/mesec]", W_POWER, TextAlign.End)
-            HeaderCell("Energija [€/kWh]", W_ENERGY, TextAlign.End)
+            HeaderCell(stringResource(R.string.prices_col_block), W_BLOCK, TextAlign.Start)
+            HeaderCell(stringResource(R.string.prices_col_power), W_POWER, TextAlign.End)
+            HeaderCell(stringResource(R.string.prices_col_energy), W_ENERGY, TextAlign.End)
         }
+        val locale = currentLocale
+        val nowSpoken = stringResource(R.string.prices_row_now_spoken)
 
         for (r in list.rows) {
             val isNow = currentBlockId == r.block
             val blockColor = Color(Repo.color(r.block))
-            val power = PriceLists.formatNumber(r.powerEurPerKw)
-            val energy = PriceLists.formatNumber(r.energyEurPerKwh)
+            val power = PriceLists.formatNumber(r.powerEurPerKw, locale)
+            val energy = PriceLists.formatNumber(r.energyEurPerKwh, locale)
+            val spoken = stringResource(R.string.prices_row_spoken, r.block, if (isNow) nowSpoken else "", power, energy)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
                     .heightIn(min = 44.dp)
                     .background(if (isNow) blockColor.copy(alpha = 0x40 / 255f) else Color.Transparent)
-                    .clearAndSetSemantics {
-                        contentDescription = "${r.block}. blok" +
-                            (if (isNow) ", trenutno veljavni časovni blok" else "") +
-                            ". Moč $power evra na kilovat na mesec. Energija $energy evra na kilovatno uro."
-                    },
+                    .clearAndSetSemantics { contentDescription = spoken },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -173,7 +178,7 @@ private fun PriceTable(list: PriceList, currentBlockId: Int?) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (isNow) "${r.block}. blok (zdaj)" else "${r.block}. blok",
+                        text = stringResource(if (isNow) R.string.common_block_now else R.string.common_block, r.block),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = if (isNow) FontWeight.Bold else null,
                         color = colors.onSurface,

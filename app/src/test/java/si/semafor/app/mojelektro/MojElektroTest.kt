@@ -1,5 +1,7 @@
 package si.semafor.app.mojelektro
 
+import si.semafor.app.TestStrings
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -156,12 +158,13 @@ class MojElektroTest {
 
     @Test
     fun messages_areSlovenianAndSpecific() {
-        assertTrue(mojElektroErrorMessage(MojElektroError.Forbidden).contains("EIMM"))
-        assertTrue(mojElektroErrorMessage(MojElektroError.InvalidRequest("E.1.001")).endsWith("(koda E.1.001)"))
-        assertTrue(mojElektroErrorMessage(MojElektroError.Server(500)).contains("500"))
+        assertTrue(TestStrings.sl(mojElektroErrorMessage(MojElektroError.Forbidden)).contains("EIMM"))
+        assertTrue(TestStrings.sl(mojElektroErrorMessage(MojElektroError.InvalidRequest("E.1.001"))).endsWith("(koda E.1.001)"))
+        assertTrue(TestStrings.en(mojElektroErrorMessage(MojElektroError.InvalidRequest("E.1.001"))).endsWith("(code E.1.001)"))
+        assertTrue(TestStrings.sl(mojElektroErrorMessage(MojElektroError.Server(500))).contains("500"))
         assertEquals(
             "Povezava deluje. Merilno mesto 3-1234567, merilne točke: 1. Merilno mesto ima 15-minutne meritve.",
-            successText(MojElektroParser.meteringPoint(meteringPointJson))
+            TestStrings.sl(successText(MojElektroParser.meteringPoint(meteringPointJson)))
         )
     }
 }

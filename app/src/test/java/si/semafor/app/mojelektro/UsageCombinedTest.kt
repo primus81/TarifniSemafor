@@ -5,6 +5,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import si.semafor.app.SloTime
+import si.semafor.app.TestStrings
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -120,22 +121,31 @@ class UsageCombinedTest {
         val over = IntervalPoint(0L, 0.6, 2.4, 3, 2.0)
         val near = IntervalPoint(0L, 0.46, 1.84, 2, 2.0)
         val safe = IntervalPoint(0L, 0.1, 0.4, 5, 2.0)
-        assertEquals("Nad dogovorjeno močjo bloka: 120 % dogovorjene moči.", UsageInsights.powerText(over))
-        assertEquals("Blizu dogovorjene moči bloka: 92 %.", UsageInsights.powerText(near))
-        assertEquals("Varno pod dogovorjeno močjo bloka: 20 %.", UsageInsights.powerText(safe))
-        assertEquals("Dogovorjena moč za ta interval ni znana.", UsageInsights.powerText(over.copy(agreedKw = null)))
-        assertTrue(UsageInsights.blockText(near).startsWith("2. blok je med dražjimi"))
-        assertTrue(UsageInsights.blockText(safe).startsWith("5. blok je med cenejšimi"))
-        assertEquals("Časovni blok tega intervala ni znan.", UsageInsights.blockText(safe.copy(blockId = null)))
-        assertEquals("2,40 kW (0,600 kWh v 15 minutah), 3. blok, dogovorjena 2,00 kW.", UsageInsights.summary(over))
+        assertEquals("Nad dogovorjeno močjo bloka: 120 % dogovorjene moči.", TestStrings.sl(UsageInsights.powerText(over)))
+        assertEquals("Blizu dogovorjene moči bloka: 92 %.", TestStrings.sl(UsageInsights.powerText(near)))
+        assertEquals("Varno pod dogovorjeno močjo bloka: 20 %.", TestStrings.sl(UsageInsights.powerText(safe)))
+        assertEquals("Dogovorjena moč za ta interval ni znana.", TestStrings.sl(UsageInsights.powerText(over.copy(agreedKw = null))))
+        assertTrue(TestStrings.sl(UsageInsights.blockText(near)).startsWith("2. blok je med dražjimi"))
+        assertTrue(TestStrings.sl(UsageInsights.blockText(safe)).startsWith("5. blok je med cenejšimi"))
+        assertEquals("Časovni blok tega intervala ni znan.", TestStrings.sl(UsageInsights.blockText(safe.copy(blockId = null))))
+        assertEquals("2,40 kW (0,600 kWh v 15 minutah), 3. blok, dogovorjena 2,00 kW.", TestStrings.sl(UsageInsights.summary(over)))
+    }
+
+    @Test
+    fun insights_inEnglishUseEnglishNumbers() {
+        val over = IntervalPoint(0L, 0.6, 2.4, 3, 2.0)
+        val en = java.util.Locale.forLanguageTag("en-GB")
+        assertEquals("2.40 kW (0.600 kWh in 15 minutes), block 3, agreed 2.00 kW.", TestStrings.en(UsageInsights.summary(over, en)))
+        assertEquals("Above the agreed power of the block: 120 % of the agreed power.", TestStrings.en(UsageInsights.powerText(over, en)))
+        assertEquals("Exceeded in 1 quarter hour (highest 120 %).", TestStrings.en(UsageInsights.peakVerdict(DailyPeak(day, over, 0, 1), en)))
     }
 
     @Test
     fun peakVerdict_usesTheCounts() {
         val p = IntervalPoint(0L, 0.6, 2.4, 3, 2.0)
-        assertEquals("Presežena v 2 četrturah (najvišja 120 %).", UsageInsights.peakVerdict(DailyPeak(day, p, 0, 2)))
-        assertEquals("Nad 90 % v 1 četrturi (najvišja 120 %).", UsageInsights.peakVerdict(DailyPeak(day, p, 1, 0)))
+        assertEquals("Presežena v 2 četrturah (najvišja 120 %).", TestStrings.sl(UsageInsights.peakVerdict(DailyPeak(day, p, 0, 2))))
+        assertEquals("Nad 90 % v 1 četrturi (najvišja 120 %).", TestStrings.sl(UsageInsights.peakVerdict(DailyPeak(day, p, 1, 0))))
         val low = p.copy(kw = 1.0)
-        assertEquals("Pod 90 % ves dan (najvišja 50 %).", UsageInsights.peakVerdict(DailyPeak(day, low, 0, 0)))
+        assertEquals("Pod 90 % ves dan (najvišja 50 %).", TestStrings.sl(UsageInsights.peakVerdict(DailyPeak(day, low, 0, 0))))
     }
 }

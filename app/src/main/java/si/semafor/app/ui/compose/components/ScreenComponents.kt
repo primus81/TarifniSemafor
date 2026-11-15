@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -95,7 +96,7 @@ fun ScreenHeader(
     title: String,
     onBack: () -> Unit,
     subtitle: String? = null,
-    backDescription: String = "Nazaj na domači zaslon",
+    backDescription: String = stringResource(R.string.common_back_home),
     bottomPadding: Dp = 12.dp
 ) {
     Row(
@@ -194,7 +195,7 @@ fun ActionButton(
 @Composable
 fun ColumnScope.RefreshButton(onClick: () -> Unit) {
     ActionButton(
-        label = "Osveži",
+        label = stringResource(R.string.common_refresh),
         onClick = onClick,
         modifier = Modifier
             .align(Alignment.CenterHorizontally)
@@ -348,12 +349,13 @@ fun PrimaryButton(label: String, onClick: () -> Unit) {
 /** Underlined text, at least 48 dp high, that opens a web page; announced as a link ("povezava"). */
 @Composable
 fun LinkText(label: String, onClick: () -> Unit) {
+    val linkDescription = stringResource(R.string.common_link_suffix, label)
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clickable(onClick = onClick)
-            .semantics { contentDescription = "$label, povezava" },
+            .semantics { contentDescription = linkDescription },
         contentAlignment = Alignment.CenterStart
     ) {
         Text(

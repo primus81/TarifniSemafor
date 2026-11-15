@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,7 +38,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -59,6 +57,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -70,6 +70,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import si.semafor.app.AppLanguage
+import si.semafor.app.AppSettings
+import si.semafor.app.BlockPalette
 import si.semafor.app.PriceLists
 import si.semafor.app.R
 import si.semafor.app.SloTime
@@ -80,15 +83,14 @@ import si.semafor.app.mojelektro.UsageAnalysis
 import si.semafor.app.mojelektro.UsageData
 import si.semafor.app.mojelektro.UsageInsights
 import si.semafor.app.mojelektro.UsageUiState
+import si.semafor.app.text
+import si.semafor.app.ui.compose.LocalLang
 import si.semafor.app.ui.compose.charts.AgreedPowerGauge
 import si.semafor.app.ui.compose.charts.CombinedDayChart
 import si.semafor.app.ui.compose.charts.DailyBlocksChart
 import si.semafor.app.ui.compose.charts.DailyPeaksChart
-import si.semafor.app.ui.compose.charts.ExportColor
-import si.semafor.app.ui.compose.charts.NearBar
-import si.semafor.app.ui.compose.charts.NormalBar
-import si.semafor.app.ui.compose.charts.OverBar
 import si.semafor.app.ui.compose.charts.ProductionChart
+import si.semafor.app.ui.compose.charts.UnknownColor
 import si.semafor.app.ui.compose.charts.blockColor
 import si.semafor.app.ui.compose.charts.fmt
 import si.semafor.app.ui.compose.components.ActionButton
@@ -99,21 +101,27 @@ import si.semafor.app.ui.compose.components.InfoCard
 import si.semafor.app.ui.compose.components.LegendRow
 import si.semafor.app.ui.compose.components.PrimaryButton
 import si.semafor.app.ui.compose.components.SectionHeading
+import si.semafor.app.ui.compose.components.UsageSkeleton
+import si.semafor.app.ui.compose.currentLocale
 import si.semafor.app.ui.compose.theme.AppColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 
-private val DAY = DateTimeFormatter.ofPattern("d. M. yyyy")
-private val SHORT_DAY = DateTimeFormatter.ofPattern("d. M.")
-private val WEEKDAYS = listOf("pon", "tor", "sre", "čet", "pet", "sob", "ned")
-private val UnknownColor = Color(0xFF888888)
+private val OnBlock = Color(BlockPalette.ON_BLOCK)
 
-/** "tor 10. 11." */
-private fun shortDay(date: LocalDate) = WEEKDAYS[date.dayOfWeek.value - 1] + " " + date.format(SHORT_DAY)
+/** "tor 10. 11." / "Tue 10 Nov" */
+private fun shortDay(date: LocalDate, lang: String): String {
+    val locale = AppLanguage.localeOf(lang)
+    val weekday = date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale).trimEnd('.')
+    val pattern = if (lang == AppSettings.LANGUAGE_EN) "d MMM" else "d. M."
+    return weekday + " " + date.format(DateTimeFormatter.ofPattern(pattern, locale))
+}
 
 /**
- * "Moj semafor porabe": the user's own Moj Elektro readings combined with the official URO block schedule. Shown as
- * the second page of the home screen when a Moj Elektro connection exists. Everything is computed on the device.
+ * "Semafor porabe": the user's own Moj Elektro readings combined with the official URO block schedule. Second page of
+ * the main pager and second tab of the bottom bar. Without a connection ([connected] = false) it shows a short
+ * introduction with a button to the connection settings. Everything is computed on the device.
  *
  * Order: summary (metering point, agreed power, freshness, privacy) -> the interactive combined chart of one day ->
  * secondary charts (daily peaks, energy by block, taken/delivered energy) -> details and explanations.
@@ -121,6 +129,7 @@ private fun shortDay(date: LocalDate) = WEEKDAYS[date.dayOfWeek.value - 1] + " "
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UsageDashboardScreen(
+    connected: Boolean,
     state: UsageUiState,
     rangeDays: Int,
     ranges: List<Int>,
@@ -137,7 +146,7 @@ fun UsageDashboardScreen(
 
     PullToRefreshBox(
         isRefreshing = refreshing,
-        onRefresh = onRefresh,
+        onRefresh = { if (connected) onRefresh() },
         state = pullState,
         modifier = Modifier.fillMaxSize(),
         indicator = {
@@ -159,27 +168,32 @@ fun UsageDashboardScreen(
                 contentPadding = contentPadding()
             ) {
                 item(key = "title") { DashboardTitle() }
-                when (state) {
-                    UsageUiState.NotConnected -> item(key = "not-connected") {
-                        InfoCard {
-                            Body("Za prikaz tvoje porabe najprej poveži svoje merilno mesto z žetonom API portala Moj Elektro. Povezava je neobvezna; podatki ostanejo v telefonu.")
-                            Spacer(Modifier.height(10.dp))
-                            ActionButton("Poveži merilno mesto", onClick = onManageConnection)
-                        }
+                when {
+                    !connected || state == UsageUiState.NotConnected ->
+                        item(key = "onboarding") { OnboardingCard(onManageConnection) }
+
+                    state is UsageUiState.Loading -> item(key = "loading") {
+                        Body(
+                            state.step.text(),
+                            small = true,
+                            modifier = Modifier
+                                .padding(bottom = 8.dp)
+                                .semantics { liveRegion = LiveRegionMode.Polite }
+                        )
+                        UsageSkeleton()
+                        Body(stringResource(R.string.usage_loading_note), small = true, modifier = Modifier.padding(top = 8.dp))
                     }
 
-                    is UsageUiState.Loading -> item(key = "loading") { LoadingCard(state.step) }
-
-                    is UsageUiState.Error -> item(key = "error") {
+                    state is UsageUiState.Error -> item(key = "error") {
                         InfoCard {
-                            Body(state.message, color = AppColors.Warning)
+                            Body(state.message.text(), color = AppColors.Warning)
                             Spacer(Modifier.height(10.dp))
-                            ActionButton("Upravljaj povezavo", onClick = onManageConnection)
+                            ActionButton(stringResource(R.string.usage_manage), onClick = onManageConnection)
                         }
-                        PrimaryButton("Poskusi znova", onRefresh)
+                        PrimaryButton(stringResource(R.string.common_retry), onRefresh)
                     }
 
-                    is UsageUiState.Content -> content(
+                    state is UsageUiState.Content -> content(
                         data = state.data,
                         chosenDay = chosenDay?.let(LocalDate::parse),
                         onChooseDay = { date, scrollToChart ->
@@ -205,14 +219,13 @@ private const val HERO_INDEX = 3
 @Composable
 private fun contentPadding(): PaddingValues {
     val dir = LocalLayoutDirection.current
-    val bars = WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
-        .union(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom))
-        .asPaddingValues()
+    // The bottom bar below this page already keeps clear of the navigation bar; only the sides are added here.
+    val bars = WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).asPaddingValues()
     return PaddingValues(
         start = 24.dp + bars.calculateStartPadding(dir),
         top = 8.dp,
         end = 24.dp + bars.calculateEndPadding(dir),
-        bottom = 24.dp + bars.calculateBottomPadding()
+        bottom = 24.dp
     )
 }
 
@@ -220,13 +233,13 @@ private fun contentPadding(): PaddingValues {
 private fun DashboardTitle() {
     Column(Modifier.padding(bottom = 12.dp)) {
         Text(
-            text = "Moj semafor porabe",
+            text = stringResource(R.string.usage_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.semantics { heading() }
         )
         Text(
-            text = "Tvoja poraba (Moj Elektro) ob časovnih blokih (uro.si)",
+            text = stringResource(R.string.usage_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp)
@@ -234,20 +247,42 @@ private fun DashboardTitle() {
     }
 }
 
+/** Shown without a Moj Elektro connection: what the page does, three steps and a button to the connection. */
 @Composable
-private fun LoadingCard(step: String) {
-    InfoCard {
-        Body(step, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-        Spacer(Modifier.height(10.dp))
-        LinearProgressIndicator(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(2.dp)),
-            color = MaterialTheme.colorScheme.secondary,
-            trackColor = MaterialTheme.colorScheme.outline
+private fun OnboardingCard(onManageConnection: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(colors.secondaryContainer)
+            .border(1.dp, colors.outline, shape)
+            .padding(18.dp)
+    ) {
+        // The five official block colours as a small "traffic light" strip.
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(bottom = 12.dp)) {
+            for (b in 1..5) {
+                Box(
+                    Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(blockColor(b))
+                )
+            }
+        }
+        Text(
+            stringResource(R.string.usage_onboarding_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.onSurface,
+            modifier = Modifier.semantics { heading() }
         )
+        Body(stringResource(R.string.usage_onboarding_text), modifier = Modifier.padding(top = 4.dp))
         Spacer(Modifier.height(10.dp))
-        Body("Prvo nalaganje lahko traja nekaj sekund: aplikacija prenese meritve in uradne časovne bloke za vsak dan.", small = true)
+        for (step in listOf(R.string.usage_onboarding_step1, R.string.usage_onboarding_step2, R.string.usage_onboarding_step3)) {
+            Body(stringResource(step), small = true, modifier = Modifier.padding(top = 2.dp))
+        }
+        PrimaryButton(stringResource(R.string.usage_onboarding_button), onManageConnection)
     }
 }
 
@@ -271,13 +306,13 @@ private fun LazyListScope.content(
     item(key = "notices") { Notices(data) }
     item(key = "hero") { HeroCard(day, withData, onChooseDay = { onChooseDay(it, false) }) }
 
-    item(key = "peaks-title") { SectionHeading("Dnevne 15-minutne konice") }
+    item(key = "peaks-title") { SectionHeading(stringResource(R.string.usage_peaks_heading)) }
     item(key = "peaks") { PeaksCard(data, day?.date) { onChooseDay(it, true) } }
 
-    item(key = "blocks-title") { SectionHeading("Poraba po časovnih blokih") }
+    item(key = "blocks-title") { SectionHeading(stringResource(R.string.usage_blocks_heading)) }
     item(key = "range") {
         ChoiceChips(
-            choices = ranges.map { Choice(it, "$it dni") },
+            choices = ranges.map { Choice(it, pluralStringResource(R.plurals.usage_range_days, it, it)) },
             selected = rangeDays,
             onSelect = onRangeChange,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -286,29 +321,41 @@ private fun LazyListScope.content(
     item(key = "blocks") { BlocksCard(data) }
 
     data.production?.let { prod ->
-        item(key = "production-title") { SectionHeading("Prejeta in oddana energija") }
+        item(key = "production-title") { SectionHeading(stringResource(R.string.usage_production_heading)) }
         item(key = "production") {
+            val locale = currentLocale
             InfoCard {
-                Body("${prod.date.format(DAY)} · prejeto ${fmt(prod.totalImport)} kWh, oddano ${fmt(prod.totalExport)} kWh", small = true)
+                Body(
+                    stringResource(
+                        R.string.usage_production_line,
+                        SloTime.formatLocalDate(prod.date, LocalLang.current),
+                        fmt(prod.totalImport, 2, locale),
+                        fmt(prod.totalExport, 2, locale)
+                    ),
+                    small = true
+                )
                 Spacer(Modifier.height(8.dp))
-                ProductionChart(prod, NormalBar)
+                ProductionChart(prod, AppColors.NeutralBar)
                 Spacer(Modifier.height(8.dp))
-                LegendRow(listOf(NormalBar to "prejeto (A+)", ExportColor to "oddano (A-)"))
+                LegendRow(
+                    listOf(
+                        AppColors.NeutralBar to stringResource(R.string.usage_legend_import),
+                        AppColors.Export to stringResource(R.string.usage_legend_export)
+                    )
+                )
             }
         }
     }
 
-    item(key = "details-title") { SectionHeading("Podrobnosti Moj Elektro") }
+    item(key = "details-title") { SectionHeading(stringResource(R.string.usage_details_heading)) }
     item(key = "block-table") { BlockTableCard(data.blockRows, data.currentBlockId, rangeDays) }
     item(key = "registers") { RegistersCard(data) }
     item(key = "help") { HelpCard() }
     item(key = "footer") {
-        Body(
-            "Preneseno ${SloTime.formatDateTime(data.fetchedAtMillis)}. Časovni bloki so iz uradnih podatkov (uro.si). " +
-                "Izračuni so informativni in ne nadomeščajo računa.",
-            small = true
-        )
-        PrimaryButton(if (refreshing) "Osvežujem …" else "Osveži") { if (!refreshing) onRefresh() }
+        Body(stringResource(R.string.usage_footer, SloTime.formatDateTime(data.fetchedAtMillis, LocalLang.current)), small = true)
+        PrimaryButton(stringResource(if (refreshing) R.string.common_refreshing else R.string.common_refresh)) {
+            if (!refreshing) onRefresh()
+        }
     }
 }
 
@@ -316,32 +363,29 @@ private fun LazyListScope.content(
 @Composable
 private fun SummaryCard(data: UsageData, onManageConnection: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val lang = LocalLang.current
     InfoCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Merilno mesto (EIMM)", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.usage_eimm_label), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 Text(data.eimm, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             }
             FreshnessBadge(data)
         }
 
         Spacer(Modifier.height(12.dp))
-        Text("Dogovorjena moč", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        Text(stringResource(R.string.usage_agreed), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         Spacer(Modifier.height(6.dp))
         val agreed = data.agreed
         if (agreed == null) {
-            Body("Moj Elektro za tvoje merilno mesto ne navaja veljavne dogovorjene moči.")
+            Body(stringResource(R.string.usage_agreed_missing))
         } else {
             AgreedPowerChips(agreed.blockKw.map { it?.toDouble() }, data.currentBlockId)
         }
 
         Spacer(Modifier.height(12.dp))
-        val last = data.lastDay?.let { "Zadnji popoln dan: ${it.format(DAY)}. " } ?: ""
-        Body(
-            "${last}Preneseno ${SloTime.formatDateTime(data.fetchedAtMillis)}. Moj Elektro objavi meritve z zamikom, " +
-                "običajno približno en dan, zato tu ni tvoje trenutne porabe.",
-            small = true
-        )
+        val last = data.lastDay?.let { stringResource(R.string.usage_last_day, SloTime.formatLocalDate(it, lang)) } ?: ""
+        Body(stringResource(R.string.usage_freshness, last, SloTime.formatDateTime(data.fetchedAtMillis, lang)), small = true)
 
         Spacer(Modifier.height(12.dp))
         Box(
@@ -351,28 +395,23 @@ private fun SummaryCard(data: UsageData, onManageConnection: () -> Unit) {
                 .background(colors.outlineVariant)
         )
         Spacer(Modifier.height(10.dp))
-        Text("Zasebnost", style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
-        Body(
-            "Žeton API in EIMM sta šifrirana s ključem v varni shrambi telefona (Android Keystore) in ne zapustita " +
-                "telefona, razen do uradnega strežnika Moj Elektro. Meritve so shranjene šifrirane. Povezavo in vse " +
-                "shranjene meritve lahko kadar koli izbrišeš.",
-            small = true
-        )
+        Text(stringResource(R.string.me_privacy_heading), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+        Body(stringResource(R.string.usage_privacy), small = true)
         Spacer(Modifier.height(8.dp))
-        ActionButton("Upravljaj povezavo", onClick = onManageConnection)
+        ActionButton(stringResource(R.string.usage_manage), onClick = onManageConnection)
     }
 }
 
-/** "Sveže" / "Shranjeno": whether the shown readings come from the last download or from storage after an error. */
+/** Whether the shown readings come from the last download or from storage after an error. */
 @Composable
 private fun FreshnessBadge(data: UsageData) {
     val stale = data.fromCacheAfterError
-    val color = if (stale) AppColors.Warning else MaterialTheme.colorScheme.primary
+    val color = if (stale) AppColors.Near else AppColors.Export
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(color.copy(alpha = 0.15f))
+            .background(color.copy(alpha = 0.16f))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Box(
@@ -383,37 +422,44 @@ private fun FreshnessBadge(data: UsageData) {
         )
         Spacer(Modifier.width(6.dp))
         Text(
-            if (stale) "Shranjeno" else "Osveženo",
+            stringResource(if (stale) R.string.usage_stored else R.string.usage_fresh),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
 
-/** The agreed power of every block as small coloured chips; the block that is running now is outlined. */
+/** The agreed power of every block as chips in the official block colours; the block in force now is outlined. */
 @Composable
 private fun AgreedPowerChips(kw: List<Double?>, currentBlock: Int?) {
+    val locale = currentLocale
+    val ink = MaterialTheme.colorScheme.onSurface
+    val nowSpoken = stringResource(R.string.usage_chip_spoken_now)
+    val noData = stringResource(R.string.usage_no_data)
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
         kw.forEachIndexed { i, v ->
             val block = i + 1
             val now = block == currentBlock
             val shape = RoundedCornerShape(10.dp)
+            val kwSpoken = v?.let { stringResource(R.string.usage_chip_kw_spoken, fmt(it, 2, locale)) } ?: noData
+            val spoken = stringResource(R.string.usage_chip_spoken, block, if (now) nowSpoken else "", kwSpoken)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .weight(1f)
                     .clip(shape)
-                    .background(blockColor(block).copy(alpha = if (now) 0.35f else 0.16f))
-                    .border(if (now) 2.dp else 1.dp, if (now) Color.White else blockColor(block).copy(alpha = 0.5f), shape)
+                    .background(blockColor(block))
+                    .border(if (now) 2.dp else 0.dp, if (now) ink else Color.Transparent, shape)
                     .padding(vertical = 6.dp)
-                    .clearAndSetSemantics {
-                        contentDescription = "$block. blok" + (if (now) ", velja zdaj" else "") +
-                            ": " + (v?.let { "${fmt(it)} kilovata" } ?: "ni podatka")
-                    }
+                    .clearAndSetSemantics { contentDescription = spoken }
             ) {
-                Text("$block", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Text(v?.let { fmt(it, 1) } ?: "–", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Text(if (now) "zdaj" else "kW", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("$block", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = OnBlock)
+                Text(v?.let { fmt(it, 1, locale) } ?: "–", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = OnBlock)
+                Text(
+                    if (now) stringResource(R.string.usage_chip_now) else "kW",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OnBlock
+                )
             }
         }
     }
@@ -423,16 +469,10 @@ private fun AgreedPowerChips(kw: List<Double?>, currentBlock: Int?) {
 private fun Notices(data: UsageData) {
     Column(Modifier.animateContentSize()) {
         if (data.fromCacheAfterError) {
-            InfoCard { Body("Osvežitev ni uspela, zato so prikazani shranjeni podatki.", color = AppColors.Warning) }
+            InfoCard { Body(stringResource(R.string.usage_cache_after_error), color = AppColors.Warning) }
         }
         if (data.label == IntervalLabel.UNKNOWN) {
-            InfoCard {
-                Body(
-                    "Časovnih oznak 15-minutnih meritev ni bilo mogoče zanesljivo razvrstiti, zato meritve niso " +
-                        "razdeljene po časovnih blokih.",
-                    color = AppColors.Warning
-                )
-            }
+            InfoCard { Body(stringResource(R.string.usage_label_unknown), color = AppColors.Warning) }
         }
     }
 }
@@ -444,6 +484,8 @@ private fun Notices(data: UsageData) {
 @Composable
 private fun HeroCard(day: DayProfile?, days: List<DayProfile>, onChooseDay: (LocalDate) -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val lang = LocalLang.current
+    val locale = currentLocale
     val shape = RoundedCornerShape(20.dp)
     Column(
         modifier = Modifier
@@ -454,16 +496,16 @@ private fun HeroCard(day: DayProfile?, days: List<DayProfile>, onChooseDay: (Loc
             .padding(14.dp)
     ) {
         Text(
-            text = "Tvoja moč in časovni bloki",
+            text = stringResource(R.string.usage_hero_title),
             style = MaterialTheme.typography.titleMedium,
             color = colors.onSurface,
             modifier = Modifier.semantics { heading() }
         )
-        Body("Dotakni se grafa ali podrsaj po njem in preveri vsako četrturo.", small = true)
+        Body(stringResource(R.string.usage_hero_hint), small = true)
 
         if (day == null) {
             Spacer(Modifier.height(8.dp))
-            Body("Za izbrano obdobje še ni 15-minutnih podatkov.")
+            Body(stringResource(R.string.usage_no_15min))
             return@Column
         }
 
@@ -472,7 +514,7 @@ private fun HeroCard(day: DayProfile?, days: List<DayProfile>, onChooseDay: (Loc
         val recent = days.takeLast(7).reversed()
         if (recent.size > 1) {
             ChoiceChips(
-                choices = recent.map { Choice(it.date, shortDay(it.date)) },
+                choices = recent.map { Choice(it.date, shortDay(it.date, lang)) },
                 selected = day.date,
                 onSelect = onChooseDay
             )
@@ -484,19 +526,19 @@ private fun HeroCard(day: DayProfile?, days: List<DayProfile>, onChooseDay: (Loc
         val initial = day.peakIndex ?: day.intervals.lastIndex
         var selected by rememberSaveable(day.date.toString()) { mutableIntStateOf(initial) }
         val incomplete = day.intervals.size < UsageAnalysis.expectedIntervals(day.date)
-        val total = fmt(day.totalKwh, 1)
         Body(
-            "${day.date.format(DAY)} · skupaj $total kWh" + if (incomplete) " · dan še ni popoln" else "",
+            stringResource(R.string.usage_day_total, SloTime.formatLocalDate(day.date, lang), fmt(day.totalKwh, 1, locale)) +
+                if (incomplete) stringResource(R.string.usage_day_incomplete) else "",
             small = true
         )
         Spacer(Modifier.height(6.dp))
         CombinedDayChart(day, selected = { selected }, onSelect = { selected = it })
         Spacer(Modifier.height(6.dp))
         LegendRow(
-            (1..5).map { blockColor(it) to "$it. blok" } + listOf(
-                Color.White to "dogovorjena moč",
-                AppColors.Warning to "90 %",
-                OverBar to "presežek"
+            (1..5).map { blockColor(it) to stringResource(R.string.common_block, it) } + listOf(
+                colors.onSurface to stringResource(R.string.usage_legend_agreed),
+                AppColors.Near to stringResource(R.string.usage_legend_90),
+                AppColors.Over to stringResource(R.string.usage_legend_over)
             )
         )
         Spacer(Modifier.height(10.dp))
@@ -511,6 +553,7 @@ private fun IntervalReadout(day: DayProfile, selected: () -> Int, onStep: (Int) 
     val index = selected().coerceIn(0, points.lastIndex)
     val p = points[index]
     val colors = MaterialTheme.colorScheme
+    val locale = currentLocale
     val color = p.blockId?.let(::blockColor) ?: UnknownColor
     val shape = RoundedCornerShape(14.dp)
     val powerPrice = p.blockId?.let { b -> PriceLists.current()?.rows?.firstOrNull { it.block == b }?.powerEurPerKw }
@@ -519,8 +562,8 @@ private fun IntervalReadout(day: DayProfile, selected: () -> Int, onStep: (Int) 
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(color.copy(alpha = 0.12f))
-            .border(1.dp, color.copy(alpha = 0.6f), shape)
+            .background(color.copy(alpha = 0.14f))
+            .border(1.dp, color, shape)
             .padding(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -533,20 +576,21 @@ private fun IntervalReadout(day: DayProfile, selected: () -> Int, onStep: (Int) 
             Spacer(Modifier.width(8.dp))
             Text(
                 text = SloTime.formatHm(p.startMillis) + "–" + SloTime.formatHm(p.startMillis + UsageAnalysis.INTERVAL_MS) +
-                    (if (index == day.peakIndex) " · najvišja konica dneva" else ""),
+                    (if (index == day.peakIndex) stringResource(R.string.usage_peak_of_day) else ""),
                 style = MaterialTheme.typography.titleSmall,
                 color = colors.onSurface,
                 modifier = Modifier.weight(1f)
             )
         }
         Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
-            Body(UsageInsights.summary(p), modifier = Modifier.padding(top = 4.dp))
+            Body(UsageInsights.summary(p, locale).text(), modifier = Modifier.padding(top = 4.dp))
+            val agreed = p.agreedKw
             Body(
-                UsageInsights.powerText(p),
+                UsageInsights.powerText(p, locale).text(),
                 color = when {
-                    p.agreedKw == null -> colors.onSurface
-                    p.kw > p.agreedKw -> OverBar
-                    p.kw >= UsageAnalysis.NEAR_RATIO * p.agreedKw -> NearBar
+                    agreed == null -> colors.onSurface
+                    p.kw > agreed -> AppColors.Over
+                    p.kw >= UsageAnalysis.NEAR_RATIO * agreed -> AppColors.Warning
                     else -> colors.onSurface
                 }
             )
@@ -556,22 +600,25 @@ private fun IntervalReadout(day: DayProfile, selected: () -> Int, onStep: (Int) 
             Spacer(Modifier.height(6.dp))
             AgreedPowerGauge(agreedKw, p.kw, color)
         }
-        Body(UsageInsights.blockText(p), small = true, modifier = Modifier.padding(top = 4.dp))
+        Body(UsageInsights.blockText(p).text(), small = true, modifier = Modifier.padding(top = 4.dp))
         if (powerPrice != null) {
-            Body("Postavka za moč v tem bloku: ${PriceLists.formatNumber(powerPrice)} €/kW/mesec (cenik SODO).", small = true)
+            Body(stringResource(R.string.usage_power_price, PriceLists.formatNumber(powerPrice, locale)), small = true)
         }
 
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            StepButton("Prejšnja četrtura", R.drawable.ic_arrow_back, Modifier.weight(1f), enabled = index > 0) {
+            StepButton(stringResource(R.string.usage_prev), Modifier.weight(1f), enabled = index > 0) {
                 onStep(index - 1)
             }
             day.peakIndex?.let { peak ->
-                StepButtonText("Konica", "Na najvišjo konico dneva", Modifier.weight(1f), enabled = index != peak) {
-                    onStep(peak)
-                }
+                StepButtonText(
+                    stringResource(R.string.usage_peak),
+                    stringResource(R.string.usage_peak_spoken),
+                    Modifier.weight(1f),
+                    enabled = index != peak
+                ) { onStep(peak) }
             }
-            StepButton("Naslednja četrtura", R.drawable.ic_arrow_back, Modifier.weight(1f), enabled = index < points.lastIndex, mirrored = true) {
+            StepButton(stringResource(R.string.usage_next), Modifier.weight(1f), enabled = index < points.lastIndex, mirrored = true) {
                 onStep(index + 1)
             }
         }
@@ -581,7 +628,6 @@ private fun IntervalReadout(day: DayProfile, selected: () -> Int, onStep: (Int) 
 @Composable
 private fun StepButton(
     description: String,
-    icon: Int,
     modifier: Modifier,
     enabled: Boolean,
     mirrored: Boolean = false,
@@ -598,7 +644,7 @@ private fun StepButton(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            painter = painterResource(icon),
+            painter = painterResource(R.drawable.ic_arrow_back),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
             modifier = Modifier
@@ -627,47 +673,62 @@ private fun StepButtonText(label: String, description: String, modifier: Modifie
 /** Daily peaks against the agreed power with the 90 % / 100 % lines; tapping a day opens it in the main chart. */
 @Composable
 private fun PeaksCard(data: UsageData, selectedDate: LocalDate?, onDayClick: (LocalDate) -> Unit) {
+    val lang = LocalLang.current
+    val locale = currentLocale
     InfoCard {
         val peaks = data.dailyPeaks
         if (peaks.isEmpty()) {
-            Body("V izbranem obdobju še ni 15-minutnih podatkov.")
+            Body(stringResource(R.string.usage_peaks_none))
             return@InfoCard
         }
         DailyPeaksChart(peaks, selectedDate, onDayClick)
         Spacer(Modifier.height(8.dp))
-        LegendRow(listOf(OverBar to "nad 100 %", NearBar to "nad 90 %", Color.White to "dogovorjena moč"))
-        Body("Stolpec je najvišja četrtura dneva kot delež dogovorjene moči njenega bloka. Dotakni se dneva za prikaz v glavnem grafu. Prag 90 % je samo opozorilo aplikacije.", small = true)
+        LegendRow(
+            listOf(
+                AppColors.Over to stringResource(R.string.usage_legend_over_100),
+                AppColors.Near to stringResource(R.string.usage_legend_over_90),
+                MaterialTheme.colorScheme.onSurface to stringResource(R.string.usage_legend_agreed)
+            )
+        )
+        Body(stringResource(R.string.usage_peaks_explain), small = true)
         val worst = peaks.filter { it.utilization != null }.maxByOrNull { it.utilization!! }
         if (worst != null) {
             Spacer(Modifier.height(6.dp))
             Body(
-                "Najbližje dogovorjeni moči: ${shortDay(worst.date)} ob ${SloTime.formatHm(worst.peak.startMillis)}, " +
-                    "${fmt(worst.peak.kw)} kW v ${worst.peak.blockId ?: "?"}. bloku. " + UsageInsights.peakVerdict(worst),
-                color = if (worst.overCount > 0) OverBar else MaterialTheme.colorScheme.onSurface
+                stringResource(
+                    R.string.usage_peaks_closest,
+                    shortDay(worst.date, lang),
+                    SloTime.formatHm(worst.peak.startMillis),
+                    fmt(worst.peak.kw, 2, locale),
+                    worst.peak.blockId?.toString() ?: "?",
+                    UsageInsights.peakVerdict(worst, locale).text()
+                ),
+                color = if (worst.overCount > 0) AppColors.Over else MaterialTheme.colorScheme.onSurface
             )
         }
         val overDays = peaks.count { it.overCount > 0 }
         if (overDays > 0) {
-            Body("Dogovorjena moč je bila presežena v $overDays od ${peaks.size} dni.", color = OverBar)
+            Body(stringResource(R.string.usage_peaks_over_days, overDays, peaks.size), color = AppColors.Over)
         }
     }
 }
 
 @Composable
 private fun BlocksCard(data: UsageData) {
+    val locale = currentLocale
     InfoCard {
         val days = data.daily
         if (days.isEmpty()) {
-            Body("V izbranem obdobju ni 15-minutnih podatkov.")
+            Body(stringResource(R.string.usage_no_period_data))
             return@InfoCard
         }
         DailyBlocksChart(days)
         Spacer(Modifier.height(8.dp))
-        LegendRow((1..5).map { blockColor(it) to "$it" } + (UnknownColor to "neznan"))
+        LegendRow((1..5).map { blockColor(it) to "$it" } + (UnknownColor to stringResource(R.string.common_unknown_block)))
         Spacer(Modifier.height(8.dp))
         val total = days.sumOf { it.totalKwh }
         val perBlock = (0 until 5).map { b -> days.sumOf { it.kwhByBlock[b] } }
-        Body("Skupaj ${fmt(total, 1)} kWh v ${days.size} dneh.", small = true)
+        Body(pluralStringResource(R.plurals.usage_blocks_total, days.size, fmt(total, 1, locale), days.size), small = true)
         if (total > 0) {
             Spacer(Modifier.height(6.dp))
             perBlock.forEachIndexed { i, v -> ShareBar(i + 1, v, v / total) }
@@ -678,12 +739,14 @@ private fun BlocksCard(data: UsageData) {
 /** One block's share of the energy as a thin bar with the numbers. */
 @Composable
 private fun ShareBar(block: Int, kwh: Double, share: Double) {
+    val locale = currentLocale
+    val spoken = stringResource(R.string.usage_share_spoken, block, fmt(kwh, 1, locale), fmt(share * 100, 0, locale))
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 3.dp)
-            .clearAndSetSemantics { contentDescription = "$block. blok: ${fmt(kwh, 1)} kilovatnih ur, ${fmt(share * 100, 0)} odstotkov." }
+            .clearAndSetSemantics { contentDescription = spoken }
     ) {
         Text("$block.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(22.dp))
         Box(
@@ -702,7 +765,7 @@ private fun ShareBar(block: Int, kwh: Double, share: Double) {
             )
         }
         Text(
-            "${fmt(kwh, 1)} kWh · ${fmt(share * 100, 0)} %",
+            "${fmt(kwh, 1, locale)} kWh · ${fmt(share * 100, 0, locale)} %",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 8.dp)
@@ -715,8 +778,10 @@ private fun ShareBar(block: Int, kwh: Double, share: Double) {
 private fun BlockTableCard(rows: List<BlockPowerRow>, currentBlock: Int?, rangeDays: Int) {
     val colors = MaterialTheme.colorScheme
     val prices = PriceLists.current()
+    val lang = LocalLang.current
+    val locale = currentLocale
     InfoCard {
-        Text("Moč po časovnih blokih (zadnjih $rangeDays dni)", style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+        Text(stringResource(R.string.usage_table_title, rangeDays), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
         Spacer(Modifier.height(8.dp))
         for (r in rows) {
             val price = prices?.rows?.firstOrNull { it.block == r.blockId }?.powerEurPerKw
@@ -733,32 +798,40 @@ private fun BlockTableCard(rows: List<BlockPowerRow>, currentBlock: Int?, rangeD
                         .size(28.dp)
                         .clip(CircleShape)
                         .background(blockColor(r.blockId))
-                        .border(if (r.blockId == currentBlock) 2.dp else 0.dp, Color.White, CircleShape),
+                        .border(if (r.blockId == currentBlock) 2.dp else 0.dp, colors.onSurface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("${r.blockId}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color(0xFF111111))
+                    Text("${r.blockId}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = OnBlock)
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Dogovorjena " + (r.agreedKw?.let { "${fmt(it)} kW" } ?: "ni podatka") +
-                            (if (r.blockId == currentBlock) " · velja zdaj" else ""),
+                        stringResource(
+                            R.string.usage_table_agreed,
+                            r.agreedKw?.let { "${fmt(it, 2, locale)} kW" } ?: stringResource(R.string.usage_no_data)
+                        ) + if (r.blockId == currentBlock) stringResource(R.string.usage_table_now) else "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurface
                     )
                     val peakText = r.peak?.let { p ->
-                        "Najvišja ${fmt(p.kw)} kW (${shortDay(SloTime.dateOf(p.startMillis))} ob ${SloTime.formatHm(p.startMillis)})" +
-                            (util?.let { " · ${UsageInsights.percent(it)}" } ?: "")
-                    } ?: if (r.intervalCount == 0) "V obdobju ni bilo četrtur v tem bloku." else "Ni porabe."
+                        stringResource(
+                            R.string.usage_table_peak,
+                            fmt(p.kw, 2, locale),
+                            shortDay(SloTime.dateOf(p.startMillis), lang),
+                            SloTime.formatHm(p.startMillis)
+                        ) + (util?.let { " · ${UsageInsights.percent(it, locale)}" } ?: "")
+                    } ?: stringResource(if (r.intervalCount == 0) R.string.usage_table_no_quarters else R.string.usage_table_no_use)
                     Body(peakText, small = true)
                     if (r.overCount > 0) {
-                        Body("Presežena v ${r.overCount} ${UsageInsights.quarters(r.overCount)}.", small = true, color = OverBar)
+                        Body(pluralStringResource(R.plurals.usage_block_over, r.overCount, r.overCount), small = true, color = AppColors.Over)
                     }
-                    if (price != null) Body("Postavka za moč: ${PriceLists.formatNumber(price)} €/kW/mesec", small = true)
+                    if (price != null) {
+                        Body(stringResource(R.string.usage_table_rate, PriceLists.formatNumber(price, locale)), small = true)
+                    }
                 }
             }
         }
-        Body("Postavke so iz vgrajenega cenika SODO (brez DDV), dogovorjena moč iz Moj Elektro.", small = true)
+        Body(stringResource(R.string.usage_table_footer), small = true)
     }
 }
 
@@ -766,14 +839,15 @@ private fun BlockTableCard(rows: List<BlockPowerRow>, currentBlock: Int?, rangeD
 @Composable
 private fun RegistersCard(data: UsageData) {
     val r = data.registers
+    val locale = currentLocale
     InfoCard {
-        Text("Registri v obdobju", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+        Text(stringResource(R.string.usage_registers_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(6.dp))
-        DetailRow("Prejeta energija (A+)", "${fmt(r.importKwh, 1)} kWh")
-        r.exportKwh?.let { DetailRow("Oddana energija (A-)", "${fmt(it, 1)} kWh") }
-        DetailRow("15-minutnih meritev", "${r.intervalCount}")
-        if (r.missingCount > 0) DetailRow("Meritev brez vrednosti", "${r.missingCount}")
-        DetailRow("Meritev z oznako stanja", "${r.flaggedCount}")
+        DetailRow(stringResource(R.string.usage_reg_import), "${fmt(r.importKwh, 1, locale)} kWh")
+        r.exportKwh?.let { DetailRow(stringResource(R.string.usage_reg_export), "${fmt(it, 1, locale)} kWh") }
+        DetailRow(stringResource(R.string.usage_reg_count), "${r.intervalCount}")
+        if (r.missingCount > 0) DetailRow(stringResource(R.string.usage_reg_missing), "${r.missingCount}")
+        DetailRow(stringResource(R.string.usage_reg_flagged), "${r.flaggedCount}")
         // Each status code with the description from the Moj Elektro catalogue (GET /reading-qualities).
         for ((code, count) in r.flaggedByType.entries.sortedByDescending { it.value }) {
             val text = data.qualityDescriptions[code]
@@ -784,22 +858,20 @@ private fun RegistersCard(data: UsageData) {
             )
         }
         DetailRow(
-            "Časovna oznaka meritve",
-            when (data.label) {
-                IntervalLabel.START -> "začetek četrture"
-                IntervalLabel.END -> "konec četrture"
-                IntervalLabel.UNKNOWN -> "ni zanesljivo določena"
-            }
+            stringResource(R.string.usage_reg_label),
+            stringResource(
+                when (data.label) {
+                    IntervalLabel.START -> R.string.usage_reg_label_start
+                    IntervalLabel.END -> R.string.usage_reg_label_end
+                    IntervalLabel.UNKNOWN -> R.string.usage_reg_label_unknown
+                }
+            )
         )
         if (data.agreedFetchedAtMillis > 0L) {
-            DetailRow("Dogovorjena moč prebrana", SloTime.formatDateTime(data.agreedFetchedAtMillis))
+            DetailRow(stringResource(R.string.usage_reg_agreed_read), SloTime.formatDateTime(data.agreedFetchedAtMillis, LocalLang.current))
         }
         Spacer(Modifier.height(4.dp))
-        Body(
-            "Oznako stanja doda Moj Elektro (npr. ocenjena ali nadomestna vrednost). Ali časovna oznaka pomeni začetek " +
-                "ali konec četrture, aplikacija ugotovi iz samih podatkov (primerja jih z dnevnimi stanji števca).",
-            small = true
-        )
+        Body(stringResource(R.string.usage_reg_explain), small = true)
     }
 }
 
@@ -821,30 +893,19 @@ private fun DetailRow(label: String, value: String) {
 @Composable
 private fun HelpCard() {
     InfoCard {
-        HelpItem(
-            "Kaj je dogovorjena moč?",
-            "Moč, ki jo ima tvoje merilno mesto dogovorjeno za posamezen časovni blok. Podatek prebere aplikacija iz Moj Elektro. " +
-                "Postavka za moč se obračuna glede na dogovorjeno (in morebitno preseženo) moč v bloku, ne glede na porabljene kWh."
-        )
-        HelpItem(
-            "Kako se izračuna moč četrture?",
-            "Števec zapiše energijo vsake četrture v kWh. Povprečna moč te četrture je energija, deljena s četrt ure (kWh × 4)."
-        )
-        HelpItem(
-            "Od kod so časovni bloki?",
-            "Za vsak pretekli dan aplikacija vpraša uradni vir uro.si, kateri blok je veljal ob posamezni uri. Pravila blokov niso vpisana v aplikacijo."
-        )
-        HelpItem(
-            "Zakaj ni današnjih podatkov?",
-            "Moj Elektro objavi meritve z zamikom, običajno približno en dan. Trenutno veljavni blok vidiš na prvi strani."
-        )
+        HelpItem(R.string.usage_help_agreed_q, R.string.usage_help_agreed_a)
+        HelpItem(R.string.usage_help_power_q, R.string.usage_help_power_a)
+        HelpItem(R.string.usage_help_blocks_q, R.string.usage_help_blocks_a)
+        HelpItem(R.string.usage_help_delay_q, R.string.usage_help_delay_a)
     }
 }
 
 @Composable
-private fun ColumnScope.HelpItem(title: String, text: String) {
-    var open by rememberSaveable(title) { mutableStateOf(false) }
+private fun ColumnScope.HelpItem(titleRes: Int, textRes: Int) {
+    val title = stringResource(titleRes)
+    var open by rememberSaveable(titleRes) { mutableStateOf(false) }
     val rotation by animateFloatAsState(if (open) 180f else 0f, tween(150), label = "help")
+    val spoken = stringResource(if (open) R.string.common_expanded else R.string.common_collapsed, title)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -853,20 +914,20 @@ private fun ColumnScope.HelpItem(title: String, text: String) {
             .clickable { open = !open }
             .clearAndSetSemantics {
                 role = Role.Button
-                contentDescription = title + ", " + (if (open) "razširjeno" else "strnjeno")
+                contentDescription = spoken
             }
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
         Icon(
             painter = painterResource(R.drawable.ic_expand_more),
             contentDescription = null,
-            tint = Color.Unspecified,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(24.dp)
                 .rotate(rotation)
         )
     }
     AnimatedVisibility(visible = open) {
-        Body(text, small = true, modifier = Modifier.padding(bottom = 8.dp))
+        Body(stringResource(textRes), small = true, modifier = Modifier.padding(bottom = 8.dp))
     }
 }

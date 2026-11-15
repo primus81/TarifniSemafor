@@ -65,7 +65,7 @@
                     android:ellipsize="end"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:textColor="#111111"
+                    android:textColor="#1A1A1A"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -76,7 +76,7 @@
                     android:ellipsize="end"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:textColor="#111111"
+                    android:textColor="#1A1A1A"
                     android:textSize="11sp" />
 
                 <TextView
@@ -86,7 +86,7 @@
                     android:ellipsize="end"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:textColor="#111111"
+                    android:textColor="#1A1A1A"
                     android:textSize="11sp" />
             </LinearLayout>
 
@@ -111,7 +111,7 @@
                     android:ellipsize="end"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:textColor="#111111"
+                    android:textColor="#1A1A1A"
                     android:textSize="10sp" />
 
                 <TextView
@@ -121,7 +121,7 @@
                     android:ellipsize="end"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:textColor="#111111"
+                    android:textColor="#1A1A1A"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
@@ -132,7 +132,7 @@
                     android:ellipsize="end"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:textColor="#111111"
+                    android:textColor="#1A1A1A"
                     android:textSize="10sp" />
             </LinearLayout>
         </LinearLayout>
@@ -159,7 +159,7 @@
                 android:ellipsize="end"
                 android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="#111111"
+                android:textColor="#1A1A1A"
                 android:textSize="10sp" />
 
             <TextView
@@ -169,7 +169,7 @@
                 android:ellipsize="end"
                 android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="#111111"
+                android:textColor="#1A1A1A"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -180,7 +180,7 @@
                 android:ellipsize="end"
                 android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="#111111"
+                android:textColor="#1A1A1A"
                 android:textSize="10sp" />
 
             <TextView
@@ -190,7 +190,7 @@
                 android:ellipsize="end"
                 android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="#111111"
+                android:textColor="#1A1A1A"
                 android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>

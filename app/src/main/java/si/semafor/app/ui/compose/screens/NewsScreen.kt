@@ -15,7 +15,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import si.semafor.app.AppSettings
 import si.semafor.app.NewsItem
+import si.semafor.app.R
+import si.semafor.app.ui.compose.LocalLang
 import si.semafor.app.NewsResult
 import si.semafor.app.NewsUiState
 import si.semafor.app.SloTime
@@ -38,30 +42,27 @@ fun NewsScreen(
     RefreshableScreen(refreshing = pullRefreshing, onRefresh = onPullRefresh) {
         when (state) {
             NewsUiState.Loading -> {
-                ScreenHeader(title = "Novice", onBack = onBack)
-                StateCard("Nalagam novice …")
+                ScreenHeader(title = stringResource(R.string.news_title), onBack = onBack)
+                StateCard(stringResource(R.string.news_loading))
             }
 
             is NewsUiState.Loaded -> {
                 val result = state.result
                 ScreenHeader(
-                    title = "Novice",
-                    subtitle = if (result.isOffline) {
-                        "Agencija za energijo · Shranjene novice (brez povezave)"
-                    } else {
-                        "Agencija za energijo"
-                    },
+                    title = stringResource(R.string.news_title),
+                    subtitle = stringResource(if (result.isOffline) R.string.news_source_offline else R.string.news_source_online),
                     onBack = onBack
                 )
                 val items = result.items
                 if (items.isNullOrEmpty()) {
-                    StateCard("Novic ni mogoče naložiti.", null, "Preveri internetno povezavo.")
+                    StateCard(stringResource(R.string.news_failed), null, stringResource(R.string.news_check_connection))
                 } else {
                     for (item in items) NewsCard(item, onOpenUrl)
                 }
                 RefreshButton(onRefresh)
                 Text(
-                    text = "Vir: Agencija za energijo (agen-rs.si)",
+                    text = stringResource(R.string.news_footer) +
+                        if (LocalLang.current == AppSettings.LANGUAGE_EN) "\n" + stringResource(R.string.news_language_note) else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -84,7 +85,9 @@ private fun NewsCard(item: NewsItem, onOpenUrl: (String) -> Unit) {
             .padding(bottom = 8.dp)
             .background(colors.surface, shape)
             .border(1.dp, colors.outline, shape)
-            .clickable(enabled = item.link.isNotEmpty(), onClickLabel = "odpri povezavo") { onOpenUrl(item.link) }
+            .clickable(enabled = item.link.isNotEmpty(), onClickLabel = stringResource(R.string.common_open_link)) {
+                onOpenUrl(item.link)
+            }
             .padding(14.dp)
     ) {
         if (item.title.isNotEmpty()) {
@@ -98,7 +101,7 @@ private fun NewsCard(item: NewsItem, onOpenUrl: (String) -> Unit) {
         }
         if (item.dateMillis > 0L) {
             Text(
-                text = SloTime.formatDate(item.dateMillis),
+                text = SloTime.formatDate(item.dateMillis, LocalLang.current),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)

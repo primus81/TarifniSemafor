@@ -29,7 +29,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -43,6 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -58,7 +66,9 @@ import si.semafor.app.R
 import si.semafor.app.Repo
 import si.semafor.app.SemaforIconState
 import si.semafor.app.SloTime
+import si.semafor.app.ui.compose.components.SemaforLogo
 import si.semafor.app.ui.compose.theme.AppColors
+import androidx.compose.foundation.layout.Spacer
 
 /** One entry of the main menu. A divider is drawn above an entry with [dividerBefore]. */
 @Immutable
@@ -78,6 +88,7 @@ fun AppShell(
     nowMillis: Long,
     blockId: Int?,
     menuEntries: () -> List<MenuEntry>,
+    bottomBar: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Column(
@@ -103,15 +114,19 @@ fun AppShell(
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(bottom = keyboard)
+                // With the bottom bar, the bar keeps clear of the navigation bar, so the screens must not add it again.
+                .then(if (bottomBar != null) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier)
         ) { content() }
+        bottomBar?.invoke()
     }
 }
 
 @Composable
 private fun TopBar(nowMillis: Long, blockId: Int?, menuEntries: () -> List<MenuEntry>) {
     val icon = SemaforIconState.forBlock(blockId)
-    val boltColor = if (icon.lit) Color(Repo.color(icon.blockId!!)) else AppColors.Border
-    val titleDescription = "Tarifni semafor. " + if (icon.lit) "Trenutni blok: ${icon.blockId}" else "Ni podatkov"
+    val titleDescription = if (icon.lit) stringResource(R.string.top_title_block, icon.blockId!!) else stringResource(R.string.top_title_no_data)
+    val menuDescription = stringResource(R.string.top_menu)
+    val lang = LocalLang.current
     var menuOpen by remember { mutableStateOf(false) }
 
     Row(
@@ -133,7 +148,7 @@ private fun TopBar(nowMillis: Long, blockId: Int?, menuEntries: () -> List<MenuE
                     .clickable { menuOpen = true }
                     .semantics {
                         role = Role.Button
-                        contentDescription = "Meni"
+                        contentDescription = menuDescription
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -152,20 +167,15 @@ private fun TopBar(nowMillis: Long, blockId: Int?, menuEntries: () -> List<MenuE
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_semafor_bolt),
-                contentDescription = null,
-                tint = boltColor,
-                modifier = Modifier.size(36.dp)
-            )
+            SemaforLogo(blockId = blockId, modifier = Modifier.size(34.dp))
+            Spacer(Modifier.width(8.dp))
             BasicText(
-                text = "Tarifni semafor",
+                text = stringResource(R.string.app_name),
                 style = TextStyle(color = AppColors.TextPrimary, fontWeight = FontWeight.Bold),
                 maxLines = 1,
                 autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = 20.sp, stepSize = 1.sp),
                 modifier = Modifier
                     .weight(1f, fill = false)
-                    .offset(x = (-4).dp)
             )
         }
 
@@ -173,7 +183,7 @@ private fun TopBar(nowMillis: Long, blockId: Int?, menuEntries: () -> List<MenuE
             modifier = Modifier.padding(start = 8.dp),
             horizontalAlignment = Alignment.End
         ) {
-            Text(SloTime.formatTopDate(nowMillis), fontSize = 12.sp, color = AppColors.TextSecondary, textAlign = TextAlign.End)
+            Text(SloTime.formatTopDate(nowMillis, lang), fontSize = 12.sp, color = AppColors.TextSecondary, textAlign = TextAlign.End)
             Text(SloTime.formatHm(nowMillis), fontSize = 12.sp, color = AppColors.TextSecondary, textAlign = TextAlign.End)
         }
     }
@@ -182,6 +192,8 @@ private fun TopBar(nowMillis: Long, blockId: Int?, menuEntries: () -> List<MenuE
 @Composable
 private fun MainMenu(expanded: Boolean, onDismiss: () -> Unit, entries: () -> List<MenuEntry>) {
     val screenWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val ink = MaterialTheme.colorScheme.onSurface
+    val inkSecondary = MaterialTheme.colorScheme.onSurfaceVariant
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
@@ -215,12 +227,55 @@ private fun MainMenu(expanded: Boolean, onDismiss: () -> Unit, entries: () -> Li
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(entry.title, fontSize = 15.sp, color = AppColors.TextPrimary)
+                    Text(entry.title, fontSize = 15.sp, color = ink)
                     if (entry.subtitle != null) {
-                        Text(entry.subtitle, fontSize = 12.sp, color = AppColors.TextSecondary)
+                        Text(entry.subtitle, fontSize = 12.sp, color = inkSecondary)
                     }
                 }
             }
+        }
+    }
+}
+
+/** The three main destinations of the bottom bar, in pager order. */
+enum class MainTab(val labelRes: Int, val iconRes: Int) {
+    HOME(R.string.nav_home, R.drawable.ic_nav_home),
+    USAGE(R.string.nav_usage, R.drawable.ic_nav_usage),
+    SETTINGS(R.string.nav_settings, R.drawable.ic_nav_settings)
+}
+
+/**
+ * Material 3 bottom bar of the main destinations. [selected] follows the pager while it is being swiped. The home icon
+ * is the app's lightning bolt in the colour of the current block. A light tick confirms a change of tab.
+ */
+@Composable
+fun MainBottomBar(selected: Int, blockId: Int?, onSelect: (Int) -> Unit) {
+    val haptics = LocalHapticFeedback.current
+    NavigationBar(containerColor = AppColors.TopBar, tonalElevation = 0.dp) {
+        MainTab.entries.forEachIndexed { i, tab ->
+            val label = stringResource(tab.labelRes)
+            NavigationBarItem(
+                selected = selected == i,
+                onClick = {
+                    if (selected != i) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    onSelect(i)
+                },
+                icon = {
+                    if (tab == MainTab.HOME) {
+                        SemaforLogo(blockId = blockId, modifier = Modifier.size(26.dp))
+                    } else {
+                        Icon(painter = painterResource(tab.iconRes), contentDescription = null)
+                    }
+                },
+                label = { Text(label, maxLines = 1) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
         }
     }
 }

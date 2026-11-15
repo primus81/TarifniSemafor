@@ -19,12 +19,23 @@ object SloTime {
     val ZONE: ZoneId = ZoneId.of("Europe/Ljubljana")
     private val LOCALE: Locale = Locale.forLanguageTag("sl-SI")
 
+    private val EN_LOCALE: Locale = Locale.forLanguageTag("en-GB")
+
     private val HM = DateTimeFormatter.ofPattern("HH:mm", LOCALE).withZone(ZONE)
-    private val DATE = DateTimeFormatter.ofPattern("d. M. yyyy", LOCALE).withZone(ZONE)
-    private val DATE_TIME =
-        DateTimeFormatter.ofPattern("d. M. yyyy 'ob' HH:mm", LOCALE).withZone(ZONE)
-    private val TOP_DATE = DateTimeFormatter.ofPattern("EEE, d. MMM", LOCALE).withZone(ZONE)
-    private val SHORT_STAMP = DateTimeFormatter.ofPattern("d. M. HH:mm", LOCALE).withZone(ZONE)
+
+    /** Date patterns of one language. */
+    private class Patterns(locale: Locale, date: String, dateTime: String, top: String, stamp: String) {
+        val date: DateTimeFormatter = DateTimeFormatter.ofPattern(date, locale).withZone(ZONE)
+        val dateTime: DateTimeFormatter = DateTimeFormatter.ofPattern(dateTime, locale).withZone(ZONE)
+        val top: DateTimeFormatter = DateTimeFormatter.ofPattern(top, locale).withZone(ZONE)
+        val stamp: DateTimeFormatter = DateTimeFormatter.ofPattern(stamp, locale).withZone(ZONE)
+    }
+
+    private val SL_PATTERNS = Patterns(LOCALE, "d. M. yyyy", "d. M. yyyy 'ob' HH:mm", "EEE, d. MMM", "d. M. HH:mm")
+    private val EN_PATTERNS = Patterns(EN_LOCALE, "d MMM yyyy", "d MMM yyyy, HH:mm", "EEE, d MMM", "d MMM HH:mm")
+
+    /** Patterns of [lang] (AppSettings.LANGUAGE_*); the time zone is always Europe/Ljubljana. */
+    private fun patterns(lang: String) = if (lang == AppSettings.LANGUAGE_EN) EN_PATTERNS else SL_PATTERNS
     private val API_TIMESTAMP =
         DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss", Locale.US).withZone(ZONE)
 
@@ -36,17 +47,21 @@ object SloTime {
         Instant.ofEpochMilli(millis).atZone(ZONE).hour
 
     fun formatHm(millis: Long): String = HM.format(Instant.ofEpochMilli(millis))
-    fun formatDate(millis: Long): String = DATE.format(Instant.ofEpochMilli(millis))
-    fun formatDateTime(millis: Long): String = DATE_TIME.format(Instant.ofEpochMilli(millis))
-    fun formatTopDate(millis: Long): String = TOP_DATE.format(Instant.ofEpochMilli(millis))
+    fun formatDate(millis: Long, lang: String = AppSettings.LANGUAGE_SL): String =
+        patterns(lang).date.format(Instant.ofEpochMilli(millis))
+
+    fun formatDateTime(millis: Long, lang: String = AppSettings.LANGUAGE_SL): String =
+        patterns(lang).dateTime.format(Instant.ofEpochMilli(millis))
+
+    fun formatTopDate(millis: Long, lang: String = AppSettings.LANGUAGE_SL): String =
+        patterns(lang).top.format(Instant.ofEpochMilli(millis))
+
+    /** A calendar date in the style of [lang] ("15. 11. 2026" / "15 Nov 2026"). */
+    fun formatLocalDate(date: LocalDate, lang: String = AppSettings.LANGUAGE_SL): String = patterns(lang).date.format(date)
 
     /** Compact stamp for small widgets: "HH:mm" if it is today (Slovenian date), otherwise "d. M. HH:mm". */
-    fun formatStamp(millis: Long, today: LocalDate = today()): String =
-        if (dateOf(millis) == today) formatHm(millis) else SHORT_STAMP.format(
-            Instant.ofEpochMilli(
-                millis
-            )
-        )
+    fun formatStamp(millis: Long, today: LocalDate = today(), lang: String = AppSettings.LANGUAGE_SL): String =
+        if (dateOf(millis) == today) formatHm(millis) else patterns(lang).stamp.format(Instant.ofEpochMilli(millis))
 
     /** Timestamp for the official API: Slovenian wall-clock time, independent of the device zone. */
     fun formatApiTimestamp(millis: Long): String =

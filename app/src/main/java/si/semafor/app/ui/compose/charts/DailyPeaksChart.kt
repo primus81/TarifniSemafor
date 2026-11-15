@@ -5,7 +5,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -22,6 +21,10 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.res.stringResource
+import si.semafor.app.R
+import si.semafor.app.ui.compose.currentLocale
 import si.semafor.app.mojelektro.DailyPeak
 import si.semafor.app.mojelektro.UsageAnalysis
 import si.semafor.app.ui.compose.theme.AppColors
@@ -45,11 +48,15 @@ fun DailyPeaksChart(
     val measurer = rememberTextMeasurer()
     val click by rememberUpdatedState(onDayClick)
     val percentMode = peaks.isNotEmpty() && peaks.all { it.utilization != null }
-    val summary = remember(peaks) {
-        val over = peaks.count { it.overCount > 0 }
-        val near = peaks.count { it.overCount == 0 && it.nearCount > 0 }
-        "Dnevne 15-minutne konice, ${peaks.size} dni. Dni s preseženo dogovorjeno močjo: $over, dni nad 90 odstotkov: $near."
-    }
+    val summary = stringResource(
+        R.string.chart_peaks,
+        peaks.size,
+        peaks.count { it.overCount > 0 },
+        peaks.count { it.overCount == 0 && it.nearCount > 0 }
+    )
+    val locale = currentLocale
+    val axisColor = AppColors.TextSecondary
+    val ink = MaterialTheme.colorScheme.onSurface
     Canvas(
         modifier
             .fillMaxWidth()
@@ -72,13 +79,13 @@ fun DailyPeaksChart(
         val max = if (percentMode) maxOf(values.max(), 110.0) * 1.08 else maxOf(values.max(), 0.1) * 1.15
         fun y(v: Double) = (bottom - (v / max) * (bottom - top)).toFloat()
         val slot = width / peaks.size
-        val labelStyle = TextStyle(fontSize = 10.sp, color = AppColors.TextSecondary)
-        val grid = AppColors.TextSecondary.copy(alpha = 0.25f)
+        val labelStyle = TextStyle(fontSize = 10.sp, color = axisColor)
+        val grid = axisColor.copy(alpha = 0.25f)
 
         drawLine(grid, Offset(left, bottom), Offset(size.width, bottom), strokeWidth = 1.dp.toPx())
         val ticks = if (percentMode) listOf(90.0, 100.0) else listOf(max / 1.15 / 2, max / 1.15)
         for (t in ticks) {
-            val layout = measurer.measure(if (percentMode) "${t.toInt()} %" else fmt(t, 1), labelStyle)
+            val layout = measurer.measure(if (percentMode) "${t.toInt()} %" else fmt(t, 1, locale), labelStyle)
             drawText(layout, topLeft = Offset(left - layout.size.width - 4.dp.toPx(), y(t) - layout.size.height / 2f))
         }
         if (!percentMode) {
@@ -90,9 +97,9 @@ fun DailyPeaksChart(
         peaks.forEachIndexed { i, p ->
             val v = values[i]
             val color = when {
-                p.overCount > 0 -> OverBar
-                p.nearCount > 0 -> NearBar
-                else -> p.peak.blockId?.let(::blockColor) ?: Color(0xFF888888)
+                p.overCount > 0 -> AppColors.Over
+                p.nearCount > 0 -> AppColors.Near
+                else -> p.peak.blockId?.let(::blockColor) ?: UnknownColor
             }
             val selected = p.date == selectedDate
             val x = left + i * slot + slot * 0.18f
@@ -103,7 +110,7 @@ fun DailyPeaksChart(
                 CornerRadius(2.dp.toPx(), 2.dp.toPx())
             )
             if (selected) {
-                drawRect(Color.White, Offset(x, bottom + 1.dp.toPx()), Size(w, 2.dp.toPx()))
+                drawRect(ink, Offset(x, bottom + 1.dp.toPx()), Size(w, 2.dp.toPx()))
             }
             if (i % labelEvery == 0 || i == peaks.lastIndex) {
                 val layout = measurer.measure("${p.date.dayOfMonth}.", labelStyle)
@@ -116,11 +123,11 @@ fun DailyPeaksChart(
         }
         if (percentMode) {
             drawLine(
-                AppColors.Warning.copy(alpha = 0.85f), Offset(left, y(90.0)), Offset(size.width, y(90.0)),
+                AppColors.Near.copy(alpha = 0.9f), Offset(left, y(90.0)), Offset(size.width, y(90.0)),
                 strokeWidth = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(1.5.dp.toPx(), 3.dp.toPx()))
             )
             drawLine(
-                Color.White, Offset(left, y(100.0)), Offset(size.width, y(100.0)),
+                ink, Offset(left, y(100.0)), Offset(size.width, y(100.0)),
                 strokeWidth = 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
             )
         }

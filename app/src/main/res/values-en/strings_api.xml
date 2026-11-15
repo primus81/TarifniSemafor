@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts that the uro.si API sends in Slovenian. values/ holds the original wording, values-en the translation.
+     ApiTexts maps an API text to its key; unknown texts are shown as the API sends them. -->
+<resources>
+    <string name="api_load_highest">Highest network load</string>
+    <string name="api_load_high">High network load</string>
+    <string name="api_load_medium">Medium network load</string>
+    <string name="api_load_lower">Lower network load</string>
+    <string name="api_load_low">Low network load</string>
+    <string name="api_season_high_1">higher season, first part</string>
+    <string name="api_season_high_2">higher season, second part</string>
+    <string name="api_season_high">higher season</string>
+    <string name="api_season_low">lower season</string>
+    <string name="api_device_heating">Heating and cooling appliances</string>
+    <string name="api_device_household">Ordinary household appliances</string>
+    <string name="api_device_ev">Electric vehicle charging</string>
+    <string name="api_device_storage">Energy storage</string>
+    <string name="api_use_normal">Normal use</string>
+    <string name="api_use_conditional">Normal use, with care</string>
+    <string name="api_use_increase">Adapted use (increase)</string>
+    <string name="api_use_decrease">Adapted use (reduce)</string>
+    <string name="api_use_limited">Limited use</string>
+</resources>

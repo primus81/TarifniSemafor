@@ -1,4 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slovenian (default language). Every key here must also exist in values-en (checked by StringsParityTest). -->
 <resources>
     <string name="app_name">Tarifni semafor</string>
     <string name="widget_description">Trenutni časovni blok omrežnine, čas naslednje spremembe in najugodnejši blok.</string>
+
+    <!-- Common -->
+    <string name="common_ok">V redu</string>
+    <string name="common_cancel">Prekliči</string>
+    <string name="common_refresh">Osveži</string>
+    <string name="common_refreshing">Osvežujem …</string>
+    <string name="common_retry">Poskusi znova</string>
+    <string name="common_back_home">Nazaj na domači zaslon</string>
+    <string name="common_link_suffix">%1$s, povezava</string>
+    <string name="common_open_link">odpri povezavo</string>
+    <string name="common_expanded">%1$s, razširjeno. Dotakni se za strnitev.</string>
+    <string name="common_collapsed">%1$s, strnjeno. Dotakni se za razširitev.</string>
+    <string name="common_block">%1$d. blok</string>
+    <string name="common_block_now">%1$d. blok (zdaj)</string>
+    <string name="common_unknown_block">neznan</string>
+    <string name="toast_link_failed">Povezave ni mogoče odpreti.</string>
+    <string name="toast_notification_settings_failed">Nastavitev obvestil ni mogoče odpreti.</string>
+    <string name="toast_donation_not_set">Donacijska povezava še ni nastavljena.</string>
+    <string name="toast_allow_notifications">Za obvestila dovoli obvestila v nastavitvah telefona.</string>
+
+    <!-- Top bar, menu, bottom navigation -->
+    <string name="top_menu">Meni</string>
+    <string name="top_title_block">Tarifni semafor. Trenutni blok: %1$d</string>
+    <string name="top_title_no_data">Tarifni semafor. Ni podatkov</string>
+    <string name="menu_calculator">Kalkulator</string>
+    <string name="menu_calculator_sub">Primerjalnik stroškov oskrbe</string>
+    <string name="menu_prices">Cenik omrežnine</string>
+    <string name="menu_tips">Nasveti</string>
+    <string name="menu_tariff_info">Vse o tarifnem sistemu</string>
+    <string name="menu_news">Novice</string>
+    <string name="menu_sources">Viri podatkov</string>
+    <string name="menu_about">O aplikaciji</string>
+    <string name="nav_home">Domov</string>
+    <string name="nav_usage">Semafor porabe</string>
+    <string name="nav_settings">Nastavitve</string>
+
+    <!-- Home -->
+    <string name="home_loading_title">Nalagam podatke …</string>
+    <string name="home_error_title">Podatkov trenutno ni mogoče preveriti.</string>
+    <string name="home_error_detail">Zadnja posodobitev: %1$s\nShranjeni podatki niso več veljavni, zato niso prikazani.</string>
+    <string name="home_error_warning">Posodobitev trenutno ni mogoča. Preveri internetno povezavo.</string>
+    <string name="home_current_block">Trenutni časovni blok</string>
+    <string name="home_block_hours">%1$d–%2$d h · %3$s</string>
+    <string name="home_countdown">Sprememba časovnega bloka čez %1$s</string>
+    <string name="home_countdown_now">Sprememba časovnega bloka zdaj</string>
+    <string name="home_card_description">Trenutni časovni blok: %1$d. blok, %2$s, od %3$d do %4$d ure, %5$s.%6$s Naslednja sprememba ob %7$s.</string>
+    <string name="home_card_price">" Omrežnina za energijo %1$s evra na kilovatno uro."</string>
+    <string name="home_last_update">Zadnja posodobitev: %1$s</string>
+    <string name="home_data_fresh">Podatki so aktualni.</string>
+    <string name="home_data_offline">Posodobitev trenutno ni mogoča. Preveri internetno povezavo.\nPrikazani so zadnji shranjeni podatki.</string>
+    <string name="home_data_cached">Prikazani so zadnji shranjeni podatki.</string>
+    <string name="home_best_prefix">"Naslednji najugodnejši časovni blok ob "</string>
+    <string name="home_best_suffix">" uri"</string>
+    <string name="home_best_countdown">(čez %1$s)</string>
+    <string name="home_best_now">(zdaj)</string>
+    <string name="home_advice_now">Priporočila zdaj</string>
+    <string name="home_advice_next">Priporočila za naslednji časovni blok</string>
+    <string name="home_advice_good">Ugodno</string>
+    <string name="home_advice_mid">Vmes</string>
+    <string name="home_advice_bad">Manj ugodno</string>
+    <string name="home_advice_source_note">Priporočila objavlja uro.si.</string>
+    <string name="home_donation_title">☕ Podpri razvoj aplikacije</string>
+    <string name="home_donation_title_spoken">Podpri razvoj aplikacije</string>
+    <string name="home_donation_text">Če ti je aplikacija všeč in ti koristi, lahko s prostovoljno donacijo podpreš njen nadaljnji razvoj. Hvala za tvojo podporo!</string>
+    <string name="home_donation_custom">Poljuben znesek</string>
+    <string name="home_donation_1">Podpri razvoj z donacijo v višini 1 evra</string>
+    <string name="home_donation_3">Podpri razvoj z donacijo v višini 3 evrov</string>
+    <string name="home_donation_5">Podpri razvoj z donacijo v višini 5 evrov</string>
+    <string name="home_donation_any">Podpri razvoj z donacijo poljubnega zneska</string>
+
+    <!-- News -->
+    <string name="news_title">Novice</string>
+    <string name="news_loading">Nalagam novice …</string>
+    <string name="news_source_online">Agencija za energijo</string>
+    <string name="news_source_offline">Agencija za energijo · Shranjene novice (brez povezave)</string>
+    <string name="news_failed">Novic ni mogoče naložiti.</string>
+    <string name="news_check_connection">Preveri internetno povezavo.</string>
+    <string name="news_footer">Vir: Agencija za energijo (agen-rs.si)</string>
+    <string name="news_language_note">Novice objavlja Agencija za energijo v slovenščini.</string>
+
+    <!-- Price list -->
+    <string name="prices_title">Cenik omrežnine</string>
+    <string name="prices_subtitle">Uporabniška skupina 0 (gospodinjstva in nizka napetost)</string>
+    <string name="prices_missing">Cenik za trenutno obdobje še ni vnesen.</string>
+    <string name="prices_open_sodo">Odpri cenike SODO</string>
+    <string name="prices_valid">Velja od %1$s do %2$s</string>
+    <string name="prices_col_block">Blok</string>
+    <string name="prices_col_power">Moč [€/kW/mesec]</string>
+    <string name="prices_col_energy">Energija [€/kWh]</string>
+    <string name="prices_header_spoken">Stolpci: blok, moč v evrih na kilovat na mesec, energija v evrih na kilovatno uro.</string>
+    <string name="prices_row_spoken">%1$d. blok%2$s. Moč %3$s evra na kilovat na mesec. Energija %4$s evra na kilovatno uro.</string>
+    <string name="prices_row_now_spoken">, trenutno veljavni časovni blok</string>
+    <string name="prices_note_group">Cenik velja za uporabniško skupino 0 (gospodinjski odjemalci in drugi odjemalci na nizkonapetostnem omrežju). Uporabniki brez 15-minutnih meritev imajo drugačen obračun in tu niso prikazani.</string>
+    <string name="prices_note_taxes">Zneski so brez davkov, taks, trošarin in drugih dajatev.</string>
+    <string name="prices_note_power">Tarifna postavka za moč se obračunava glede na dogovorjeno (in morebitno presežno) obračunsko moč v posameznem časovnem bloku, ne glede na porabo kWh. Tarifna postavka za energijo se obračunava glede na prevzeto energijo v kWh.</string>
+    <string name="prices_note_block1">Blok 1 velja samo ob delavnikih v višji sezoni (november–februar).</string>
+    <string name="prices_note_info">Cenik je informativen. Veljavne postavke objavlja operater (SODO).</string>
+    <string name="prices_official">Uradni cenik (SODO)</string>
+
+    <!-- Dialogs -->
+    <string name="sources_title">Viri podatkov</string>
+    <string name="sources_blocks">Tarifni semafor in časovni bloki:</string>
+    <string name="sources_blocks_link">Agencija za energijo, uro.si (API)</string>
+    <string name="sources_news">Novice:</string>
+    <string name="sources_news_link">Agencija za energijo (RSS)</string>
+    <string name="sources_calc">Kalkulator (Primerjalnik stroškov oskrbe), povzetek in povezava:</string>
+    <string name="sources_calc_link">Agencija za energijo</string>
+    <string name="sources_tariff">Informacije o tarifnem sistemu:</string>
+    <string name="sources_tariff_link">MojElektro</string>
+    <string name="sources_colors">Barve časovnih blokov:</string>
+    <string name="sources_colors_link">uradna tabela uro.si</string>
+    <string name="sources_icons">Ikone (prosta licenca Apache 2.0):</string>
+    <string name="sources_icons_link">Material Symbols (Google)</string>
+    <string name="sources_usage">Tvoje meritve (neobvezno):</string>
+    <string name="sources_usage_link">Moj Elektro API</string>
+    <string name="about_title">O aplikaciji</string>
+    <string name="about_disclaimer">Tarifni semafor je neuradna aplikacija. Ni povezana z Agencijo za energijo, SODO ali drugimi operaterji. Podatki so povzeti iz javnih virov (glej Viri podatkov); njihova točnost ni zagotovljena, veljavne podatke objavljajo uradni viri.</string>
+    <string name="about_developer">"Razvijalec: "</string>
+    <string name="about_version">Verzija: %1$s</string>
+    <string name="about_privacy_policy">Politika zasebnosti</string>
 </resources>

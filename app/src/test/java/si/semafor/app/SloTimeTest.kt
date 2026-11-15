@@ -166,21 +166,22 @@ class SloTimeTest {
 
     @Test
     fun transitionMessages_onlyStateVerifiedFacts() {
-        assertEquals("Začel se je ugodnejši časovni blok 4.", transitionMessage(4, 3, 60_000L))
-        assertEquals("Začel se je dražji časovni blok 1.", transitionMessage(1, 5, 60_000L))
+        assertEquals("Začel se je ugodnejši časovni blok 4.", slTransition(4, 3, 60_000L))
+        assertEquals("Začel se je dražji časovni blok 1.", slTransition(1, 5, 60_000L))
         assertEquals(
             "Začel se je časovni blok 2.",
-            transitionMessage(2, -1, 60_000L)
+            slTransition(2, -1, 60_000L)
         ) // previous unknown
-        assertEquals("Začel se je časovni blok 2.", transitionMessage(2, 2, 60_000L))
+        assertEquals("Začel se je časovni blok 2.", slTransition(2, 2, 60_000L))
         assertEquals(
             "Začel se je ugodnejši časovni blok 5.",
-            transitionMessage(5, 4, MAX_LATENESS_MS)
+            slTransition(5, 4, MAX_LATENESS_MS)
         ) // limit is still on time
         assertEquals(
             "Zdaj velja časovni blok 3.",
-            transitionMessage(3, 2, MAX_LATENESS_MS + 1)
+            slTransition(3, 2, MAX_LATENESS_MS + 1)
         ) // delayed: no "started" claim
+        assertEquals("Cheaper time block 4 has begun.", TestStrings.en(transitionMessage(4, 3, 60_000L), 4))
     }
 
     @Test

@@ -19,13 +19,13 @@ class NotifierRecoveryTest {
     @Test
     fun recoveryMessageClaimsNoDirectionWhenThePreviousBlockIsUnknown() {
         // previousId = -1 is what the recovery path passes: neither "cheaper" nor "dearer" may be claimed.
-        assertEquals("Začel se je časovni blok 3.", transitionMessage(3, -1, 60_000L))
-        assertEquals("Zdaj velja časovni blok 3.", transitionMessage(3, -1, MAX_LATENESS_MS + 1))
+        assertEquals("Začel se je časovni blok 3.", slTransition(3, -1, 60_000L))
+        assertEquals("Zdaj velja časovni blok 3.", slTransition(3, -1, MAX_LATENESS_MS + 1))
     }
 
     @Test
     fun verifiedTransitionStillSaysWhetherItGotCheaperOrDearer() {
-        assertEquals("Začel se je ugodnejši časovni blok 4.", transitionMessage(4, 2, 60_000L))
-        assertEquals("Začel se je dražji časovni blok 2.", transitionMessage(2, 4, 60_000L))
+        assertEquals("Začel se je ugodnejši časovni blok 4.", slTransition(4, 2, 60_000L))
+        assertEquals("Začel se je dražji časovni blok 2.", slTransition(2, 4, 60_000L))
     }
 }

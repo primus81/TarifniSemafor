@@ -28,6 +28,11 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import si.semafor.app.R
+import si.semafor.app.text
+import si.semafor.app.ui.compose.LocalLang
+import si.semafor.app.ui.compose.currentLocale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
@@ -76,12 +81,13 @@ fun NetworkCalculator() {
     val energy = rememberSaveable(saver = StringListSaver) { mutableStateListOf("", "", "", "", "") }
 
     val estimate = TariffCalculator.estimate(season, today, samePower, powerAll, powerBlocks, energy)
+    val locale = currentLocale
     val small = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
 
     // ---- Inputs ----
     InfoCard {
         Text(
-            text = "Hitri izračun omrežnine",
+            text = stringResource(R.string.calc_quick_title),
             style = MaterialTheme.typography.titleMedium,
             color = colors.onSurface,
             modifier = Modifier
@@ -89,7 +95,7 @@ fun NetworkCalculator() {
                 .semantics { heading() }
         )
         Text(
-            text = "Okvirni mesečni strošek omrežnine za uporabniško skupino 0. Vnesi dogovorjeno moč in pričakovano porabo.",
+            text = stringResource(R.string.calc_quick_intro),
             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight),
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -97,14 +103,14 @@ fun NetworkCalculator() {
 
         Row(modifier = Modifier.fillMaxWidth().selectableGroup()) {
             RadioRow(
-                label = "Višja sezona (nov–feb)",
+                label = stringResource(R.string.calc_season_high),
                 selected = season == Season.HIGH,
                 onClick = { season = Season.HIGH },
                 modifier = Modifier.weight(1f),
                 fontSize = 13.sp
             )
             RadioRow(
-                label = "Nižja sezona (mar–okt)",
+                label = stringResource(R.string.calc_season_low),
                 selected = season == Season.LOW,
                 onClick = { season = Season.LOW },
                 modifier = Modifier.weight(1f),
@@ -113,29 +119,29 @@ fun NetworkCalculator() {
         }
 
         Text(
-            text = "Dogovorjena obračunska moč (kW)",
+            text = stringResource(R.string.calc_power_heading),
             style = MaterialTheme.typography.titleSmall,
             color = colors.onSurface,
             modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)
         )
         SwitchRow(
-            label = "Enaka moč za vse bloke",
+            label = stringResource(R.string.calc_same_power),
             checked = samePower,
             onCheckedChange = { samePower = it },
             fontSize = 14.sp
         )
         if (samePower) {
             NumberRow(
-                label = "Moč za vse bloke (kW)",
-                description = "Dogovorjena obračunska moč v kilovatih, enaka za vse bloke",
+                label = stringResource(R.string.calc_power_all),
+                description = stringResource(R.string.calc_power_all_spoken),
                 value = powerAll,
                 onValueChange = { powerAll = it }
             )
         } else {
             for (b in 1..TariffCalculator.BLOCKS) {
                 NumberRow(
-                    label = "Blok $b (kW)",
-                    description = "Dogovorjena obračunska moč za blok $b v kilovatih",
+                    label = stringResource(R.string.calc_power_block, b),
+                    description = stringResource(R.string.calc_power_block_spoken, b),
                     value = powerBlocks[b - 1],
                     onValueChange = { powerBlocks[b - 1] = it }
                 )
@@ -143,15 +149,15 @@ fun NetworkCalculator() {
         }
 
         Text(
-            text = "Pričakovana poraba na mesec (kWh)",
+            text = stringResource(R.string.calc_energy_heading),
             style = MaterialTheme.typography.titleSmall,
             color = colors.onSurface,
             modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)
         )
         for (b in 1..TariffCalculator.BLOCKS) {
             NumberRow(
-                label = "Blok $b (kWh)",
-                description = "Pričakovana mesečna poraba v bloku $b v kilovatnih urah",
+                label = stringResource(R.string.calc_energy_block, b),
+                description = stringResource(R.string.calc_energy_block_spoken, b),
                 value = energy[b - 1],
                 onValueChange = { energy[b - 1] = it }
             )
@@ -161,7 +167,7 @@ fun NetworkCalculator() {
     // ---- Result ----
     InfoCard {
         Text(
-            text = "Ocena mesečnega stroška",
+            text = stringResource(R.string.calc_result_title),
             style = MaterialTheme.typography.titleMedium,
             color = colors.onSurface,
             modifier = Modifier
@@ -169,10 +175,10 @@ fun NetworkCalculator() {
                 .semantics { heading() }
         )
         val cost = (estimate as? Estimate.Ready)?.cost
-        fun eur(value: java.math.BigDecimal?) = if (value == null) "–" else TariffCalculator.formatEur(value)
+        fun eur(value: java.math.BigDecimal?) = if (value == null) "–" else TariffCalculator.formatEur(value, locale)
 
-        ResultRow("Moč (obračunska moč)", eur(cost?.powerNet))
-        ResultRow("Energija (prevzeta energija)", eur(cost?.energyNet))
+        ResultRow(stringResource(R.string.calc_result_power), eur(cost?.powerNet))
+        ResultRow(stringResource(R.string.calc_result_energy), eur(cost?.energyNet))
         Box(
             modifier = Modifier
                 .padding(vertical = 6.dp)
@@ -180,12 +186,12 @@ fun NetworkCalculator() {
                 .height(1.dp)
                 .background(colors.outlineVariant)
         )
-        ResultRow("Skupaj brez DDV", eur(cost?.totalNet))
-        ResultRow("DDV (22 %)", eur(cost?.vat))
+        ResultRow(stringResource(R.string.calc_result_net), eur(cost?.totalNet))
+        ResultRow(stringResource(R.string.calc_result_vat), eur(cost?.vat))
         // TalkBack reads the new total when it changes, without stealing focus.
-        ResultRow("Skupaj z DDV", eur(cost?.totalGross), emphasis = true, liveRegion = true)
+        ResultRow(stringResource(R.string.calc_result_gross), eur(cost?.totalGross), emphasis = true, liveRegion = true)
         Text(
-            text = estimateNote(estimate),
+            text = estimateNote(estimate, LocalLang.current).text(),
             style = small,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(top = 10.dp)
@@ -235,7 +241,7 @@ private fun NumberRow(label: String, description: String, value: String, onValue
         }
         if (invalid) {
             Text(
-                text = "Vnesi število, npr. 5,5",
+                text = stringResource(R.string.calc_invalid_number),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.error,
                 textAlign = TextAlign.End,

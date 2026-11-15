@@ -11,14 +11,6 @@ object HomeFormat {
         return "$h h $m min $s s"
     }
 
-    /** Countdown on the current block card. */
-    fun blockCountdown(diffMs: Long): String =
-        if (diffMs <= 0) "Sprememba časovnega bloka zdaj" else "Sprememba časovnega bloka čez " + duration(diffMs)
-
-    /** Countdown on the best upcoming block card. */
-    fun bestCountdown(diffMs: Long): String =
-        if (diffMs <= 0) "(zdaj)" else "(čez " + duration(diffMs) + ")"
-
     private val HIGH_SEASON = Regex("(?i)visoka sezona")
     private val LOW_SEASON = Regex("(?i)nizka sezona")
 

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English. Every key of values/ must exist here as well (checked by StringsParityTest). -->
+<resources>
+    <string name="app_name">Tarifni semafor</string>
+    <string name="widget_description">The current network-charge time block, when it changes next and the cheapest upcoming block.</string>
+
+    <!-- Common -->
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_refresh">Refresh</string>
+    <string name="common_refreshing">Refreshing …</string>
+    <string name="common_retry">Try again</string>
+    <string name="common_back_home">Back to the home screen</string>
+    <string name="common_link_suffix">%1$s, link</string>
+    <string name="common_open_link">open link</string>
+    <string name="common_expanded">%1$s, expanded. Tap to collapse.</string>
+    <string name="common_collapsed">%1$s, collapsed. Tap to expand.</string>
+    <string name="common_block">Block %1$d</string>
+    <string name="common_block_now">Block %1$d (now)</string>
+    <string name="common_unknown_block">unknown</string>
+    <string name="toast_link_failed">The link cannot be opened.</string>
+    <string name="toast_notification_settings_failed">The notification settings cannot be opened.</string>
+    <string name="toast_donation_not_set">The donation link has not been set up yet.</string>
+    <string name="toast_allow_notifications">To get notifications, allow them in your phone\'s settings.</string>
+
+    <!-- Top bar, menu, bottom navigation -->
+    <string name="top_menu">Menu</string>
+    <string name="top_title_block">Tarifni semafor. Current block: %1$d</string>
+    <string name="top_title_no_data">Tarifni semafor. No data</string>
+    <string name="menu_calculator">Calculator</string>
+    <string name="menu_calculator_sub">Supply cost comparison</string>
+    <string name="menu_prices">Network charge prices</string>
+    <string name="menu_tips">Tips</string>
+    <string name="menu_tariff_info">All about the tariff system</string>
+    <string name="menu_news">News</string>
+    <string name="menu_sources">Data sources</string>
+    <string name="menu_about">About the app</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_usage">Consumption</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Home -->
+    <string name="home_loading_title">Loading data …</string>
+    <string name="home_error_title">The data cannot be verified right now.</string>
+    <string name="home_error_detail">Last update: %1$s\nThe stored data is no longer valid, so it is not shown.</string>
+    <string name="home_error_warning">Updating is not possible right now. Check your internet connection.</string>
+    <string name="home_current_block">Current time block</string>
+    <string name="home_block_hours">%1$d–%2$d h · %3$s</string>
+    <string name="home_countdown">Next block change in %1$s</string>
+    <string name="home_countdown_now">The time block is changing now</string>
+    <string name="home_card_description">Current time block: block %1$d, %2$s, from %3$d to %4$d o\'clock, %5$s.%6$s Next change at %7$s.</string>
+    <string name="home_card_price">" Network charge for energy %1$s euro per kilowatt hour."</string>
+    <string name="home_last_update">Last update: %1$s</string>
+    <string name="home_data_fresh">The data is up to date.</string>
+    <string name="home_data_offline">Updating is not possible right now. Check your internet connection.\nShowing the last stored data.</string>
+    <string name="home_data_cached">Showing the last stored data.</string>
+    <string name="home_best_prefix">"Next cheapest time block at "</string>
+    <string name="home_best_suffix">""</string>
+    <string name="home_best_countdown">(in %1$s)</string>
+    <string name="home_best_now">(now)</string>
+    <string name="home_advice_now">Recommendations now</string>
+    <string name="home_advice_next">Recommendations for the next time block</string>
+    <string name="home_advice_good">Favourable</string>
+    <string name="home_advice_mid">In between</string>
+    <string name="home_advice_bad">Less favourable</string>
+    <string name="home_advice_source_note">Recommendations are published by uro.si.</string>
+    <string name="home_donation_title">☕ Support the app</string>
+    <string name="home_donation_title_spoken">Support the app</string>
+    <string name="home_donation_text">If you like the app and find it useful, a voluntary donation helps its further development. Thank you for your support!</string>
+    <string name="home_donation_custom">Any amount</string>
+    <string name="home_donation_1">Support development with a donation of 1 euro</string>
+    <string name="home_donation_3">Support development with a donation of 3 euros</string>
+    <string name="home_donation_5">Support development with a donation of 5 euros</string>
+    <string name="home_donation_any">Support development with a donation of any amount</string>
+
+    <!-- News -->
+    <string name="news_title">News</string>
+    <string name="news_loading">Loading news …</string>
+    <string name="news_source_online">Energy Agency</string>
+    <string name="news_source_offline">Energy Agency · Stored news (offline)</string>
+    <string name="news_failed">The news cannot be loaded.</string>
+    <string name="news_check_connection">Check your internet connection.</string>
+    <string name="news_footer">Source: Energy Agency (agen-rs.si)</string>
+    <string name="news_language_note">The news is published by the Energy Agency in Slovenian.</string>
+
+    <!-- Price list -->
+    <string name="prices_title">Network charge prices</string>
+    <string name="prices_subtitle">User group 0 (households and low voltage)</string>
+    <string name="prices_missing">The price list for the current period has not been entered yet.</string>
+    <string name="prices_open_sodo">Open the SODO price lists</string>
+    <string name="prices_valid">Valid from %1$s to %2$s</string>
+    <string name="prices_col_block">Block</string>
+    <string name="prices_col_power">Power [€/kW/month]</string>
+    <string name="prices_col_energy">Energy [€/kWh]</string>
+    <string name="prices_header_spoken">Columns: block, power in euros per kilowatt per month, energy in euros per kilowatt hour.</string>
+    <string name="prices_row_spoken">Block %1$d%2$s. Power %3$s euro per kilowatt per month. Energy %4$s euro per kilowatt hour.</string>
+    <string name="prices_row_now_spoken">, the time block in force now</string>
+    <string name="prices_note_group">The prices apply to user group 0 (households and other customers on the low-voltage network). Customers without 15-minute metering are billed differently and are not shown here.</string>
+    <string name="prices_note_taxes">The amounts exclude taxes, levies, excise duties and other charges.</string>
+    <string name="prices_note_power">The power rate is charged on the agreed (and any excess) billing power in each time block, regardless of the kWh used. The energy rate is charged on the energy taken in kWh.</string>
+    <string name="prices_note_block1">Block 1 applies only on working days in the higher season (November–February).</string>
+    <string name="prices_note_info">The price list is for information only. The valid rates are published by the operator (SODO).</string>
+    <string name="prices_official">Official price list (SODO)</string>
+
+    <!-- Dialogs -->
+    <string name="sources_title">Data sources</string>
+    <string name="sources_blocks">Tarifni semafor and time blocks:</string>
+    <string name="sources_blocks_link">Energy Agency, uro.si (API)</string>
+    <string name="sources_news">News:</string>
+    <string name="sources_news_link">Energy Agency (RSS)</string>
+    <string name="sources_calc">Calculator (supply cost comparison), summary and link:</string>
+    <string name="sources_calc_link">Energy Agency</string>
+    <string name="sources_tariff">Information on the tariff system:</string>
+    <string name="sources_tariff_link">MojElektro</string>
+    <string name="sources_colors">Colours of the time blocks:</string>
+    <string name="sources_colors_link">official uro.si table</string>
+    <string name="sources_icons">Icons (free licence Apache 2.0):</string>
+    <string name="sources_icons_link">Material Symbols (Google)</string>
+    <string name="sources_usage">Your readings (optional):</string>
+    <string name="sources_usage_link">Moj Elektro API</string>
+    <string name="about_title">About the app</string>
+    <string name="about_disclaimer">Tarifni semafor is an unofficial app. It is not affiliated with the Energy Agency, SODO or any other operator. The data is taken from public sources (see Data sources); its accuracy is not guaranteed, and the valid data is published by the official sources.</string>
+    <string name="about_developer">"Developer: "</string>
+    <string name="about_version">Version: %1$s</string>
+    <string name="about_privacy_policy">Privacy policy</string>
+</resources>

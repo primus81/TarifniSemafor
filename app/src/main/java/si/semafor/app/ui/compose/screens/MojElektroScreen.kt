@@ -21,6 +21,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import si.semafor.app.R
+import si.semafor.app.UiText
+import si.semafor.app.text
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -66,7 +70,7 @@ fun MojElektroScreen(
     onDisconnect: () -> Unit,
     onOpenMojElektro: () -> Unit,
     onOpenUsage: () -> Unit,
-    backDescription: String = "Nazaj na nastavitve"
+    backDescription: String = stringResource(R.string.me_back_settings)
 ) {
     val colors = MaterialTheme.colorScheme
     val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
@@ -74,40 +78,33 @@ fun MojElektroScreen(
 
     ScreenScaffold {
         ScreenHeader(
-            title = "Moj Elektro",
-            subtitle = "Povezava tvojega merilnega mesta",
+            title = stringResource(R.string.me_title),
+            subtitle = stringResource(R.string.me_subtitle),
             onBack = onBack,
             backDescription = backDescription
         )
 
         InfoCard {
             Text(
-                text = "Povezava je neobvezna; aplikacija brez nje deluje enako. Z njo lahko aplikacija iz portala " +
-                    "Moj Elektro prebere podatke tvojega merilnega mesta in ti na strani Moj semafor porabe (podrsaj levo na " +
-                    "domačem zaslonu ali meni Moja poraba) pokaže porabo po " +
-                    "časovnih blokih, 15-minutne konice ob dogovorjeni moči in, če jo imaš, oddano energijo.",
+                text = stringResource(R.string.me_intro),
                 style = body,
                 color = colors.onSurface
             )
         }
 
-        SectionHeading("Zasebnost")
+        SectionHeading(stringResource(R.string.me_privacy_heading))
         InfoCard {
             Text(
-                text = "Žeton in EIMM sta shranjena samo v tem telefonu, šifrirana s ključem, ki ne zapusti varne " +
-                    "shrambe telefona. Aplikacija ju pošilja samo uradnemu strežniku Moj Elektro " +
-                    "(api.informatika.si), nikoli nikomur drugemu. Podatki tvojega merilnega mesta ostanejo v " +
-                    "telefonu (meritve so shranjene šifrirane in se izbrišejo ob prekinitvi povezave). Žeton omogoča samo branje; kadarkoli ga lahko prekličeš na mojelektro.si.",
+                text = stringResource(R.string.me_privacy_text),
                 style = body,
                 color = colors.onSurface
             )
         }
 
-        SectionHeading("Podatki niso v realnem času")
+        SectionHeading(stringResource(R.string.me_delay_heading))
         InfoCard {
             Text(
-                text = "Moj Elektro objavi merilne podatke z zamikom, običajno približno en dan. Aplikacija zato " +
-                    "nikoli ne prikazuje tvoje trenutne porabe.",
+                text = stringResource(R.string.me_delay_text),
                 style = body,
                 color = colors.onSurface
             )
@@ -117,7 +114,7 @@ fun MojElektroScreen(
             val eimm = state.connectedEimm
             if (eimm != null) {
                 ConnectedCard(eimm, state.busy, onVerify, onDisconnect)
-                PrimaryButton("Prikaži mojo porabo", onOpenUsage)
+                PrimaryButton(stringResource(R.string.me_show_usage), onOpenUsage)
             } else {
                 ConnectForm(state.busy, onConnect, onOpenMojElektro)
             }
@@ -126,7 +123,7 @@ fun MojElektroScreen(
         state.message?.let { StatusMessage(it) }
 
         Text(
-            text = "Aplikacija Tarifni semafor ni uradna aplikacija portala Moj Elektro.",
+            text = stringResource(R.string.me_not_official),
             style = note,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
@@ -137,19 +134,19 @@ fun MojElektroScreen(
 @Composable
 private fun ConnectedCard(eimm: String, busy: Boolean, onVerify: () -> Unit, onDisconnect: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    SectionHeading("Povezava")
+    SectionHeading(stringResource(R.string.me_connection_heading))
     InfoCard {
         Text(
-            text = "Povezano merilno mesto: $eimm",
+            text = stringResource(R.string.me_connected, eimm),
             style = MaterialTheme.typography.titleSmall,
             color = colors.onSurface
         )
         Spacer(Modifier.height(12.dp))
-        ActionButton(if (busy) "Preverjam …" else "Preveri povezavo") { if (!busy) onVerify() }
+        ActionButton(stringResource(if (busy) R.string.me_checking else R.string.me_verify)) { if (!busy) onVerify() }
         Spacer(Modifier.height(8.dp))
-        ActionButton("Prekini povezavo") { if (!busy) onDisconnect() }
+        ActionButton(stringResource(R.string.me_disconnect)) { if (!busy) onDisconnect() }
         Text(
-            text = "Prekinitev izbriše žeton in EIMM iz telefona. Žeton na mojelektro.si s tem ni preklican.",
+            text = stringResource(R.string.me_disconnect_note),
             style = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight),
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp)
@@ -166,40 +163,39 @@ private fun ConnectForm(busy: Boolean, onConnect: (String, String) -> Unit, onOp
     var showToken by remember { mutableStateOf(false) }
     var eimm by rememberSaveable { mutableStateOf("") }
 
-    SectionHeading("Poveži merilno mesto")
+    SectionHeading(stringResource(R.string.me_connect_heading))
     InfoCard {
-        FieldLabel("Žeton API")
+        FieldLabel(stringResource(R.string.me_token))
         CredentialField(
             value = token,
             onValueChange = { token = it },
-            description = "Žeton API",
-            placeholder = "Prilepi žeton",
+            description = stringResource(R.string.me_token),
+            placeholder = stringResource(R.string.me_token_placeholder),
             secret = !showToken,
             keyboardType = KeyboardType.Password
         )
-        SwitchRow(label = "Pokaži žeton", checked = showToken, onCheckedChange = { showToken = it }, fontSize = 14.sp)
+        SwitchRow(label = stringResource(R.string.me_show_token), checked = showToken, onCheckedChange = { showToken = it }, fontSize = 14.sp)
 
         Spacer(Modifier.height(4.dp))
-        FieldLabel("EIMM (enotni identifikator merilnega mesta)")
+        FieldLabel(stringResource(R.string.me_eimm))
         CredentialField(
             value = eimm,
             onValueChange = { eimm = it },
-            description = "EIMM, enotni identifikator merilnega mesta",
-            placeholder = "npr. 3-1234567",
+            description = stringResource(R.string.me_eimm_spoken),
+            placeholder = stringResource(R.string.me_eimm_placeholder),
             secret = false,
             keyboardType = KeyboardType.Ascii
         )
 
         Text(
-            text = "Žeton ustvariš na mojelektro.si v razdelku API storitve. EIMM najdeš na mojelektro.si med " +
-                "podatki merilnega mesta.",
-            style = note,
+            text = stringResource(R.string.me_where),
+                style = note,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(top = 10.dp)
         )
-        LinkText("Odpri mojelektro.si", onOpenMojElektro)
+        LinkText(stringResource(R.string.me_open_portal), onOpenMojElektro)
     }
-    PrimaryButton(if (busy) "Preverjam …" else "Preveri in shrani povezavo") {
+    PrimaryButton(stringResource(if (busy) R.string.me_checking else R.string.me_save)) {
         if (!busy) onConnect(token, eimm)
     }
 }
@@ -267,7 +263,7 @@ private fun CredentialField(
 private fun StatusMessage(message: MojElektroMessage) {
     InfoCard {
         Text(
-            text = message.text,
+            text = message.text.text(),
             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight),
             // Colours of the app: yellow for warnings (as in Nastavitve), green block colour for success.
             color = if (message.isError) AppColors.Warning else SuccessColor,
@@ -276,7 +272,7 @@ private fun StatusMessage(message: MojElektroMessage) {
     }
 }
 
-private val SuccessColor = Color(0xFF9CCC4F)
+private val SuccessColor = Color(0xFF2E9E4F)
 
 @Preview(showBackground = true, backgroundColor = 0xFF161C28)
 @Composable
@@ -285,7 +281,7 @@ private fun MojElektroScreenPreview() {
         MojElektroScreen(
             state = MojElektroUiState(
                 loaded = true,
-                message = MojElektroMessage("Žeton ni bil sprejet. Preveri, ali si ga kopiral v celoti.", true)
+                message = MojElektroMessage(UiText.res(R.string.me_err_unauthorized), true)
             ),
             onBack = {},
             onConnect = { _, _ -> },

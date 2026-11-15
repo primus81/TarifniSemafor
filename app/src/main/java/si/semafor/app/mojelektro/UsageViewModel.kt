@@ -2,6 +2,8 @@ package si.semafor.app.mojelektro
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
+import si.semafor.app.R
+import si.semafor.app.UiText
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -16,8 +18,8 @@ import kotlinx.coroutines.withContext
 @Immutable
 sealed interface UsageUiState {
     data object NotConnected : UsageUiState
-    data class Loading(val step: String) : UsageUiState
-    data class Error(val message: String) : UsageUiState
+    data class Loading(val step: UiText) : UsageUiState
+    data class Error(val message: UiText) : UsageUiState
     data class Content(val data: UsageData) : UsageUiState
 }
 
@@ -25,7 +27,7 @@ sealed interface UsageUiState {
 class UsageViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = UsageRepository(app)
 
-    private val _state = MutableStateFlow<UsageUiState>(UsageUiState.Loading("Nalagam …"))
+    private val _state = MutableStateFlow<UsageUiState>(UsageUiState.Loading(UiText.res(R.string.usage_loading)))
     val state: StateFlow<UsageUiState> = _state.asStateFlow()
 
     private val _rangeDays = MutableStateFlow(DEFAULT_RANGE)
@@ -67,7 +69,7 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
         job?.cancel()
         shownAt = 0L
         _refreshing.value = false
-        _state.value = UsageUiState.Loading("Nalagam …")
+        _state.value = UsageUiState.Loading(UiText.res(R.string.usage_loading))
     }
 
     fun refresh() = load(force = true)
@@ -88,7 +90,7 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
             if (_state.value is UsageUiState.Content) _refreshing.value = true
-            else _state.value = UsageUiState.Loading("Nalagam …")
+            else _state.value = UsageUiState.Loading(UiText.res(R.string.usage_loading))
             val result = withContext(Dispatchers.IO) {
                 repository.load(range, force) { step ->
                     // Progress only while nothing is shown yet (a refresh keeps the charts on screen).

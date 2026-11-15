@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Moj Elektro connection screen -->
+    <string name="me_title">Moj Elektro</string>
+    <string name="me_subtitle">Connection of your metering point</string>
+    <string name="me_back_settings">Back to settings</string>
+    <string name="me_intro">The connection is optional; the app works the same without it. With it, the app reads the data of your metering point from the Moj Elektro portal and shows you, in the Consumption tab, your consumption by time block, your 15-minute peaks against the agreed power and, if you have it, the energy you deliver.</string>
+    <string name="me_privacy_heading">Privacy</string>
+    <string name="me_privacy_text">The token and EIMM are stored only on this phone, encrypted with a key that never leaves the phone\'s secure storage. The app sends them only to the official Moj Elektro server (api.informatika.si), never to anyone else. The data of your metering point stays on the phone (readings are stored encrypted and deleted when you disconnect). The token is read-only; you can revoke it on mojelektro.si at any time.</string>
+    <string name="me_delay_heading">The data is not real-time</string>
+    <string name="me_delay_text">Moj Elektro publishes meter data with a delay, usually about one day. The app therefore never shows your current consumption.</string>
+    <string name="me_show_usage">Show my consumption</string>
+    <string name="me_not_official">Tarifni semafor is not an official app of the Moj Elektro portal.</string>
+    <string name="me_connection_heading">Connection</string>
+    <string name="me_connected">Connected metering point: %1$s</string>
+    <string name="me_checking">Checking …</string>
+    <string name="me_verify">Check connection</string>
+    <string name="me_disconnect">Disconnect</string>
+    <string name="me_disconnect_note">Disconnecting deletes the token and EIMM from the phone. It does not revoke the token on mojelektro.si.</string>
+    <string name="me_connect_heading">Connect a metering point</string>
+    <string name="me_token">API token</string>
+    <string name="me_token_placeholder">Paste the token</string>
+    <string name="me_show_token">Show token</string>
+    <string name="me_eimm">EIMM (unique metering point identifier)</string>
+    <string name="me_eimm_spoken">EIMM, unique metering point identifier</string>
+    <string name="me_eimm_placeholder">e.g. 3-1234567</string>
+    <string name="me_where">Create the token on mojelektro.si under API services. The EIMM is listed on mojelektro.si with the data of your metering point.</string>
+    <string name="me_open_portal">Open mojelektro.si</string>
+    <string name="me_save">Check and save connection</string>
+    <string name="me_input_token">Enter the API token (without spaces) as mojelektro.si shows it.</string>
+    <string name="me_input_eimm">The EIMM must have the form number-number, e.g. 3-1234567.</string>
+    <string name="me_disconnected">Disconnected. The token and EIMM have been deleted from the phone.</string>
+    <string name="me_ok">The connection works. Metering point %1$s.</string>
+    <string name="me_ok_points">The connection works. Metering point %1$s, measurement points: %2$d.</string>
+    <string name="me_ok_15_yes">" The metering point has 15-minute readings."</string>
+    <string name="me_ok_15_no">" The metering point has no 15-minute readings."</string>
+
+    <!-- Moj Elektro errors -->
+    <string name="me_err_invalid">The Moj Elektro server rejected the request. Check what you entered.</string>
+    <string name="me_err_invalid_code">The Moj Elektro server rejected the request. Check what you entered. (code %1$s)</string>
+    <string name="me_err_unauthorized">The token was not accepted. Check that you copied all of it and that it is still valid.</string>
+    <string name="me_err_forbidden">The token does not give access to this metering point. Check the token and the EIMM.</string>
+    <string name="me_err_not_found">No metering point with this EIMM was found. Check the EIMM.</string>
+    <string name="me_err_server">The Moj Elektro server is not answering correctly right now (error %1$d). Try again later.</string>
+    <string name="me_err_network">Could not reach the Moj Elektro server. Check your internet connection.</string>
+    <string name="me_err_timeout">The Moj Elektro server did not answer in time. Try again in a few minutes.</string>
+    <string name="me_err_response">The answer of the Moj Elektro server is not in the expected form. Try again later.</string>
+    <string name="me_err_not_connected">No metering point is connected.</string>
+    <string name="me_err_storage">The stored connection could not be read, so it has been deleted. Connect your metering point again.</string>
+
+    <!-- Usage (Consumption traffic light) -->
+    <string name="usage_title">Consumption traffic light</string>
+    <string name="usage_subtitle">Your consumption (Moj Elektro) against the time blocks (uro.si)</string>
+    <string name="usage_onboarding_title">Connect your metering point</string>
+    <string name="usage_onboarding_text">The consumption traffic light shows your 15-minute power against the official time blocks, your peaks against the agreed power and your consumption by block. You need an API token from the Moj Elektro portal and your EIMM. Everything stays encrypted on your phone.</string>
+    <string name="usage_onboarding_step1">1. Create a read-only API token on mojelektro.si.</string>
+    <string name="usage_onboarding_step2">2. In Settings, choose Moj Elektro connection and paste the token and the EIMM.</string>
+    <string name="usage_onboarding_step3">3. Come back here: the chart is ready in a few seconds.</string>
+    <string name="usage_onboarding_button">Open connection settings</string>
+    <string name="usage_loading">Loading …</string>
+    <string name="usage_loading_readings">Downloading readings from Moj Elektro …</string>
+    <string name="usage_loading_agreed">Downloading the agreed power …</string>
+    <string name="usage_loading_blocks">Preparing the time blocks (%1$d/%2$d) …</string>
+    <string name="usage_loading_note">The first load can take a few seconds: the app downloads the readings and the official time blocks of every day.</string>
+    <string name="usage_eimm_label">Metering point (EIMM)</string>
+    <string name="usage_fresh">Updated</string>
+    <string name="usage_stored">Stored</string>
+    <string name="usage_agreed">Agreed power</string>
+    <string name="usage_agreed_missing">Moj Elektro lists no valid agreed power for your metering point.</string>
+    <string name="usage_chip_now">now</string>
+    <string name="usage_chip_spoken">Block %1$d%2$s: %3$s</string>
+    <string name="usage_chip_spoken_now">, in force now</string>
+    <string name="usage_chip_kw_spoken">%1$s kilowatts</string>
+    <string name="usage_no_data">no data</string>
+    <string name="usage_last_day">"Last complete day: %1$s. "</string>
+    <string name="usage_freshness">%1$sDownloaded %2$s. Moj Elektro publishes readings with a delay, usually about one day, so your current consumption is not shown here.</string>
+    <string name="usage_privacy">Your API token and EIMM are encrypted with a key in the phone\'s secure storage (Android Keystore) and never leave the phone except to the official Moj Elektro server. Readings are stored encrypted. You can delete the connection and all stored readings at any time.</string>
+    <string name="usage_manage">Manage connection</string>
+    <string name="usage_cache_after_error">The refresh failed, so stored data is shown.</string>
+    <string name="usage_label_unknown">The timestamps of the 15-minute readings could not be classified reliably, so the readings are not split by time block.</string>
+    <string name="usage_hero_title">Your power and the time blocks</string>
+    <string name="usage_hero_hint">Touch the chart or slide across it to inspect every quarter hour.</string>
+    <string name="usage_no_15min">There are no 15-minute readings for the selected period yet.</string>
+    <string name="usage_day_total">%1$s · total %2$s kWh</string>
+    <string name="usage_day_incomplete">" · day not complete yet"</string>
+    <string name="usage_legend_agreed">agreed power</string>
+    <string name="usage_legend_90" formatted="false">90 %</string>
+    <string name="usage_legend_over">excess</string>
+    <string name="usage_peak_of_day">" · highest peak of the day"</string>
+    <string name="usage_power_price">Power rate in this block: %1$s €/kW/month (SODO price list).</string>
+    <string name="usage_prev">Previous quarter hour</string>
+    <string name="usage_next">Next quarter hour</string>
+    <string name="usage_peak">Peak</string>
+    <string name="usage_peak_spoken">Go to the highest peak of the day</string>
+    <string name="usage_peaks_heading">Daily 15-minute peaks</string>
+    <string name="usage_peaks_none">There are no 15-minute readings in the selected period yet.</string>
+    <string name="usage_legend_over_100" formatted="false">over 100 %</string>
+    <string name="usage_legend_over_90" formatted="false">over 90 %</string>
+    <string name="usage_peaks_explain">Each bar is the day\'s highest quarter hour as a share of the agreed power of its block. Tap a day to show it in the main chart. The 90 %% threshold is only a warning of the app.</string>
+    <string name="usage_peaks_closest">Closest to the agreed power: %1$s at %2$s, %3$s kW in block %4$s. %5$s</string>
+    <string name="usage_peaks_over_days">The agreed power was exceeded on %1$d of %2$d days.</string>
+    <string name="usage_blocks_heading">Consumption by time block</string>
+    <plurals name="usage_range_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="usage_no_period_data">There are no 15-minute readings in the selected period.</string>
+    <plurals name="usage_blocks_total">
+        <item quantity="one">Total %1$s kWh over %2$d day.</item>
+        <item quantity="other">Total %1$s kWh over %2$d days.</item>
+    </plurals>
+    <string name="usage_share_spoken">Block %1$d: %2$s kilowatt hours, %3$s percent.</string>
+    <string name="usage_production_heading">Energy taken and delivered</string>
+    <string name="usage_production_line">%1$s · taken %2$s kWh, delivered %3$s kWh</string>
+    <string name="usage_legend_import">taken (A+)</string>
+    <string name="usage_legend_export">delivered (A-)</string>
+    <string name="usage_details_heading">Moj Elektro details</string>
+    <string name="usage_table_title">Power by time block (last %1$d days)</string>
+    <string name="usage_table_agreed">Agreed %1$s</string>
+    <string name="usage_table_now">" · in force now"</string>
+    <string name="usage_table_peak">Highest %1$s kW (%2$s at %3$s)</string>
+    <string name="usage_table_no_quarters">There were no quarter hours in this block in the period.</string>
+    <string name="usage_table_no_use">No consumption.</string>
+    <string name="usage_table_rate">Power rate: %1$s €/kW/month</string>
+    <string name="usage_table_footer">The rates come from the built-in SODO price list (excl. VAT), the agreed power from Moj Elektro.</string>
+    <string name="usage_registers_title">Registers in the period</string>
+    <string name="usage_reg_import">Energy taken (A+)</string>
+    <string name="usage_reg_export">Energy delivered (A-)</string>
+    <string name="usage_reg_count">15-minute readings</string>
+    <string name="usage_reg_missing">Readings without a value</string>
+    <string name="usage_reg_flagged">Readings with a status code</string>
+    <string name="usage_reg_label">Timestamp of a reading</string>
+    <string name="usage_reg_label_start">start of the quarter hour</string>
+    <string name="usage_reg_label_end">end of the quarter hour</string>
+    <string name="usage_reg_label_unknown">not reliably determined</string>
+    <string name="usage_reg_agreed_read">Agreed power read</string>
+    <string name="usage_reg_explain">Status codes are added by Moj Elektro (e.g. an estimated or substituted value). Whether a timestamp marks the start or the end of its quarter hour is worked out from the data itself (compared with the daily meter states).</string>
+    <string name="usage_help_agreed_q">What is the agreed power?</string>
+    <string name="usage_help_agreed_a">The power agreed for your metering point in each time block. The app reads it from Moj Elektro. The power rate is charged on the agreed (and any exceeded) power in the block, regardless of the kWh used.</string>
+    <string name="usage_help_power_q">How is the power of a quarter hour calculated?</string>
+    <string name="usage_help_power_a">The meter records the energy of every quarter hour in kWh. The average power of that quarter hour is the energy divided by a quarter of an hour (kWh × 4).</string>
+    <string name="usage_help_blocks_q">Where do the time blocks and colours come from?</string>
+    <string name="usage_help_blocks_a">For every past day the app asks the official source uro.si which block applied in each hour. No block rules are written into the app. The colours come from the official uro.si table of the current year.</string>
+    <string name="usage_help_delay_q">Why is there no data for today?</string>
+    <string name="usage_help_delay_a">Moj Elektro publishes readings with a delay, usually about one day. The block in force now is on the first page.</string>
+    <string name="usage_footer">Downloaded %1$s. The time blocks come from official data (uro.si). The calculations are for information only and do not replace your bill.</string>
+    <string name="usage_power_over">Above the agreed power of the block: %1$s of the agreed power.</string>
+    <string name="usage_power_near">Close to the agreed power of the block: %1$s.</string>
+    <string name="usage_power_safe">Safely below the agreed power of the block: %1$s.</string>
+    <string name="usage_power_unknown">The agreed power for this interval is not known.</string>
+    <string name="usage_block_unknown">The time block of this interval is not known.</string>
+    <string name="usage_block_dear">Block %1$d is one of the more expensive blocks (1 = most expensive). Consumption that is not urgent can be moved to a block with a higher number.</string>
+    <string name="usage_block_middle">Block 3 is the middle block.</string>
+    <string name="usage_block_cheap">Block %1$d is one of the cheaper blocks (5 = cheapest).</string>
+    <string name="usage_interval_summary">%1$s kW (%2$s kWh in 15 minutes)%3$s%4$s.</string>
+    <string name="usage_interval_block">, block %1$d</string>
+    <string name="usage_interval_agreed">, agreed %1$s kW</string>
+    <plurals name="usage_verdict_over">
+        <item quantity="one">Exceeded in %1$d quarter hour (highest %2$s).</item>
+        <item quantity="other">Exceeded in %1$d quarter hours (highest %2$s).</item>
+    </plurals>
+    <plurals name="usage_verdict_near">
+        <item quantity="one">Over 90 %% in %1$d quarter hour (highest %2$s).</item>
+        <item quantity="other">Over 90 %% in %1$d quarter hours (highest %2$s).</item>
+    </plurals>
+    <string name="usage_verdict_safe">Below 90 %% all day (highest %1$s).</string>
+    <string name="usage_verdict_unknown">The agreed power is not known.</string>
+    <plurals name="usage_block_over">
+        <item quantity="one">Exceeded in %1$d quarter hour.</item>
+        <item quantity="other">Exceeded in %1$d quarter hours.</item>
+    </plurals>
+
+    <!-- Chart descriptions (TalkBack) -->
+    <string name="chart_combined">Chart of consumption and time blocks on %1$s. %2$s%3$s Use the buttons below the chart for individual quarter hours.</string>
+    <plurals name="chart_over_quarters">
+        <item quantity="one">Above the agreed power: %1$d quarter hour.</item>
+        <item quantity="other">Above the agreed power: %1$d quarter hours.</item>
+    </plurals>
+    <string name="chart_combined_peak">"Highest average power %1$s kW at %2$s. "</string>
+    <string name="chart_peaks">Daily 15-minute peaks, %1$d days. Days with the agreed power exceeded: %2$d, days over 90 percent: %3$d.</string>
+    <string name="chart_daily_blocks">Consumption by day and time block, %1$d days, total %2$s kWh, of which %3$s kWh in blocks 1 and 2.</string>
+    <string name="chart_production">Energy taken %1$s kWh and delivered %2$s kWh on %3$s.</string>
+    <string name="chart_gauge">Average 15-minute power %1$s kW, that is %2$s percent of the agreed power of %3$s kW.</string>
+</resources>

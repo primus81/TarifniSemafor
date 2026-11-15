@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Moj Elektro connection screen -->
+    <string name="me_title">Moj Elektro</string>
+    <string name="me_subtitle">Povezava tvojega merilnega mesta</string>
+    <string name="me_back_settings">Nazaj na nastavitve</string>
+    <string name="me_intro">Povezava je neobvezna; aplikacija brez nje deluje enako. Z njo lahko aplikacija iz portala Moj Elektro prebere podatke tvojega merilnega mesta in ti v zavihku Semafor porabe pokaže porabo po časovnih blokih, 15-minutne konice ob dogovorjeni moči in, če jo imaš, oddano energijo.</string>
+    <string name="me_privacy_heading">Zasebnost</string>
+    <string name="me_privacy_text">Žeton in EIMM sta shranjena samo v tem telefonu, šifrirana s ključem, ki ne zapusti varne shrambe telefona. Aplikacija ju pošilja samo uradnemu strežniku Moj Elektro (api.informatika.si), nikoli nikomur drugemu. Podatki tvojega merilnega mesta ostanejo v telefonu (meritve so shranjene šifrirane in se izbrišejo ob prekinitvi povezave). Žeton omogoča samo branje; kadarkoli ga lahko prekličeš na mojelektro.si.</string>
+    <string name="me_delay_heading">Podatki niso v realnem času</string>
+    <string name="me_delay_text">Moj Elektro objavi merilne podatke z zamikom, običajno približno en dan. Aplikacija zato nikoli ne prikazuje tvoje trenutne porabe.</string>
+    <string name="me_show_usage">Prikaži mojo porabo</string>
+    <string name="me_not_official">Aplikacija Tarifni semafor ni uradna aplikacija portala Moj Elektro.</string>
+    <string name="me_connection_heading">Povezava</string>
+    <string name="me_connected">Povezano merilno mesto: %1$s</string>
+    <string name="me_checking">Preverjam …</string>
+    <string name="me_verify">Preveri povezavo</string>
+    <string name="me_disconnect">Prekini povezavo</string>
+    <string name="me_disconnect_note">Prekinitev izbriše žeton in EIMM iz telefona. Žeton na mojelektro.si s tem ni preklican.</string>
+    <string name="me_connect_heading">Poveži merilno mesto</string>
+    <string name="me_token">Žeton API</string>
+    <string name="me_token_placeholder">Prilepi žeton</string>
+    <string name="me_show_token">Pokaži žeton</string>
+    <string name="me_eimm">EIMM (enotni identifikator merilnega mesta)</string>
+    <string name="me_eimm_spoken">EIMM, enotni identifikator merilnega mesta</string>
+    <string name="me_eimm_placeholder">npr. 3-1234567</string>
+    <string name="me_where">Žeton ustvariš na mojelektro.si v razdelku API storitve. EIMM najdeš na mojelektro.si med podatki merilnega mesta.</string>
+    <string name="me_open_portal">Odpri mojelektro.si</string>
+    <string name="me_save">Preveri in shrani povezavo</string>
+    <string name="me_input_token">Vnesi žeton API (brez presledkov), kot ga prikaže mojelektro.si.</string>
+    <string name="me_input_eimm">EIMM mora imeti obliko številka-številka, npr. 3-1234567.</string>
+    <string name="me_disconnected">Povezava je prekinjena. Žeton in EIMM sta izbrisana iz telefona.</string>
+    <string name="me_ok">Povezava deluje. Merilno mesto %1$s.</string>
+    <string name="me_ok_points">Povezava deluje. Merilno mesto %1$s, merilne točke: %2$d.</string>
+    <string name="me_ok_15_yes">" Merilno mesto ima 15-minutne meritve."</string>
+    <string name="me_ok_15_no">" Merilno mesto nima 15-minutnih meritev."</string>
+
+    <!-- Moj Elektro errors -->
+    <string name="me_err_invalid">Strežnik Moj Elektro je zavrnil zahtevo. Preveri vnesene podatke.</string>
+    <string name="me_err_invalid_code">Strežnik Moj Elektro je zavrnil zahtevo. Preveri vnesene podatke. (koda %1$s)</string>
+    <string name="me_err_unauthorized">Žeton ni bil sprejet. Preveri, ali si ga kopiral v celoti in ali je še veljaven.</string>
+    <string name="me_err_forbidden">Žeton ne omogoča dostopa do tega merilnega mesta. Preveri žeton in EIMM.</string>
+    <string name="me_err_not_found">Merilnega mesta s tem EIMM ni mogoče najti. Preveri EIMM.</string>
+    <string name="me_err_server">Strežnik Moj Elektro trenutno ne odgovarja pravilno (napaka %1$d). Poskusi pozneje.</string>
+    <string name="me_err_network">Povezava s strežnikom Moj Elektro ni uspela. Preveri internetno povezavo.</string>
+    <string name="me_err_timeout">Strežnik Moj Elektro ni odgovoril pravočasno. Poskusi znova čez nekaj minut.</string>
+    <string name="me_err_response">Odgovor strežnika Moj Elektro ni v pričakovani obliki. Poskusi pozneje.</string>
+    <string name="me_err_not_connected">Merilno mesto ni povezano.</string>
+    <string name="me_err_storage">Shranjene povezave ni bilo mogoče prebrati, zato je izbrisana. Poveži merilno mesto znova.</string>
+
+    <!-- Usage (Semafor porabe) -->
+    <string name="usage_title">Semafor porabe</string>
+    <string name="usage_subtitle">Tvoja poraba (Moj Elektro) ob časovnih blokih (uro.si)</string>
+    <string name="usage_onboarding_title">Poveži svoje merilno mesto</string>
+    <string name="usage_onboarding_text">Semafor porabe pokaže tvojo 15-minutno moč ob uradnih časovnih blokih, konice ob dogovorjeni moči in porabo po blokih. Potrebuješ žeton API s portala Moj Elektro in EIMM. Vse ostane šifrirano v telefonu.</string>
+    <string name="usage_onboarding_step1">1. Na mojelektro.si ustvari žeton API (samo branje).</string>
+    <string name="usage_onboarding_step2">2. V Nastavitvah izberi Povezava Moj Elektro in prilepi žeton ter EIMM.</string>
+    <string name="usage_onboarding_step3">3. Vrni se sem: graf se pripravi v nekaj sekundah.</string>
+    <string name="usage_onboarding_button">Odpri nastavitve povezave</string>
+    <string name="usage_loading">Nalagam …</string>
+    <string name="usage_loading_readings">Prenašam meritve z Moj Elektro …</string>
+    <string name="usage_loading_agreed">Prenašam dogovorjeno moč …</string>
+    <string name="usage_loading_blocks">Pripravljam časovne bloke (%1$d/%2$d) …</string>
+    <string name="usage_loading_note">Prvo nalaganje lahko traja nekaj sekund: aplikacija prenese meritve in uradne časovne bloke za vsak dan.</string>
+    <string name="usage_eimm_label">Merilno mesto (EIMM)</string>
+    <string name="usage_fresh">Osveženo</string>
+    <string name="usage_stored">Shranjeno</string>
+    <string name="usage_agreed">Dogovorjena moč</string>
+    <string name="usage_agreed_missing">Moj Elektro za tvoje merilno mesto ne navaja veljavne dogovorjene moči.</string>
+    <string name="usage_chip_now">zdaj</string>
+    <string name="usage_chip_spoken">%1$d. blok%2$s: %3$s</string>
+    <string name="usage_chip_spoken_now">, velja zdaj</string>
+    <string name="usage_chip_kw_spoken">%1$s kilovata</string>
+    <string name="usage_no_data">ni podatka</string>
+    <string name="usage_last_day">"Zadnji popoln dan: %1$s. "</string>
+    <string name="usage_freshness">%1$sPreneseno %2$s. Moj Elektro objavi meritve z zamikom, običajno približno en dan, zato tu ni tvoje trenutne porabe.</string>
+    <string name="usage_privacy">Žeton API in EIMM sta šifrirana s ključem v varni shrambi telefona (Android Keystore) in ne zapustita telefona, razen do uradnega strežnika Moj Elektro. Meritve so shranjene šifrirane. Povezavo in vse shranjene meritve lahko kadar koli izbrišeš.</string>
+    <string name="usage_manage">Upravljaj povezavo</string>
+    <string name="usage_cache_after_error">Osvežitev ni uspela, zato so prikazani shranjeni podatki.</string>
+    <string name="usage_label_unknown">Časovnih oznak 15-minutnih meritev ni bilo mogoče zanesljivo razvrstiti, zato meritve niso razdeljene po časovnih blokih.</string>
+    <string name="usage_hero_title">Tvoja moč in časovni bloki</string>
+    <string name="usage_hero_hint">Dotakni se grafa ali podrsaj po njem in preveri vsako četrturo.</string>
+    <string name="usage_no_15min">Za izbrano obdobje še ni 15-minutnih podatkov.</string>
+    <string name="usage_day_total">%1$s · skupaj %2$s kWh</string>
+    <string name="usage_day_incomplete">" · dan še ni popoln"</string>
+    <string name="usage_legend_agreed">dogovorjena moč</string>
+    <string name="usage_legend_90" formatted="false">90 %</string>
+    <string name="usage_legend_over">presežek</string>
+    <string name="usage_peak_of_day">" · najvišja konica dneva"</string>
+    <string name="usage_power_price">Postavka za moč v tem bloku: %1$s €/kW/mesec (cenik SODO).</string>
+    <string name="usage_prev">Prejšnja četrtura</string>
+    <string name="usage_next">Naslednja četrtura</string>
+    <string name="usage_peak">Konica</string>
+    <string name="usage_peak_spoken">Na najvišjo konico dneva</string>
+    <string name="usage_peaks_heading">Dnevne 15-minutne konice</string>
+    <string name="usage_peaks_none">V izbranem obdobju še ni 15-minutnih podatkov.</string>
+    <string name="usage_legend_over_100" formatted="false">nad 100 %</string>
+    <string name="usage_legend_over_90" formatted="false">nad 90 %</string>
+    <string name="usage_peaks_explain">Stolpec je najvišja četrtura dneva kot delež dogovorjene moči njenega bloka. Dotakni se dneva za prikaz v glavnem grafu. Prag 90 %% je samo opozorilo aplikacije.</string>
+    <string name="usage_peaks_closest">Najbližje dogovorjeni moči: %1$s ob %2$s, %3$s kW v %4$s. bloku. %5$s</string>
+    <string name="usage_peaks_over_days">Dogovorjena moč je bila presežena v %1$d od %2$d dni.</string>
+    <string name="usage_blocks_heading">Poraba po časovnih blokih</string>
+    <plurals name="usage_range_days">
+        <item quantity="one">%1$d dan</item>
+        <item quantity="two">%1$d dneva</item>
+        <item quantity="few">%1$d dnevi</item>
+        <item quantity="other">%1$d dni</item>
+    </plurals>
+    <string name="usage_no_period_data">V izbranem obdobju ni 15-minutnih podatkov.</string>
+    <plurals name="usage_blocks_total">
+        <item quantity="one">Skupaj %1$s kWh v %2$d dnevu.</item>
+        <item quantity="two">Skupaj %1$s kWh v %2$d dneh.</item>
+        <item quantity="few">Skupaj %1$s kWh v %2$d dneh.</item>
+        <item quantity="other">Skupaj %1$s kWh v %2$d dneh.</item>
+    </plurals>
+    <string name="usage_share_spoken">%1$d. blok: %2$s kilovatnih ur, %3$s odstotkov.</string>
+    <string name="usage_production_heading">Prejeta in oddana energija</string>
+    <string name="usage_production_line">%1$s · prejeto %2$s kWh, oddano %3$s kWh</string>
+    <string name="usage_legend_import">prejeto (A+)</string>
+    <string name="usage_legend_export">oddano (A-)</string>
+    <string name="usage_details_heading">Podrobnosti Moj Elektro</string>
+    <string name="usage_table_title">Moč po časovnih blokih (zadnjih %1$d dni)</string>
+    <string name="usage_table_agreed">Dogovorjena %1$s</string>
+    <string name="usage_table_now">" · velja zdaj"</string>
+    <string name="usage_table_peak">Najvišja %1$s kW (%2$s ob %3$s)</string>
+    <string name="usage_table_no_quarters">V obdobju ni bilo četrtur v tem bloku.</string>
+    <string name="usage_table_no_use">Ni porabe.</string>
+    <string name="usage_table_rate">Postavka za moč: %1$s €/kW/mesec</string>
+    <string name="usage_table_footer">Postavke so iz vgrajenega cenika SODO (brez DDV), dogovorjena moč iz Moj Elektro.</string>
+    <string name="usage_registers_title">Registri v obdobju</string>
+    <string name="usage_reg_import">Prejeta energija (A+)</string>
+    <string name="usage_reg_export">Oddana energija (A-)</string>
+    <string name="usage_reg_count">15-minutnih meritev</string>
+    <string name="usage_reg_missing">Meritev brez vrednosti</string>
+    <string name="usage_reg_flagged">Meritev z oznako stanja</string>
+    <string name="usage_reg_label">Časovna oznaka meritve</string>
+    <string name="usage_reg_label_start">začetek četrture</string>
+    <string name="usage_reg_label_end">konec četrture</string>
+    <string name="usage_reg_label_unknown">ni zanesljivo določena</string>
+    <string name="usage_reg_agreed_read">Dogovorjena moč prebrana</string>
+    <string name="usage_reg_explain">Oznako stanja doda Moj Elektro (npr. ocenjena ali nadomestna vrednost). Ali časovna oznaka pomeni začetek ali konec četrture, aplikacija ugotovi iz samih podatkov (primerja jih z dnevnimi stanji števca).</string>
+    <string name="usage_help_agreed_q">Kaj je dogovorjena moč?</string>
+    <string name="usage_help_agreed_a">Moč, ki jo ima tvoje merilno mesto dogovorjeno za posamezen časovni blok. Podatek prebere aplikacija iz Moj Elektro. Postavka za moč se obračuna glede na dogovorjeno (in morebitno preseženo) moč v bloku, ne glede na porabljene kWh.</string>
+    <string name="usage_help_power_q">Kako se izračuna moč četrture?</string>
+    <string name="usage_help_power_a">Števec zapiše energijo vsake četrture v kWh. Povprečna moč te četrture je energija, deljena s četrt ure (kWh × 4).</string>
+    <string name="usage_help_blocks_q">Od kod so časovni bloki in barve?</string>
+    <string name="usage_help_blocks_a">Za vsak pretekli dan aplikacija vpraša uradni vir uro.si, kateri blok je veljal ob posamezni uri. Pravila blokov niso vpisana v aplikacijo. Barve so iz uradne tabele uro.si za tekoče leto.</string>
+    <string name="usage_help_delay_q">Zakaj ni današnjih podatkov?</string>
+    <string name="usage_help_delay_a">Moj Elektro objavi meritve z zamikom, običajno približno en dan. Trenutno veljavni blok vidiš na prvi strani.</string>
+    <string name="usage_footer">Preneseno %1$s. Časovni bloki so iz uradnih podatkov (uro.si). Izračuni so informativni in ne nadomeščajo računa.</string>
+    <string name="usage_power_over">Nad dogovorjeno močjo bloka: %1$s dogovorjene moči.</string>
+    <string name="usage_power_near">Blizu dogovorjene moči bloka: %1$s.</string>
+    <string name="usage_power_safe">Varno pod dogovorjeno močjo bloka: %1$s.</string>
+    <string name="usage_power_unknown">Dogovorjena moč za ta interval ni znana.</string>
+    <string name="usage_block_unknown">Časovni blok tega intervala ni znan.</string>
+    <string name="usage_block_dear">%1$d. blok je med dražjimi bloki (1 = najdražji). Porabo, ki ni nujna, lahko premakneš v blok z višjo številko.</string>
+    <string name="usage_block_middle">3. blok je srednji blok.</string>
+    <string name="usage_block_cheap">%1$d. blok je med cenejšimi bloki (5 = najcenejši).</string>
+    <string name="usage_interval_summary">%1$s kW (%2$s kWh v 15 minutah)%3$s%4$s.</string>
+    <string name="usage_interval_block">, %1$d. blok</string>
+    <string name="usage_interval_agreed">, dogovorjena %1$s kW</string>
+    <plurals name="usage_verdict_over">
+        <item quantity="one">Presežena v %1$d četrturi (najvišja %2$s).</item>
+        <item quantity="two">Presežena v %1$d četrturah (najvišja %2$s).</item>
+        <item quantity="few">Presežena v %1$d četrturah (najvišja %2$s).</item>
+        <item quantity="other">Presežena v %1$d četrturah (najvišja %2$s).</item>
+    </plurals>
+    <plurals name="usage_verdict_near">
+        <item quantity="one">Nad 90 %% v %1$d četrturi (najvišja %2$s).</item>
+        <item quantity="two">Nad 90 %% v %1$d četrturah (najvišja %2$s).</item>
+        <item quantity="few">Nad 90 %% v %1$d četrturah (najvišja %2$s).</item>
+        <item quantity="other">Nad 90 %% v %1$d četrturah (najvišja %2$s).</item>
+    </plurals>
+    <string name="usage_verdict_safe">Pod 90 %% ves dan (najvišja %1$s).</string>
+    <string name="usage_verdict_unknown">Dogovorjena moč ni znana.</string>
+    <plurals name="usage_block_over">
+        <item quantity="one">Presežena v %1$d četrturi.</item>
+        <item quantity="two">Presežena v %1$d četrturah.</item>
+        <item quantity="few">Presežena v %1$d četrturah.</item>
+        <item quantity="other">Presežena v %1$d četrturah.</item>
+    </plurals>
+
+    <!-- Chart descriptions (TalkBack) -->
+    <string name="chart_combined">Graf porabe in časovnih blokov dne %1$s. %2$s%3$s Za posamezne četrture uporabi gumba pod grafom.</string>
+    <plurals name="chart_over_quarters">
+        <item quantity="one">Nad dogovorjeno močjo: %1$d četrtura.</item>
+        <item quantity="two">Nad dogovorjeno močjo: %1$d četrturi.</item>
+        <item quantity="few">Nad dogovorjeno močjo: %1$d četrture.</item>
+        <item quantity="other">Nad dogovorjeno močjo: %1$d četrtur.</item>
+    </plurals>
+    <string name="chart_combined_peak">"Najvišja povprečna moč %1$s kW ob %2$s. "</string>
+    <string name="chart_peaks">Dnevne 15-minutne konice, %1$d dni. Dni s preseženo dogovorjeno močjo: %2$d, dni nad 90 odstotkov: %3$d.</string>
+    <string name="chart_daily_blocks">Poraba po dnevih in časovnih blokih, %1$d dni, skupaj %2$s kWh, od tega v blokih 1 in 2 %3$s kWh.</string>
+    <string name="chart_production">Prejeta energija %1$s kWh in oddana energija %2$s kWh dne %3$s.</string>
+    <string name="chart_gauge">Povprečna 15-minutna moč %1$s kW, to je %2$s odstotkov dogovorjene moči %3$s kW.</string>
+</resources>

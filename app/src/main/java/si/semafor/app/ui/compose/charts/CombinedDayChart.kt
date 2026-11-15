@@ -28,13 +28,18 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import si.semafor.app.R
+import si.semafor.app.ui.compose.LocalLang
+import si.semafor.app.ui.compose.currentLocale
 import si.semafor.app.SloTime
 import si.semafor.app.mojelektro.DayProfile
 import si.semafor.app.mojelektro.PowerLevel
 import si.semafor.app.mojelektro.UsageAnalysis
 import si.semafor.app.ui.compose.theme.AppColors
 
-private val UnknownBlock = Color(0xFF888888)
 private val ChartLeft = 34.dp
 
 /**
@@ -59,15 +64,21 @@ fun CombinedDayChart(
     val currentSelected by rememberUpdatedState(selected)
     val points = profile.intervals
     val segments = remember(profile) { UsageAnalysis.blockSegments(profile) }
-    val summary = remember(profile) {
-        val peak = profile.peakIndex?.let { points[it] }
-        val over = points.count { it.level == PowerLevel.OVER }
-        buildString {
-            append("Graf porabe in časovnih blokov dne ${SloTime.formatDate(points.firstOrNull()?.startMillis ?: 0L)}. ")
-            peak?.let { append("Najvišja povprečna moč ${fmt(it.kw)} kW ob ${SloTime.formatHm(it.startMillis)}. ") }
-            append("Nad dogovorjeno močjo: $over četrtur. Za posamezne četrture uporabi gumba pod grafom.")
-        }
-    }
+    val locale = currentLocale
+    val lang = LocalLang.current
+    val peakPoint = profile.peakIndex?.let { points[it] }
+    val peakText = peakPoint?.let {
+        stringResource(R.string.chart_combined_peak, fmt(it.kw, 2, locale), SloTime.formatHm(it.startMillis))
+    } ?: ""
+    val summary = stringResource(
+        R.string.chart_combined,
+        SloTime.formatDate(points.firstOrNull()?.startMillis ?: 0L, lang),
+        peakText,
+        points.count { it.level == PowerLevel.OVER }.let { pluralStringResource(R.plurals.chart_over_quarters, it, it) }
+    )
+    // Theme colours, read here (the drawing below is not composable).
+    val axisColor = AppColors.TextSecondary
+    val ink = MaterialTheme.colorScheme.onSurface
 
     // Selects the interval under x; a light tick when the finger enters another block or reaches the day's peak.
     fun selectAt(x: Float, left: Float, width: Float) {
@@ -115,11 +126,11 @@ fun CombinedDayChart(
                 ) * 1.15
                 fun y(kw: Double) = (bottom - (kw / maxKw) * (bottom - top)).toFloat()
 
-                val labelStyle = TextStyle(fontSize = 10.sp, color = AppColors.TextSecondary)
-                val grid = AppColors.TextSecondary.copy(alpha = 0.25f)
+                val labelStyle = TextStyle(fontSize = 10.sp, color = axisColor)
+                val grid = axisColor.copy(alpha = 0.25f)
                 val yLabels = listOf(0.5, 1.0).map { f ->
                     val v = maxKw / 1.15 * f
-                    Triple(y(v), measurer.measure(fmt(v, 1), labelStyle), v)
+                    Triple(y(v), measurer.measure(fmt(v, 1, locale), labelStyle), v)
                 }
                 val unit = measurer.measure("kW", labelStyle)
                 val hourLabels = points.mapIndexedNotNull { i, p ->
@@ -145,7 +156,7 @@ fun CombinedDayChart(
                 onDrawBehind {
                     // Block bands (background) and the block strip under the bars: the URO schedule of the day.
                     for (s in segments) {
-                        val color = s.blockId?.let(::blockColor) ?: UnknownBlock
+                        val color = s.blockId?.let(::blockColor) ?: UnknownColor
                         val x0 = left + s.fromIndex * slot
                         val w = (s.toIndexExclusive - s.fromIndex) * slot
                         drawRect(color.copy(alpha = 0.10f), Offset(x0, top), Size(w, bottom - top))
@@ -162,7 +173,7 @@ fun CombinedDayChart(
                     val sel = currentSelected().coerceIn(0, (points.size - 1).coerceAtLeast(0))
                     // Bars in the colour of their block; the selected one fully opaque.
                     points.forEachIndexed { i, p ->
-                        val color = p.blockId?.let(::blockColor) ?: UnknownBlock
+                        val color = p.blockId?.let(::blockColor) ?: UnknownColor
                         val yy = y(p.kw)
                         drawRoundRect(
                             color.copy(alpha = if (i == sel) 1f else 0.78f),
@@ -174,11 +185,11 @@ fun CombinedDayChart(
                         if (p.level == PowerLevel.OVER) {
                             val capTop = y(p.kw)
                             val capBottom = y(p.agreedKw ?: p.kw)
-                            drawRect(OverBar, Offset(left + i * slot + slot * 0.12f, capTop), Size(slot * 0.76f, capBottom - capTop))
+                            drawRect(AppColors.Over, Offset(left + i * slot + slot * 0.12f, capTop), Size(slot * 0.76f, capBottom - capTop))
                         }
                     }
-                    drawPath(nearPath, AppColors.Warning.copy(alpha = 0.8f), style = Stroke(1.dp.toPx(), pathEffect = dots))
-                    drawPath(agreedPath, Color.White, style = Stroke(1.5.dp.toPx(), pathEffect = dash))
+                    drawPath(nearPath, AppColors.Near.copy(alpha = 0.9f), style = Stroke(1.dp.toPx(), pathEffect = dots))
+                    drawPath(agreedPath, ink, style = Stroke(1.5.dp.toPx(), pathEffect = dash))
 
                     for ((i, layout) in hourLabels) {
                         val cx = left + i * slot
@@ -188,16 +199,16 @@ fun CombinedDayChart(
 
                     // Peak marker.
                     profile.peakIndex?.let { i ->
-                        drawCircle(Color.White, 3.dp.toPx(), Offset(left + i * slot + slot / 2, y(points[i].kw) - 6.dp.toPx()))
+                        drawCircle(ink, 3.dp.toPx(), Offset(left + i * slot + slot / 2, y(points[i].kw) - 6.dp.toPx()))
                     }
 
                     // Scrub cursor.
                     if (points.isNotEmpty()) {
                         val p = points[sel]
                         val cx = left + sel * slot + slot / 2
-                        drawLine(Color.White.copy(alpha = 0.9f), Offset(cx, top), Offset(cx, bottom), strokeWidth = 1.5.dp.toPx())
-                        drawCircle(Color.White, 5.dp.toPx(), Offset(cx, y(p.kw)))
-                        drawCircle(p.blockId?.let(::blockColor) ?: UnknownBlock, 3.dp.toPx(), Offset(cx, y(p.kw)))
+                        drawLine(ink.copy(alpha = 0.9f), Offset(cx, top), Offset(cx, bottom), strokeWidth = 1.5.dp.toPx())
+                        drawCircle(ink, 5.dp.toPx(), Offset(cx, y(p.kw)))
+                        drawCircle(p.blockId?.let(::blockColor) ?: UnknownColor, 3.dp.toPx(), Offset(cx, y(p.kw)))
                     }
                 }
             }

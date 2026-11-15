@@ -66,19 +66,29 @@ class EstimateTest {
 
     @Test
     fun noteExplainsEveryOutcome() {
-        assertEquals("Preveri vnos: uporabi samo številke, npr. 5,5.", estimateNote(Estimate.InvalidInput))
+        assertEquals("Preveri vnos: uporabi samo številke, npr. 5,5.", TestStrings.sl(estimateNote(Estimate.InvalidInput)))
         assertEquals(
             "Za izbrano sezono v aplikaciji še ni uradnega cenika SODO, zato izračun ni mogoč.",
-            estimateNote(Estimate.NoPriceList)
+            TestStrings.sl(estimateNote(Estimate.NoPriceList))
         )
         val ready = TariffCalculator.estimate(Season.HIGH, today, true, "5", noBlocks, same("100"))
-        val note = estimateNote(ready)
+        val note = TestStrings.sl(estimateNote(ready))
         assertTrue(note, note.contains("velja od 1. 11. 2026 do 31. 12. 2026."))
         assertTrue(note, note.contains("70 %")) // the note of the official list is passed on
         assertTrue(note, note.contains("Skupna poraba: 500 kWh."))
         assertTrue(note, note.contains("z DDV 22 %"))
         assertFalse(note, note.contains("Danes ta cenik ne velja"))
         val expired = TariffCalculator.estimate(Season.HIGH, LocalDate.of(2027, 3, 15), true, "5", noBlocks, same("100"))
-        assertTrue(estimateNote(expired).contains("Danes ta cenik ne velja"))
+        assertTrue(TestStrings.sl(estimateNote(expired)).contains("Danes ta cenik ne velja"))
+    }
+
+    @Test
+    fun noteInEnglish() {
+        val ready = TariffCalculator.estimate(Season.HIGH, today, true, "5", noBlocks, same("100"))
+        val note = TestStrings.en(estimateNote(ready, AppSettings.LANGUAGE_EN))
+        assertTrue(note, note.contains("valid from 1 Nov 2026 to 31 Dec 2026."))
+        assertTrue(note, note.contains("70 % of the target power rate"))
+        assertTrue(note, note.contains("Total consumption: 500 kWh."))
+        assertTrue(note, note.contains("with 22 % VAT"))
     }
 }

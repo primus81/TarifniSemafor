@@ -1,6 +1,8 @@
 package si.semafor.app.mojelektro
 
 import android.content.Context
+import si.semafor.app.R
+import si.semafor.app.UiText
 import java.time.LocalDate
 
 /** Checks of what the user typed (pure, unit tested). The API's own rules are used, nothing is guessed. */
@@ -219,26 +221,18 @@ class MojElektroRepository(context: Context) {
         }
 }
 
-/** Slovenian explanation of an error for the user (second person singular). Pure, unit tested. */
-internal fun mojElektroErrorMessage(error: MojElektroError): String = when (error) {
+/** Explanation of an error for the user (second person singular), resolved in the app's language. Pure, unit tested. */
+internal fun mojElektroErrorMessage(error: MojElektroError): UiText = when (error) {
     is MojElektroError.InvalidRequest ->
-        "Strežnik Moj Elektro je zavrnil zahtevo. Preveri vnesene podatke." +
-            (error.code?.let { " (koda $it)" } ?: "")
+        error.code?.let { UiText.res(R.string.me_err_invalid_code, it) } ?: UiText.res(R.string.me_err_invalid)
 
-    MojElektroError.Unauthorized ->
-        "Žeton ni bil sprejet. Preveri, ali si ga kopiral v celoti in ali je še veljaven."
-
-    MojElektroError.Forbidden ->
-        "Žeton ne omogoča dostopa do tega merilnega mesta. Preveri žeton in EIMM."
-
-    MojElektroError.NotFound -> "Merilnega mesta s tem EIMM ni mogoče najti. Preveri EIMM."
-    is MojElektroError.Server ->
-        "Strežnik Moj Elektro trenutno ne odgovarja pravilno (napaka ${error.httpStatus}). Poskusi pozneje."
-
-    MojElektroError.Network -> "Povezava s strežnikom Moj Elektro ni uspela. Preveri internetno povezavo."
-    MojElektroError.Timeout -> "Strežnik Moj Elektro ni odgovoril pravočasno. Poskusi znova čez nekaj minut."
-    MojElektroError.InvalidResponse -> "Odgovor strežnika Moj Elektro ni v pričakovani obliki. Poskusi pozneje."
-    MojElektroError.NotConnected -> "Merilno mesto ni povezano."
-    MojElektroError.StorageUnavailable ->
-        "Shranjene povezave ni bilo mogoče prebrati, zato je izbrisana. Poveži merilno mesto znova."
+    MojElektroError.Unauthorized -> UiText.res(R.string.me_err_unauthorized)
+    MojElektroError.Forbidden -> UiText.res(R.string.me_err_forbidden)
+    MojElektroError.NotFound -> UiText.res(R.string.me_err_not_found)
+    is MojElektroError.Server -> UiText.res(R.string.me_err_server, error.httpStatus)
+    MojElektroError.Network -> UiText.res(R.string.me_err_network)
+    MojElektroError.Timeout -> UiText.res(R.string.me_err_timeout)
+    MojElektroError.InvalidResponse -> UiText.res(R.string.me_err_response)
+    MojElektroError.NotConnected -> UiText.res(R.string.me_err_not_connected)
+    MojElektroError.StorageUnavailable -> UiText.res(R.string.me_err_storage)
 }

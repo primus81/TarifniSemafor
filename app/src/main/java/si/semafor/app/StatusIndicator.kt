@@ -11,9 +11,6 @@ import androidx.core.app.NotificationManagerCompat
 /** The indicator may outlive the end of its block by this long, so the alarm has time to replace it. */
 internal const val STATUS_GRACE_MS = 2 * 60 * 1000L
 
-internal fun statusTitle(blockId: Int): String = "Trenutni časovni blok: $blockId"
-
-internal fun statusText(untilHm: String, nextBlockId: Int): String = "Do $untilHm · naslednji: $nextBlockId. blok"
 
 /** When the indicator disappears by itself if nothing replaced it: shortly after its block ended (at least 1 min). */
 internal fun statusTimeoutMs(untilBlockEndMs: Long): Long = (untilBlockEndMs + STATUS_GRACE_MS).coerceAtLeast(60_000L)
@@ -30,12 +27,13 @@ object StatusIndicator {
     private const val NOTIFICATION_ID = 2002
 
     fun createChannel(ctx: Context) {
+        val res = AppLanguage.localized(ctx)
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Trenutni blok v vrstici stanja",
+            res.getString(R.string.status_channel_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Ikona trenutnega časovnega bloka v vrstici stanja (po nastavitvah v aplikaciji)."
+            description = res.getString(R.string.status_channel_description)
             setShowBadge(false)
         }
         (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
@@ -51,10 +49,11 @@ object StatusIndicator {
 
         val nextStart = Repo.nextStartMillis(data.next.from)
         val untilEnd = nextStart - System.currentTimeMillis()
-        val summary = statusText(SloTime.formatHm(nextStart), data.next.id)
-        val details = StringBuilder(data.now.load)
+        val res = AppLanguage.localized(ctx)
+        val summary = res.getString(R.string.status_text, SloTime.formatHm(nextStart), data.next.id)
+        val details = StringBuilder(ApiTexts.translate(res, data.now.load))
         PriceLists.energyPrice(PriceLists.current(), data.now.id)?.let {
-            details.append(". Omrežnina za energijo: ").append(PriceLists.formatKwh(it))
+            details.append(res.getString(R.string.notif_energy_price, PriceLists.formatKwh(it, AppLanguage.locale(ctx))))
         }
 
         val open = PendingIntent.getActivity(
@@ -64,7 +63,7 @@ object StatusIndicator {
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_semafor)
             .setColor(Repo.color(data.now.id))
-            .setContentTitle(statusTitle(data.now.id))
+            .setContentTitle(res.getString(R.string.status_title, data.now.id))
             .setContentText(summary)
             .setStyle(NotificationCompat.BigTextStyle().bigText(summary + "\n" + details))
             .setContentIntent(open)

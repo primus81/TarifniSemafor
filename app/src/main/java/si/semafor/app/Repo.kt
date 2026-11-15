@@ -26,10 +26,6 @@ enum class DataState { FRESH, CACHED, UNVERIFIED }
 
 object Repo {
     private const val API = "https://www.uro.si/o/api/tarifnisemafor/v1/casovniblok"
-    private val COLORS = intArrayOf(
-        0xFF888888.toInt(), 0xFFE53935.toInt(), 0xFFF08A3C.toInt(),
-        0xFFFDD835.toInt(), 0xFF9CCC4F.toInt(), 0xFF43A047.toInt()
-    )
 
     private const val REUSE_WINDOW_MS = 30_000L
     private const val MAX_CACHE_AGE_MS = 12 * 3600 * 1000L
@@ -78,7 +74,8 @@ object Repo {
         }
     }
 
-    fun color(id: Int) = COLORS[id.coerceIn(0, 5)]
+    /** Colour of block [id] from the official uro.si table of the current year ([BlockPalette]); 0 = unknown. */
+    fun color(id: Int): Int = BlockPalette.color(id)
 
     fun getMemoryCachedBest(): BestBlock? = cachedBest
 
@@ -94,11 +91,11 @@ object Repo {
         return if (id != -1 && start > System.currentTimeMillis()) BestBlock(id, start) else null
     }
 
-    /** Vrne besedilo "ob HH:mm uri" če je danes, sicer "jutri ob HH:mm uri". */
-    fun whenText(startMillis: Long): String {
+    /** "ob HH:mm uri" if it is today, otherwise "jutri ob HH:mm uri" (in the language of [ctx]). */
+    fun whenText(ctx: Context, startMillis: Long): String {
         val timeStr = SloTime.formatHm(startMillis)
         val isToday = SloTime.dateOf(startMillis) == SloTime.today()
-        return if (isToday) "ob $timeStr uri" else "jutri ob $timeStr uri"
+        return ctx.getString(if (isToday) R.string.when_today else R.string.when_tomorrow, timeStr)
     }
 
     /** Izračuna millisekunde naslednjega začetka določene ure. */

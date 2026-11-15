@@ -9,13 +9,14 @@ class StatusIndicatorTest {
 
     @Test
     fun titleNamesTheCurrentBlock() {
-        for (id in 1..5) assertEquals("Trenutni časovni blok: $id", statusTitle(id))
+        for (id in 1..5) assertEquals("Trenutni časovni blok: $id", TestStrings.sl(R.string.status_title, id))
     }
 
     @Test
     fun textGivesTheTimeOfTheNextChangeAndTheNextBlock() {
-        assertEquals("Do 22:00 · naslednji: 4. blok", statusText("22:00", 4))
-        assertEquals("Do 06:00 · naslednji: 2. blok", statusText("06:00", 2))
+        assertEquals("Do 22:00 · naslednji: 4. blok", TestStrings.sl(R.string.status_text, "22:00", 4))
+        assertEquals("Until 22:00 · next: block 4", TestStrings.en(R.string.status_text, "22:00", 4))
+        assertEquals("Do 06:00 · naslednji: 2. blok", TestStrings.sl(R.string.status_text, "06:00", 2))
     }
 
     @Test

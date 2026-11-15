@@ -12,16 +12,11 @@ class HomeFormatTest {
     }
 
     @Test
-    fun blockCountdownSaysNowAtOrAfterTheChange() {
-        assertEquals("Sprememba časovnega bloka zdaj", HomeFormat.blockCountdown(0))
-        assertEquals("Sprememba časovnega bloka zdaj", HomeFormat.blockCountdown(-5000))
-        assertEquals("Sprememba časovnega bloka čez 0 h 1 min 0 s", HomeFormat.blockCountdown(60_000))
-    }
-
-    @Test
-    fun bestCountdown() {
-        assertEquals("(zdaj)", HomeFormat.bestCountdown(0))
-        assertEquals("(čez 2 h 0 min 0 s)", HomeFormat.bestCountdown(7_200_000))
+    fun countdownTextsInBothLanguages() {
+        val d = HomeFormat.duration(60_000)
+        assertEquals("Sprememba časovnega bloka čez 0 h 1 min 0 s", TestStrings.sl(R.string.home_countdown, d))
+        assertEquals("Next block change in 0 h 1 min 0 s", TestStrings.en(R.string.home_countdown, d))
+        assertEquals("(čez 2 h 0 min 0 s)", TestStrings.sl(R.string.home_best_countdown, HomeFormat.duration(7_200_000)))
     }
 
     @Test

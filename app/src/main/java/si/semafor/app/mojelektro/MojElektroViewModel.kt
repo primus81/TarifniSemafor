@@ -2,6 +2,8 @@ package si.semafor.app.mojelektro
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
+import si.semafor.app.R
+import si.semafor.app.UiText
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +16,7 @@ import kotlinx.coroutines.withContext
 
 /** A message under the connection form: success or error. */
 @Immutable
-data class MojElektroMessage(val text: String, val isError: Boolean)
+data class MojElektroMessage(val text: UiText, val isError: Boolean)
 
 /** What the Moj Elektro screen shows. */
 @Immutable
@@ -57,12 +59,12 @@ class MojElektroViewModel(app: Application) : AndroidViewModel(app) {
         val eimm = MojElektroInput.normalizeEimm(eimmText)
         val token = MojElektroInput.normalizeToken(tokenText)
         val inputError = when {
-            token == null -> "Vnesi žeton API (brez presledkov), kot ga prikaže mojelektro.si."
-            eimm == null -> "EIMM mora imeti obliko številka-številka, npr. 3-1234567."
+            token == null -> UiText.res(R.string.me_input_token)
+            eimm == null -> UiText.res(R.string.me_input_eimm)
             else -> null
         }
         if (inputError != null || token == null || eimm == null) {
-            _state.update { it.copy(message = MojElektroMessage(inputError ?: "", isError = true)) }
+            _state.update { it.copy(message = MojElektroMessage(inputError ?: UiText.res(R.string.me_input_token), isError = true)) }
             return
         }
         launchCheck { repository.connect(token, eimm) }
@@ -84,7 +86,7 @@ class MojElektroViewModel(app: Application) : AndroidViewModel(app) {
                 it.copy(
                     busy = false,
                     connectedEimm = null,
-                    message = MojElektroMessage("Povezava je prekinjena. Žeton in EIMM sta izbrisana iz telefona.", false)
+                    message = MojElektroMessage(UiText.res(R.string.me_disconnected), false)
                 )
             }
         }
@@ -106,15 +108,12 @@ class MojElektroViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 /** Confirmation after a successful check (pure, unit tested). */
-internal fun successText(point: MeteringPoint): String {
-    val sb = StringBuilder("Povezava deluje. Merilno mesto ${point.eimm}")
+internal fun successText(point: MeteringPoint): UiText {
     val count = point.measurementPoints.size
-    if (count > 0) sb.append(", merilne točke: ").append(count)
-    sb.append('.')
-    when (point.has15MinuteData) {
-        true -> sb.append(" Merilno mesto ima 15-minutne meritve.")
-        false -> sb.append(" Merilno mesto nima 15-minutnih meritev.")
-        null -> Unit
+    val first = if (count > 0) UiText.res(R.string.me_ok_points, point.eimm, count) else UiText.res(R.string.me_ok, point.eimm)
+    return when (point.has15MinuteData) {
+        true -> UiText.Concat(listOf(first, UiText.res(R.string.me_ok_15_yes)))
+        false -> UiText.Concat(listOf(first, UiText.res(R.string.me_ok_15_no)))
+        null -> first
     }
-    return sb.toString()
 }

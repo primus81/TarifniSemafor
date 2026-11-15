@@ -2,6 +2,8 @@ package si.semafor.app.mojelektro
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
+import si.semafor.app.R
+import si.semafor.app.UiText
 import si.semafor.app.DataState
 import si.semafor.app.Repo
 import si.semafor.app.SloTime
@@ -56,7 +58,7 @@ class UsageRepository(context: Context) {
 
     fun isConnected(): Boolean = repository.isConnected()
 
-    fun load(rangeDays: Int, force: Boolean, onProgress: (String) -> Unit): MojElektroResult<UsageData> {
+    fun load(rangeDays: Int, force: Boolean, onProgress: (UiText) -> Unit): MojElektroResult<UsageData> {
         val eimm = repository.connectedEimm() ?: return MojElektroResult.Failure(MojElektroError.NotConnected)
         val now = System.currentTimeMillis()
         val end = SloTime.today()
@@ -70,7 +72,7 @@ class UsageRepository(context: Context) {
         val snapshot = if (cached != null && covers && fresh && !force) {
             cached
         } else {
-            onProgress("Prenašam meritve z Moj Elektro …")
+            onProgress(UiText.res(R.string.usage_loading_readings))
             when (val f = repository.fifteenMinuteReadings(start, end)) {
                 is MojElektroResult.Failure -> {
                     if (cached == null || f.error == MojElektroError.NotConnected ||
@@ -90,7 +92,7 @@ class UsageRepository(context: Context) {
                     val (agreed, agreedTime) = if (freshAgreed != null) {
                         freshAgreed.agreed to freshAgreed.agreedFetchedAtMillis
                     } else {
-                        onProgress("Prenašam dogovorjeno moč …")
+                        onProgress(UiText.res(R.string.usage_loading_agreed))
                         when (val a = repository.currentAgreedPower(now)) {
                             is MojElektroResult.Success -> a.data to now
                             is MojElektroResult.Failure -> (cached?.agreed) to (cached?.agreedFetchedAtMillis ?: 0L)
@@ -109,7 +111,7 @@ class UsageRepository(context: Context) {
         rangeDays: Int,
         start: LocalDate,
         fromCacheAfterError: Boolean,
-        onProgress: (String) -> Unit
+        onProgress: (UiText) -> Unit
     ): UsageData {
         val codes = (repository.registerCodes() as? MojElektroResult.Success)?.data.orEmpty()
         fun series(of: MeterReadings, reg: ReadingRegister): List<Reading> =
@@ -125,7 +127,7 @@ class UsageRepository(context: Context) {
 
         val scheduleMap = if (label == IntervalLabel.UNKNOWN) emptyMap() else {
             schedules.forDates(byDate.keys) { done, total ->
-                onProgress("Pripravljam časovne bloke (${done + 1}/$total) …")
+                onProgress(UiText.res(R.string.usage_loading_blocks, done + 1, total))
             }
         }
         val lastDay = UsageAnalysis.lastCompleteDay(byDate)

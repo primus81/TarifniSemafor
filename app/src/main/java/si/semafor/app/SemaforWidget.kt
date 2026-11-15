@@ -85,6 +85,10 @@ class SemaforWidget : AppWidgetProvider() {
             val recent = info != null && Repo.isRecent(info)
             val lastUpdate = rawInfo?.time?.takeIf { it > 0L }
 
+            // Texts in the app's language (a widget is drawn without an Activity).
+            val res = AppLanguage.localized(ctx)
+            val lang = AppLanguage.current(ctx)
+            val locale = AppLanguage.locale(ctx)
             for (id in ids) {
                 val opts = mgr.getAppWidgetOptions(id)
                 val minWidth = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
@@ -98,10 +102,11 @@ class SemaforWidget : AppWidgetProvider() {
 
                 if (info == null) {
                     v.setInt(R.id.bg, "setColorFilter", Repo.color(0))
-                    v.setTextViewText(R.id.num, "Ni podatkov")
+                    v.setTextViewText(R.id.num, res.getString(R.string.widget_no_data))
                     v.setTextViewText(
                         R.id.hours,
-                        if (lastUpdate != null) "Zadnje: " + SloTime.formatStamp(lastUpdate) else "Preveri povezavo"
+                        if (lastUpdate != null) res.getString(R.string.widget_last, SloTime.formatStamp(lastUpdate, lang = lang))
+                        else res.getString(R.string.widget_check_connection)
                     )
                     v.setTextViewText(R.id.next_label, "")
                     v.setTextViewText(R.id.next_num, "")
@@ -113,10 +118,7 @@ class SemaforWidget : AppWidgetProvider() {
                         v.setTextViewText(R.id.best_time, "")
                         v.setViewVisibility(R.id.best_price, View.GONE)
                     }
-                    v.setContentDescription(
-                        R.id.root,
-                        "Tarifni semafor. Ni podatkov. Preveri internetno povezavo. Dotakni se za odprtje aplikacije."
-                    )
+                    v.setContentDescription(R.id.root, res.getString(R.string.widget_no_data_spoken))
                 } else {
                     val blockColor = Repo.color(info.now.id)
                     // Muted colour = stored data that was not verified recently.
@@ -126,41 +128,41 @@ class SemaforWidget : AppWidgetProvider() {
                         0.5f
                     )
                     v.setInt(R.id.bg, "setColorFilter", shownColor)
-                    v.setTextViewText(R.id.num, "${info.now.id}. blok")
+                    v.setTextViewText(R.id.num, res.getString(R.string.common_block, info.now.id))
 
                     val nextStart = Repo.nextStartMillis(info.next.from)
                     val changeTimeStr = SloTime.formatHm(nextStart)
-                    v.setTextViewText(R.id.hours, "do $changeTimeStr")
+                    v.setTextViewText(R.id.hours, res.getString(R.string.widget_until, changeTimeStr))
 
                     val curPrice = PriceLists.energyPrice(PriceLists.current(), info.now.id)
                     if (!recent) {
                         v.setTextViewText(
                             R.id.cur_price,
-                            "Stanje: " + SloTime.formatStamp(info.time)
+                            res.getString(R.string.widget_state, SloTime.formatStamp(info.time, lang = lang))
                         )
                         v.setViewVisibility(R.id.cur_price, View.VISIBLE)
                     } else if (curPrice != null) {
-                        v.setTextViewText(R.id.cur_price, PriceLists.formatKwh(curPrice))
+                        v.setTextViewText(R.id.cur_price, PriceLists.formatKwh(curPrice, locale))
                         v.setViewVisibility(R.id.cur_price, View.VISIBLE)
                     } else {
                         v.setViewVisibility(R.id.cur_price, View.GONE)
                     }
 
-                    v.setTextViewText(R.id.next_label, "Naslednji:")
-                    v.setTextViewText(R.id.next_num, "${info.next.id}. blok")
-                    v.setTextViewText(R.id.next_time, Repo.whenText(nextStart))
+                    v.setTextViewText(R.id.next_label, res.getString(R.string.widget_next))
+                    v.setTextViewText(R.id.next_num, res.getString(R.string.common_block, info.next.id))
+                    v.setTextViewText(R.id.next_time, Repo.whenText(res, nextStart))
 
                     if (!isSmall) {
-                        v.setTextViewText(R.id.best_label, "Najugodnejši")
+                        v.setTextViewText(R.id.best_label, res.getString(R.string.widget_best))
 
                         if (best != null) {
-                            v.setTextViewText(R.id.best_num, "${best.id}. blok")
-                            v.setTextViewText(R.id.best_time, Repo.whenText(best.startMillis))
+                            v.setTextViewText(R.id.best_num, res.getString(R.string.common_block, best.id))
+                            v.setTextViewText(R.id.best_time, Repo.whenText(res, best.startMillis))
                             val bestDate = SloTime.dateOf(best.startMillis)
                             val bestPrice =
                                 PriceLists.energyPrice(PriceLists.forDate(bestDate), best.id)
                             if (bestPrice != null && !compactHeight) {
-                                v.setTextViewText(R.id.best_price, PriceLists.formatKwh(bestPrice))
+                                v.setTextViewText(R.id.best_price, PriceLists.formatKwh(bestPrice, locale))
                                 v.setViewVisibility(R.id.best_price, View.VISIBLE)
                             } else {
                                 v.setViewVisibility(R.id.best_price, View.GONE)
@@ -174,14 +176,14 @@ class SemaforWidget : AppWidgetProvider() {
 
                     v.setContentDescription(
                         R.id.root,
-                        "Tarifni semafor. Zdaj velja ${info.now.id}. blok, do $changeTimeStr. " +
-                                "Naslednji je ${info.next.id}. blok, ${Repo.whenText(nextStart)}." +
-                                (if (recent) "" else " Prikazani so shranjeni podatki, stanje ${
-                                    SloTime.formatStamp(
-                                        info.time
-                                    )
-                                }.") +
-                                " Dotakni se za odprtje aplikacije."
+                        res.getString(
+                            R.string.widget_spoken,
+                            info.now.id,
+                            changeTimeStr,
+                            info.next.id,
+                            Repo.whenText(res, nextStart),
+                            if (recent) "" else res.getString(R.string.widget_spoken_stored, SloTime.formatStamp(info.time, lang = lang))
+                        )
                     )
                 }
 

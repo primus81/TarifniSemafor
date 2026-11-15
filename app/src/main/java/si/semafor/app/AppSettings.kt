@@ -1,6 +1,7 @@
 package si.semafor.app
 
 import android.content.Context
+import androidx.core.content.edit
 
 /**
  * All user-configurable settings in one place (SharedPreferences file "settings"), with their defaults.
@@ -18,6 +19,19 @@ object AppSettings {
     private const val KEY_STATUS_ICON = "status_icon_enabled"
     private const val KEY_PERMISSION_DENIED = "notif_perm_denied"
     private const val KEY_PERMISSION_ASKED = "notif_perm_asked"
+    private const val KEY_THEME = "theme_mode"
+    private const val KEY_LANGUAGE = "language"
+    private const val KEY_PRIVACY_SEEN = "privacy_notice_seen"
+    private const val KEY_ANALYTICS_CONSENT = "analytics_consent"
+
+    /** Follow the phone's light / dark setting (default). */
+    const val THEME_SYSTEM = 0
+    const val THEME_LIGHT = 1
+    const val THEME_DARK = 2
+
+    /** Languages of the app (BCP 47 tags). Slovenian is the default. */
+    const val LANGUAGE_SL = "sl"
+    const val LANGUAGE_EN = "en"
 
     /** Notify at every block change. */
     const val MODE_ALL = 0
@@ -60,6 +74,40 @@ object AppSettings {
 
     fun setPermissionAsked(ctx: Context, asked: Boolean) {
         prefs(ctx).edit().putBoolean(KEY_PERMISSION_ASKED, asked).apply()
+    }
+
+    /** [THEME_SYSTEM] (default), [THEME_LIGHT] or [THEME_DARK]. */
+    fun themeMode(ctx: Context): Int = prefs(ctx).getInt(KEY_THEME, THEME_SYSTEM)
+
+    fun setThemeMode(ctx: Context, mode: Int) {
+        prefs(ctx).edit { putInt(KEY_THEME, mode) }
+    }
+
+    /**
+     * Language chosen in the app ([LANGUAGE_SL] or [LANGUAGE_EN]); null = never chosen (Slovenian is used).
+     * Mirrors the per-app locale, so contexts without an Activity (widget, notifications) can use it as well.
+     */
+    fun language(ctx: Context): String? = prefs(ctx).getString(KEY_LANGUAGE, null)
+
+    fun setLanguage(ctx: Context, tag: String) {
+        prefs(ctx).edit { putString(KEY_LANGUAGE, tag) }
+    }
+
+    /** The privacy notice has been shown once (it opens by itself only at the first start). */
+    fun privacyNoticeSeen(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_PRIVACY_SEEN, false)
+
+    fun setPrivacyNoticeSeen(ctx: Context, seen: Boolean) {
+        prefs(ctx).edit { putBoolean(KEY_PRIVACY_SEEN, seen) }
+    }
+
+    /**
+     * The user's choice about usage analytics. Default: off. The app contains NO analytics today, so this choice sends
+     * nothing anywhere; it only records the answer for a possible future version.
+     */
+    fun analyticsConsent(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_ANALYTICS_CONSENT, false)
+
+    fun setAnalyticsConsent(ctx: Context, allowed: Boolean) {
+        prefs(ctx).edit { putBoolean(KEY_ANALYTICS_CONSENT, allowed) }
     }
 
     /** The block-change alarm is needed if either feature wants to be told when a block ends. */

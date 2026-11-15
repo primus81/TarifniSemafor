@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
@@ -19,11 +20,12 @@ internal const val MAX_LATENESS_MS = 30 * 60 * 1000L
  * is stated only when the previous block is known from the schedule that produced the alarm.
  * Blocks are ordered as elsewhere in the app: higher block number = cheaper (1 most expensive, 5 cheapest).
  */
-internal fun transitionMessage(newId: Int, previousId: Int, latenessMs: Long): String = when {
-    latenessMs > MAX_LATENESS_MS -> "Zdaj velja časovni blok $newId."
-    previousId in 1..5 && newId > previousId -> "Začel se je ugodnejši časovni blok $newId."
-    previousId in 1..5 && newId < previousId -> "Začel se je dražji časovni blok $newId."
-    else -> "Začel se je časovni blok $newId."
+@StringRes
+internal fun transitionMessage(newId: Int, previousId: Int, latenessMs: Long): Int = when {
+    latenessMs > MAX_LATENESS_MS -> R.string.notif_now
+    previousId in 1..5 && newId > previousId -> R.string.notif_cheaper
+    previousId in 1..5 && newId < previousId -> R.string.notif_dearer
+    else -> R.string.notif_started
 }
 
 /**
@@ -45,18 +47,17 @@ object Notifier {
     /** Creates all notification channels of the app: block change and status bar indicator. */
     fun createChannel(ctx: Context) {
         StatusIndicator.createChannel(ctx)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Menjava časovnega bloka",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description =
-                    "Obvestilo ob začetku novega časovnega bloka omrežnine (po nastavitvah v aplikaciji)."
-            }
-            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.createNotificationChannel(channel)
+        // Re-creating a channel with a new name renames it, so the names follow the app's language.
+        val res = AppLanguage.localized(ctx)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            res.getString(R.string.notif_channel_name),
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = res.getString(R.string.notif_channel_description)
         }
+        val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.createNotificationChannel(channel)
     }
 
     /**
@@ -128,13 +129,15 @@ object Notifier {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val headline = transitionMessage(info.now.id, previousId, latenessMs)
-        var details = info.now.load
+        // Texts in the app's language (a notification is built without an Activity).
+        val res = AppLanguage.localized(ctx)
+        val headline = res.getString(transitionMessage(info.now.id, previousId, latenessMs), info.now.id)
+        var details = ApiTexts.translate(res, info.now.load)
         val price = PriceLists.energyPrice(PriceLists.current(), info.now.id)
         if (price != null) {
-            details += ". Omrežnina za energijo: " + PriceLists.formatKwh(price)
+            details += res.getString(R.string.notif_energy_price, PriceLists.formatKwh(price, AppLanguage.locale(ctx)))
         }
-        if (recovered) details += ". Posodobljeno ob ponovni povezavi."
+        if (recovered) details += res.getString(R.string.notif_recovered)
 
         // The notification disappears when this block ends, so it never shows outdated information.
         val untilBlockEnd = Repo.nextStartMillis(info.next.from) - System.currentTimeMillis()
@@ -142,7 +145,7 @@ object Notifier {
         val builder = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_semafor)
             .setColor(Repo.color(info.now.id)) // colour of the current block
-            .setContentTitle("Tarifni Semafor")
+            .setContentTitle(res.getString(R.string.app_name))
             .setContentText(headline)
             .setStyle(NotificationCompat.BigTextStyle().bigText(headline + "\n" + details))
             .setContentIntent(pendingIntent)

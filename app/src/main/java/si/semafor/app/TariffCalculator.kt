@@ -132,36 +132,40 @@ object TariffCalculator {
         return if (v.isFinite() && v <= MAX_INPUT) v else null
     }
 
-    /** "1.234,56 €" in Slovenian formatting. */
-    fun formatEur(amount: BigDecimal): String =
-        String.format(LOCALE, "%,.2f", amount) + " €"
+    /** "1.234,56 €" in Slovenian formatting ([locale] for other languages). */
+    fun formatEur(amount: BigDecimal, locale: Locale = LOCALE): String =
+        String.format(locale, "%,.2f", amount) + " €"
 
     /** "1.234,5 kWh" style number without a unit, at most two decimals. */
-    fun formatNumber(value: BigDecimal): String =
-        String.format(LOCALE, "%,.2f", value).trimEnd('0').trimEnd(',')
+    fun formatNumber(value: BigDecimal, locale: Locale = LOCALE): String {
+        val decimal = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
+        return String.format(locale, "%,.2f", value).trimEnd('0').trimEnd(decimal)
+    }
 
     private fun BigDecimal.cents(): BigDecimal = setScale(2, RoundingMode.HALF_UP)
 }
 
-private val NOTE_DATE: java.time.format.DateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("d. M. yyyy")
+/** The explanation shown under the result of an [Estimate], in the language [lang] (AppSettings.LANGUAGE_*). */
+internal fun estimateNote(estimate: Estimate, lang: String = AppSettings.LANGUAGE_SL): UiText = when (estimate) {
+    Estimate.InvalidInput -> UiText.res(R.string.calc_note_invalid)
 
-/** The explanation shown under the result of an [Estimate] (Slovenian, second person singular). */
-internal fun estimateNote(estimate: Estimate): String = when (estimate) {
-    Estimate.InvalidInput -> "Preveri vnos: uporabi samo številke, npr. 5,5."
-
-    Estimate.NoPriceList ->
-        "Za izbrano sezono v aplikaciji še ni uradnega cenika SODO, zato izračun ni mogoč."
+    Estimate.NoPriceList -> UiText.res(R.string.calc_note_no_list)
 
     is Estimate.Ready -> {
         val list = estimate.cost.list
-        val notes = StringBuilder()
-        notes.append("Cenik SODO (skupina 0): velja od ${list.validFrom.format(NOTE_DATE)} ")
-        notes.append("do ${list.validTo.format(NOTE_DATE)}.")
-        if (estimate.notValidToday) notes.append(" Danes ta cenik ne velja, zato je izračun samo okviren.")
-        list.note?.let { notes.append('\n').append(it) }
-        notes.append("\nSkupna poraba: ${TariffCalculator.formatNumber(estimate.cost.totalKwh)} kWh. ")
-        notes.append("Izračun zajema samo omrežnino (moč in energijo) z DDV 22 %, ")
-        notes.append("brez trošarin, taks in drugih dajatev. Je informativen in ne nadomešča računa.")
-        notes.toString()
+        val parts = ArrayList<UiText>()
+        parts += UiText.res(
+            R.string.calc_note_list,
+            SloTime.formatLocalDate(list.validFrom, lang),
+            SloTime.formatLocalDate(list.validTo, lang)
+        )
+        if (estimate.notValidToday) parts += UiText.res(R.string.calc_note_not_today)
+        list.noteIn(lang)?.let { parts += UiText.Raw("\n$it") }
+        parts += UiText.Raw("\n")
+        parts += UiText.res(
+            R.string.calc_note_total,
+            TariffCalculator.formatNumber(estimate.cost.totalKwh, AppLanguage.localeOf(lang))
+        )
+        UiText.Concat(parts)
     }
 }

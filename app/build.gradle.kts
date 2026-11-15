@@ -60,11 +60,12 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
+    // Per-app language (Slovenian / English) on every Android version: AppCompatDelegate.setApplicationLocales.
+    implementation("androidx.appcompat:appcompat:1.7.1")
     // ViewModels of the screens (viewModelScope) and by viewModels().
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
     implementation("androidx.activity:activity-ktx:1.13.0")
@@ -84,4 +85,8 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // Real org.json for JVM unit tests (the Android stubs throw); test-only, not part of the app.
     testImplementation("org.json:json:20231013")
+}
+
+kotlin {
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }

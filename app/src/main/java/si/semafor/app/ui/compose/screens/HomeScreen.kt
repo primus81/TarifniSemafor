@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -53,8 +52,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.ColorUtils
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import si.semafor.app.Advice
+import si.semafor.app.ApiTexts
+import si.semafor.app.BlockPalette
+import si.semafor.app.ui.compose.LocalLang
+import si.semafor.app.ui.compose.currentLocale
+import si.semafor.app.ui.compose.components.HomeSkeleton
 import si.semafor.app.BestBlock
 import si.semafor.app.Block
 import si.semafor.app.DataState
@@ -92,20 +97,18 @@ fun HomeScreen(
     RefreshableScreen(refreshing = pullRefreshing, onRefresh = onPullRefresh) {
         when (state) {
             HomeUiState.Loading -> {
-                StateCard("Nalagam podatke …", "Pridobivam podatke o trenutnem časovnem bloku.")
-                RefreshButton(onRefresh)
+                HomeSkeleton()
             }
 
             is HomeUiState.Error -> {
                 val last = state.lastUpdate
                 val detail = if (last != null && last > 0L) {
-                    "Zadnja posodobitev: " + SloTime.formatDateTime(last) +
-                        "\nShranjeni podatki niso več veljavni, zato niso prikazani."
+                    stringResource(R.string.home_error_detail, SloTime.formatDateTime(last, LocalLang.current))
                 } else null
                 StateCard(
-                    "Podatkov trenutno ni mogoče preveriti.",
+                    stringResource(R.string.home_error_title),
                     detail,
-                    "Posodobitev trenutno ni mogoča. Preveri internetno povezavo."
+                    stringResource(R.string.home_error_warning)
                 )
                 RefreshButton(onRefresh)
             }
@@ -117,11 +120,17 @@ fun HomeScreen(
                 state.best?.let { BestBlockCard(it, nowMillis) }
 
                 SectionDivider()
-                AdviceSection("Priporočila zdaj", now, nowAdviceExpanded) { nowAdviceExpanded = it }
+                AdviceSection(stringResource(R.string.home_advice_now), now, nowAdviceExpanded) { nowAdviceExpanded = it }
                 SectionDivider()
-                AdviceSection("Priporočila za naslednji časovni blok", state.info.next, nextAdviceExpanded) {
+                AdviceSection(stringResource(R.string.home_advice_next), state.info.next, nextAdviceExpanded) {
                     nextAdviceExpanded = it
                 }
+                Text(
+                    text = stringResource(R.string.home_advice_source_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
 
                 if (DonationConfig.DONATIONS_ENABLED) {
                     SectionDivider(thickness = 2.dp)
@@ -136,11 +145,16 @@ fun HomeScreen(
 private fun CurrentBlockCard(block: Block, nextChangeMillis: Long, nowMillis: Long) {
     val background = Color(Repo.color(block.id))
     // Text colour follows the block colour: whichever of dark / white reads better on it (WCAG contrast).
-    val onCard = remember(block.id) { readableTextColor(background) }
-    val season = HomeFormat.seasonLabel(block.season)
     val spokenPrice = PriceLists.energyPrice(PriceLists.current(), block.id)
-        ?.let { " Omrežnina za energijo " + PriceLists.formatNumber(it) + " evra na kilovatno uro." }
+        ?.let { stringResource(R.string.home_card_price, PriceLists.formatNumber(it, currentLocale)) }
         ?: ""
+    // Dark text on every official block colour (contrast at least 4.5:1, checked by BlockPaletteTest).
+    val onCard = Color(BlockPalette.ON_BLOCK)
+    val context = LocalContext.current
+    val season = remember(block.season, LocalLang.current) { ApiTexts.translate(context, block.season) }
+    val load = remember(block.load, LocalLang.current) { ApiTexts.translate(context, block.load) }
+    val nextHm = SloTime.formatHm(nextChangeMillis)
+    val spoken = stringResource(R.string.home_card_description, block.id, load, block.from, block.to, season, spokenPrice, nextHm)
     // Must always stay on ONE line. The minimum is 10 sp; with a large system font it is lowered so that the longest
     // text ("čez 23 h 59 min 59 s") still fits instead of being cut off.
     val fontScale = LocalDensity.current.fontScale
@@ -155,23 +169,24 @@ private fun CurrentBlockCard(block: Block, nextChangeMillis: Long, nowMillis: Lo
             .background(background)
             .padding(horizontal = 20.dp, vertical = 16.dp)
             .clearAndSetSemantics {
-                contentDescription =
-                    "Trenutni časovni blok: ${block.id}. blok, ${block.load}, od ${block.from} do ${block.to} ure, " +
-                        "$season.$spokenPrice Naslednja sprememba ob ${SloTime.formatHm(nextChangeMillis)}."
+                contentDescription = spoken
             }
     ) {
         // Text label as well as colour: the active block is recognisable without relying on colour.
-        Text("Trenutni časovni blok", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = onCard)
+        Text(stringResource(R.string.home_current_block), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = onCard)
         BasicText(
-            text = "${block.id}. blok",
+            text = stringResource(R.string.common_block, block.id),
             style = TextStyle(color = onCard, fontWeight = FontWeight.Bold),
             maxLines = 1,
             autoSize = TextAutoSize.StepBased(minFontSize = 27.sp, maxFontSize = 43.sp, stepSize = 1.sp)
         )
-        Text(block.load, fontSize = 19.sp, fontWeight = FontWeight.Bold, color = onCard)
-        Text("${block.from}–${block.to} h · $season", fontSize = 13.sp, color = onCard)
+        Text(load, fontSize = 19.sp, fontWeight = FontWeight.Bold, color = onCard)
+        Text(stringResource(R.string.home_block_hours, block.from, block.to, season), fontSize = 13.sp, color = onCard)
         BasicText(
-            text = HomeFormat.blockCountdown(nextChangeMillis - nowMillis),
+            text = (nextChangeMillis - nowMillis).let {
+                if (it <= 0) stringResource(R.string.home_countdown_now)
+                else stringResource(R.string.home_countdown, HomeFormat.duration(it))
+            },
             style = TextStyle(color = onCard, fontStyle = FontStyle.Italic),
             maxLines = 1,
             autoSize = TextAutoSize.StepBased(minFontSize = countdownMin.sp, maxFontSize = 12.sp, stepSize = 1.sp),
@@ -191,11 +206,15 @@ private fun CurrentBlockCard(block: Block, nextChangeMillis: Long, nowMillis: Lo
 private fun StatusRow(state: HomeUiState.Content, onRefresh: () -> Unit) {
     val info = state.info
     val dataState = remember(info) { Repo.dataState(info) }
-    val text = "Zadnja posodobitev: " + SloTime.formatDateTime(info.time) + "\n" + when {
-        dataState == DataState.FRESH -> "Podatki so aktualni."
-        state.offlineFailure -> "Posodobitev trenutno ni mogoča. Preveri internetno povezavo.\nPrikazani so zadnji shranjeni podatki."
-        else -> "Prikazani so zadnji shranjeni podatki."
-    }
+    val text = stringResource(R.string.home_last_update, SloTime.formatDateTime(info.time, LocalLang.current)) + "\n" +
+        stringResource(
+            when {
+                dataState == DataState.FRESH -> R.string.home_data_fresh
+                state.offlineFailure -> R.string.home_data_offline
+                else -> R.string.home_data_cached
+            }
+        )
+    val refreshLabel = stringResource(R.string.common_refresh)
     val density = LocalDensity.current
     var textSizeSp by remember(state) { mutableFloatStateOf(12f) }
     var shrinkAttempts by remember(state) { mutableIntStateOf(0) }
@@ -230,10 +249,10 @@ private fun StatusRow(state: HomeUiState.Content, onRefresh: () -> Unit) {
                     .padding(start = 8.dp)
                     .size(buttonSize)
                     .clip(CircleShape)
-                    .background(RefreshButtonFill)
-                    .border(1.dp, RefreshButtonStroke, CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                     .clickable(role = Role.Button, onClick = onRefresh)
-                    .semantics { contentDescription = "Osveži" }
+                    .semantics { contentDescription = refreshLabel }
                     .padding(6.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -252,6 +271,8 @@ private fun StatusRow(state: HomeUiState.Content, onRefresh: () -> Unit) {
 private fun BestBlockCard(best: BestBlock, nowMillis: Long) {
     val colors = MaterialTheme.colorScheme
     val time = SloTime.formatHm(best.startMillis)
+    val prefix = stringResource(R.string.home_best_prefix)
+    val suffix = stringResource(R.string.home_best_suffix)
     val shape = RoundedCornerShape(16.dp)
     Column(
         modifier = Modifier
@@ -263,16 +284,19 @@ private fun BestBlockCard(best: BestBlock, nowMillis: Long) {
     ) {
         Text(
             text = buildAnnotatedString {
-                append("Naslednji najugodnejši časovni blok ob ")
+                append(prefix)
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(time) }
-                append(" uri")
+                append(suffix)
             },
             style = MaterialTheme.typography.bodyLarge,
             color = colors.onSurface
         )
         // The ticking countdown stays visual only; the line above already says when the block starts.
         Text(
-            text = HomeFormat.bestCountdown(best.startMillis - nowMillis),
+            text = (best.startMillis - nowMillis).let {
+                if (it <= 0) stringResource(R.string.home_best_now)
+                else stringResource(R.string.home_best_countdown, HomeFormat.duration(it))
+            },
             style = MaterialTheme.typography.bodyLarge,
             color = colors.onSurfaceVariant,
             modifier = Modifier
@@ -287,6 +311,7 @@ private fun BestBlockCard(best: BestBlock, nowMillis: Long) {
  */
 @Composable
 private fun AdviceSection(title: String, block: Block, expanded: Boolean, onExpandedChange: (Boolean) -> Unit) {
+    val spoken = stringResource(if (expanded) R.string.common_expanded else R.string.common_collapsed, title)
     val rotation by animateFloatAsState(if (expanded) 180f else 0f, tween(150), label = "chevron")
     Row(
         modifier = Modifier
@@ -296,8 +321,7 @@ private fun AdviceSection(title: String, block: Block, expanded: Boolean, onExpa
             .clearAndSetSemantics {
                 role = Role.Button
                 heading()
-                contentDescription = title + ", " + (if (expanded) "razširjeno" else "strnjeno") +
-                    ". Dotakni se za " + (if (expanded) "strnitev" else "razširitev") + "."
+                contentDescription = spoken
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -325,12 +349,16 @@ private fun AdviceSection(title: String, block: Block, expanded: Boolean, onExpa
 private fun AdviceRow(a: Advice) {
     // Symbol + description in addition to colour (colour alone must not carry the meaning).
     val (symbol, dotColor, description) = when (a.state) {
-        1 -> Triple("✓", Color(0xFF43A047), "Ugodno")
-        2 -> Triple("!", Color(0xFFFDD835), "Vmes")
-        else -> Triple("✕", Color(0xFFE53935), "Manj ugodno")
+        1 -> Triple("✓", Color(0xFF43A047), stringResource(R.string.home_advice_good))
+        2 -> Triple("!", Color(0xFFFFB300), stringResource(R.string.home_advice_mid))
+        else -> Triple("✕", AppColors.Over, stringResource(R.string.home_advice_bad))
     }
     val colors = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(16.dp)
+    // Recommendations come from uro.si in Slovenian; known texts are shown in the app's language.
+    val context = LocalContext.current
+    val lang = LocalLang.current
+    val line = remember(a, lang) { ApiTexts.translate(context, a.device) + ": " + ApiTexts.translate(context, a.use) }
     // One spoken item per recommendation, with the state in words.
     Row(
         modifier = Modifier
@@ -339,7 +367,7 @@ private fun AdviceRow(a: Advice) {
             .background(colors.surface, shape)
             .border(1.dp, colors.outline, shape)
             .padding(horizontal = 14.dp, vertical = 12.dp)
-            .clearAndSetSemantics { contentDescription = "$description. ${a.device}: ${a.use}" },
+            .clearAndSetSemantics { contentDescription = "$description. $line" },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -352,13 +380,25 @@ private fun AdviceRow(a: Advice) {
         ) {
             Text(symbol, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF111111))
         }
-        Text("${a.device}: ${a.use}", style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
+        // Device group icon (Material Icons), tinted like the text so it works in both themes.
+        ApiTexts.deviceIcon(a.device)?.let { icon ->
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                tint = colors.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(end = 10.dp)
+                    .size(22.dp)
+            )
+        }
+        Text(line, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
     }
 }
 
 @Composable
 private fun DonationCard(onOpenDonation: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val donationSpoken = stringResource(R.string.home_donation_title_spoken)
     val shape = RoundedCornerShape(16.dp)
     Column(
         modifier = Modifier
@@ -369,7 +409,7 @@ private fun DonationCard(onOpenDonation: (String) -> Unit) {
             .padding(14.dp)
     ) {
         Text(
-            text = "☕ Podpri razvoj aplikacije",
+            text = stringResource(R.string.home_donation_title),
             style = MaterialTheme.typography.titleMedium,
             color = colors.onSurface,
             textAlign = TextAlign.Center,
@@ -377,11 +417,11 @@ private fun DonationCard(onOpenDonation: (String) -> Unit) {
                 .fillMaxWidth()
                 .clearAndSetSemantics {
                     heading()
-                    contentDescription = "Podpri razvoj aplikacije"
+                    contentDescription = donationSpoken
                 }
         )
         Text(
-            text = "Če ti je aplikacija všeč in ti koristi, lahko s prostovoljno donacijo podpreš njen nadaljnji razvoj. Hvala za tvojo podporo!",
+            text = stringResource(R.string.home_donation_text),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -395,19 +435,19 @@ private fun DonationCard(onOpenDonation: (String) -> Unit) {
                 .padding(top = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            DonationButton("1 €", "Podpri razvoj z donacijo v višini 1 evra", Modifier.weight(1f)) {
+            DonationButton("1 €", stringResource(R.string.home_donation_1), Modifier.weight(1f)) {
                 onOpenDonation(DonationConfig.URL_1)
             }
-            DonationButton("3 €", "Podpri razvoj z donacijo v višini 3 evrov", Modifier.weight(1f)) {
+            DonationButton("3 €", stringResource(R.string.home_donation_3), Modifier.weight(1f)) {
                 onOpenDonation(DonationConfig.URL_3)
             }
-            DonationButton("5 €", "Podpri razvoj z donacijo v višini 5 evrov", Modifier.weight(1f)) {
+            DonationButton("5 €", stringResource(R.string.home_donation_5), Modifier.weight(1f)) {
                 onOpenDonation(DonationConfig.URL_5)
             }
         }
         DonationButton(
-            "Poljuben znesek",
-            "Podpri razvoj z donacijo poljubnega zneska",
+            stringResource(R.string.home_donation_custom),
+            stringResource(R.string.home_donation_any),
             Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
@@ -439,28 +479,4 @@ private fun DonationButton(
     ) {
         Text(label, fontSize = fontSize.sp, color = MaterialTheme.colorScheme.onSurface)
     }
-}
-
-private val RefreshButtonFill = Color(0xFF2A3037)
-private val RefreshButtonStroke = Color(0xFF3A424B)
-
-/**
- * Text colour for content drawn on [background] (the block colour): the candidate with the higher WCAG contrast
- * ratio, dark #111111 or white. If even the best one stays below 4.5:1 (AA for small text), pure black is used
- * instead of #111111 because it gains a little more contrast. A fixed luminance threshold such as 0.5 is
- * deliberately not used: with this palette it would pick white on the red, orange and green blocks.
- */
-private fun readableTextColor(background: Color): Color {
-    val bg = background.toArgb()
-    val dark = 0xFF111111.toInt()
-    val light = 0xFFFFFFFF.toInt()
-    val contrastDark = ColorUtils.calculateContrast(dark, bg)
-    val contrastLight = ColorUtils.calculateContrast(light, bg)
-    val darkWins = contrastDark >= contrastLight
-    val chosen = if (maxOf(contrastDark, contrastLight) >= 4.5) {
-        if (darkWins) dark else light
-    } else {
-        if (darkWins) 0xFF000000.toInt() else light
-    }
-    return Color(chosen)
 }

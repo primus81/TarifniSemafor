@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts that the uro.si API sends in Slovenian. values/ holds the original wording, values-en the translation.
+     ApiTexts maps an API text to its key; unknown texts are shown as the API sends them. -->
+<resources>
+    <string name="api_load_highest">Najvišja obremenitev omrežja</string>
+    <string name="api_load_high">Visoka obremenitev omrežja</string>
+    <string name="api_load_medium">Srednja obremenitev omrežja</string>
+    <string name="api_load_lower">Nižja obremenitev omrežja</string>
+    <string name="api_load_low">Nizka obremenitev omrežja</string>
+    <string name="api_season_high_1">višja sezona-prvi del</string>
+    <string name="api_season_high_2">višja sezona-drugi del</string>
+    <string name="api_season_high">višja sezona</string>
+    <string name="api_season_low">nižja sezona</string>
+    <string name="api_device_heating">Naprave za ogrevanje, hlajenje</string>
+    <string name="api_device_household">Običajne naprave v gospodinjstvu</string>
+    <string name="api_device_ev">Polnjenje električnega vozila</string>
+    <string name="api_device_storage">Hranilniki energije</string>
+    <string name="api_use_normal">Običajna raba</string>
+    <string name="api_use_conditional">Pogojena običajna raba</string>
+    <string name="api_use_increase">Prilagojena raba (povečanje)</string>
+    <string name="api_use_decrease">Prilagojena raba (zmanjšanje)</string>
+    <string name="api_use_limited">Omejena raba</string>
+</resources>

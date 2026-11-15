@@ -9,8 +9,13 @@ data class PriceList(
     val validTo: LocalDate,
     val rows: List<PriceRow>,
     val note: String?,
-    val sourceUrl: String
-)
+    val sourceUrl: String,
+    /** English wording of [note] (a translation, no additional tariff information). */
+    val noteEn: String? = null
+) {
+    /** [note] in the language [lang] (AppSettings.LANGUAGE_*). */
+    fun noteIn(lang: String): String? = if (lang == AppSettings.LANGUAGE_EN) noteEn ?: note else note
+}
 
 object PriceLists {
     // User group 0 only (households and other low-voltage customers).
@@ -27,7 +32,8 @@ object PriceLists {
                 PriceRow(5, 0.00245, 0.01299)
             ),
             note = "V višji sezoni 2026/27 se za blok 1 obračuna 70 % ciljne vrednosti postavke za moč (postopno uvajanje).",
-            sourceUrl = "https://www.sodo.si/ceniki/2026-11-01/cenik-omreznin"
+            sourceUrl = "https://www.sodo.si/ceniki/2026-11-01/cenik-omreznin",
+            noteEn = "In the 2026/27 higher season, 70 % of the target power rate is charged for block 1 (gradual introduction)."
         )
     )
 
@@ -46,7 +52,7 @@ object PriceLists {
     fun energyPrice(list: PriceList?, block: Int): Double? =
         list?.rows?.firstOrNull { it.block == block }?.energyEurPerKwh
 
-    fun formatKwh(v: Double): String = String.format(SL, "%.5f", v) + "€/kWh"
+    fun formatKwh(v: Double, locale: Locale = SL): String = String.format(locale, "%.5f", v) + "€/kWh"
 
-    fun formatNumber(v: Double): String = String.format(SL, "%.5f", v)
+    fun formatNumber(v: Double, locale: Locale = SL): String = String.format(locale, "%.5f", v)
 }

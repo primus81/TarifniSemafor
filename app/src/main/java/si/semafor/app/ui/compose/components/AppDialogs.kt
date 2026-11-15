@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -33,13 +34,29 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import si.semafor.app.BlockPalette
 import si.semafor.app.Links
+import si.semafor.app.R
+import si.semafor.app.SloTime
 import si.semafor.app.ui.compose.theme.AppColors
 
-/** Frame of the app's dialogs: rounded surface with a thin border, a title, scrollable content and "V redu". */
+/**
+ * Frame of the app's dialogs: rounded surface with a thin border, a title, scrollable content and the buttons
+ * ([buttons]; default: a single "V redu").
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppDialog(title: String, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+internal fun AppDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    buttons: @Composable RowScope.() -> Unit = {
+        TextButton(onClick = onDismiss) {
+            Text(stringResource(R.string.common_ok), fontSize = 14.sp, color = AppColors.Accent)
+        }
+    },
+    content: @Composable ColumnScope.() -> Unit
+) {
     BasicAlertDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(20.dp),
@@ -66,38 +83,38 @@ private fun AppDialog(title: String, onDismiss: () -> Unit, content: @Composable
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) { Text("V redu", fontSize = 14.sp, color = AppColors.Accent) }
-                }
+                    horizontalArrangement = Arrangement.End,
+                    content = buttons
+                )
             }
         }
     }
 }
 
+@Composable
 private fun linkStyle() = TextLinkStyles(SpanStyle(color = AppColors.Accent, textDecoration = TextDecoration.Underline))
 
 /** "Viri podatkov": the official sources of every part of the app, each with a link. */
 @Composable
 fun SourcesDialog(onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
     val sources = listOf(
-        Triple("Tarifni semafor in časovni bloki:", "Agencija za energijo, uro.si (API)", Links.URO_URL),
-        Triple("Novice:", "Agencija za energijo (RSS)", Links.NEWS_PAGE),
-        Triple(
-            "Kalkulator (Primerjalnik stroškov oskrbe), povzetek in povezava:",
-            "Agencija za energijo",
-            Links.CALC_URL
-        ),
-        Triple("Informacije o tarifnem sistemu:", "MojElektro", Links.TARIFF_INFO)
-    )
+        Triple(R.string.sources_blocks, R.string.sources_blocks_link, Links.URO_URL),
+        Triple(R.string.sources_colors, R.string.sources_colors_link, BlockPalette.tableFor(SloTime.today().year).source),
+        Triple(R.string.sources_news, R.string.sources_news_link, Links.NEWS_PAGE),
+        Triple(R.string.sources_calc, R.string.sources_calc_link, Links.CALC_URL),
+        Triple(R.string.sources_tariff, R.string.sources_tariff_link, Links.TARIFF_INFO),
+        Triple(R.string.sources_icons, R.string.sources_icons_link, Links.MATERIAL_SYMBOLS),
+        Triple(R.string.sources_usage, R.string.sources_usage_link, Links.MOJ_ELEKTRO_API_DOCS)
+    ).map { (label, link, url) -> Triple(stringResource(label), stringResource(link), url) }
+    val style = linkStyle()
     val text = buildAnnotatedString {
         sources.forEachIndexed { i, (label, linkLabel, url) ->
             if (i > 0) append("\n\n")
             append("• $label ")
-            withLink(LinkAnnotation.Url(url, linkStyle()) { onOpenUrl(url) }) { append(linkLabel) }
+            withLink(LinkAnnotation.Url(url, style) { onOpenUrl(url) }) { append(linkLabel) }
         }
     }
-    AppDialog("Viri podatkov", onDismiss) {
+    AppDialog(stringResource(R.string.sources_title), onDismiss) {
         Text(text, fontSize = 14.sp, color = AppColors.TextPrimary)
     }
 }
@@ -106,23 +123,27 @@ fun SourcesDialog(onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
 @Composable
 fun AboutDialog(version: String, onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
     val developerUrl = "https://bsky.app/profile/primush.bsky.social"
-    AppDialog("O aplikaciji", onDismiss) {
+    val style = linkStyle()
+    val developer = stringResource(R.string.about_developer)
+    val privacy = stringResource(R.string.about_privacy_policy)
+    val privacySpoken = stringResource(R.string.common_link_suffix, privacy)
+    AppDialog(stringResource(R.string.about_title), onDismiss) {
         Text(
-            text = "Tarifni semafor je neuradna aplikacija. Ni povezana z Agencijo za energijo, SODO ali drugimi operaterji. Podatki so povzeti iz javnih virov (glej Viri podatkov); njihova točnost ni zagotovljena, veljavne podatke objavljajo uradni viri.",
+            text = stringResource(R.string.about_disclaimer),
             fontSize = 13.sp,
             color = AppColors.TextSecondary,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Text(
             text = buildAnnotatedString {
-                append("Razvijalec: ")
-                withLink(LinkAnnotation.Url(developerUrl, linkStyle()) { onOpenUrl(developerUrl) }) { append("Primus") }
+                append(developer)
+                withLink(LinkAnnotation.Url(developerUrl, style) { onOpenUrl(developerUrl) }) { append("Primus") }
             },
             fontSize = 15.sp,
             color = AppColors.TextPrimary
         )
         Text(
-            text = "Verzija: $version",
+            text = stringResource(R.string.about_version, version),
             fontSize = 15.sp,
             color = AppColors.TextPrimary,
             modifier = Modifier.padding(top = 16.dp)
@@ -133,11 +154,11 @@ fun AboutDialog(version: String, onDismiss: () -> Unit, onOpenUrl: (String) -> U
                     .padding(top = 16.dp)
                     .heightIn(min = 48.dp)
                     .clickable { onOpenUrl(Links.PRIVACY_POLICY) }
-                    .semantics { contentDescription = "Politika zasebnosti, povezava" },
+                    .semantics { contentDescription = privacySpoken },
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
-                    text = "Politika zasebnosti",
+                    text = privacy,
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                     textDecoration = TextDecoration.Underline
