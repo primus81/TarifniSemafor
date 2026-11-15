@@ -1,4 +1,4 @@
-# 🚦 Tarifni semafor — Optimizirajte porabo električne energije
+#  Tarifni semafor — Optimizirajte porabo električne energije
 
 **Tarifni semafor** je vaš osebni žepni pripomoček za enostavno navigacijo skozi novo metodologijo obračuna omrežnine v Sloveniji. Aplikacija deluje kot vizualni koledar časovnih blokov, ki vam pomaga ujeti pravi trenutek za vklop večjih porabnikov ter s tem poskrbi za učinkovitejšo rabo energije in nižji račun.
 
@@ -9,17 +9,17 @@ Vabljen k testiranju.
 
 ---
 
-## 🌟 Ključne funkcionalnosti
+##  Ključne funkcionalnosti
 
-- **⏱️ Sprotni vpogled** — Takojšen pregled nad trenutno veljavnim časovnim blokom za obračun omrežnine.
-- **🚥 Pametno signaliziranje** — Jasni vizualni semaforski namigi, ki napovedujejo prihod naslednjega časovnih bloka.
-- **📱 Pripomočki za začetni zaslon** — Dva priročna gradnika (widgeta) za takojšen dostop do informacij neposredno z namizja telefona.
-- **📊 Primerjalnik stroškov** — Integriran dostop do kalkulatorja za objektivno primerjavo stroškov oskrbe z elektriko in zemeljskim plinom.
-- **💡 Izobraževalni nasveti** — Kompaktni namigi za ozaveščeno rabo energije in optimalno upravljanje domačih naprav.
+- **Sprotni vpogled** — Takojšen pregled nad trenutno veljavnim časovnim blokom za obračun omrežnine.
+- **Pametno signaliziranje** — Jasni vizualni semaforski namigi, ki napovedujejo prihod naslednjega časovnih bloka.
+- **Pripomočki za začetni zaslon** — Dva priročna gradnika (widgeta) za takojšen dostop do informacij neposredno z namizja telefona.
+- **Primerjalnik stroškov** — Integriran dostop do kalkulatorja za objektivno primerjavo stroškov oskrbe z elektriko in zemeljskim plinom.
+- **Izobraževalni nasveti** — Kompaktni namigi za ozaveščeno rabo energije in optimalno upravljanje domačih naprav.
 
 ---
 
-## 🛠️ Tehnične specifikacije & Tehnologije
+##  Tehnične specifikacije & Tehnologije
 
 Aplikacija je zgrajena z uporabo sodobnih smernic za razvoj mobilnih aplikacij:
 
@@ -36,9 +36,9 @@ Aplikacija je zgrajena z uporabo sodobnih smernic za razvoj mobilnih aplikacij:
 ## 🔒 Popolna zasebnost (No-Log & Brez registracije)
 
 Zasebnost uporabnikov je na prvem mestu. Aplikacija deluje popolnoma anonimno:
-- ❌ **Brez registracije** ali prijave.
-- ❌ **Ne zbira** nikakršnih osebnih podatkov. Neobvezna povezava Moj Elektro jih obdeluje izključno v telefonu (glej razdelek Moj Elektro).
-- 🛠️ Uporablja izključno javno dostopne podatke (REST-API) Agencije za energijo.
+- **Brez registracije** ali prijave.
+- **Ne zbira** nikakršnih osebnih podatkov. Neobvezna povezava Moj Elektro jih obdeluje izključno v telefonu (glej razdelek Moj Elektro).
+- Uporablja izključno javno dostopne podatke (REST-API) Agencije za energijo.
 
 ---
 
