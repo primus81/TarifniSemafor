@@ -34,7 +34,9 @@ data class SettingsUiState(
     val notificationMode: Int = AppSettings.MODE_ALL,
     val statusIcon: Boolean = true,
     /** Android blocks the notifications of this app (permission refused or switched off in the phone settings). */
-    val notificationsBlocked: Boolean = false
+    val notificationsBlocked: Boolean = false,
+    /** A Moj Elektro metering point is connected (optional feature). */
+    val mojElektroConnected: Boolean = false
 )
 
 /**
@@ -48,7 +50,8 @@ fun SettingsScreen(
     onBlockNotificationsChange: (Boolean) -> Unit,
     onNotificationModeChange: (Int) -> Unit,
     onStatusIconChange: (Boolean) -> Unit,
-    onOpenNotificationSettings: () -> Unit
+    onOpenNotificationSettings: () -> Unit,
+    onOpenMojElektro: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     val note = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
@@ -125,6 +128,24 @@ fun SettingsScreen(
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
+
+        SectionHeading("Moj Elektro")
+        InfoCard {
+            Text(
+                text = if (state.mojElektroConnected) {
+                    "Tvoje merilno mesto je povezano. Žeton je shranjen šifriran samo v tem telefonu."
+                } else {
+                    "Neobvezno: poveži svoje merilno mesto z žetonom API s portala Moj Elektro. Podatki ostanejo v telefonu."
+                },
+                style = note,
+                color = colors.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            ActionButton(
+                if (state.mojElektroConnected) "Upravljaj povezavo" else "Poveži merilno mesto",
+                onOpenMojElektro
+            )
+        }
     }
 }
 
@@ -141,7 +162,8 @@ private fun SettingsScreenPreview() {
             onBlockNotificationsChange = {},
             onNotificationModeChange = {},
             onStatusIconChange = {},
-            onOpenNotificationSettings = {}
+            onOpenNotificationSettings = {},
+            onOpenMojElektro = {}
         )
     }
 }

@@ -37,8 +37,38 @@ Aplikacija je zgrajena z uporabo sodobnih smernic za razvoj mobilnih aplikacij:
 
 Zasebnost uporabnikov je na prvem mestu. Aplikacija deluje popolnoma anonimno:
 - ❌ **Brez registracije** ali prijave.
-- ❌ **Ne zbira**, ne obdeluje in ne shranjuje nikakršnih osebnih podatkov.
+- ❌ **Ne zbira** nikakršnih osebnih podatkov. Neobvezna povezava Moj Elektro jih obdeluje izključno v telefonu (glej razdelek Moj Elektro).
 - 🛠️ Uporablja izključno javno dostopne podatke (REST-API) Agencije za energijo.
+
+---
+
+## Neobvezna povezava Moj Elektro
+
+V Nastavitvah lahko uporabnik poveže svoje merilno mesto z žetonom API portala Moj Elektro (samo branje) in EIMM. Aplikacija nato na zaslonu **Moja poraba** pokaže:
+
+- dogovorjeno moč za trenutni časovni blok in najvišjo 15-minutno moč v tem bloku,
+- 15-minutne konice zadnjega dne s podatki (opozorilo nad 90 % in nad dogovorjeno močjo),
+- porabo po dnevih in časovnih blokih (7 ali 30 dni),
+- prejeto in oddano energijo (samo, če merilno mesto oddaja energijo).
+
+Podatki niso v realnem času: Moj Elektro jih objavi z zamikom, običajno približno en dan.
+
+**Zasebnost:** žeton, EIMM in meritve so shranjeni samo v telefonu, šifrirani s ključem v Android Keystore (AES-256-GCM), in niso del varnostnih kopij. Aplikacija jih pošilja samo uradnemu API-ju `api.informatika.si`, nikoli razvijalcu ali tretjim. Prekinitev povezave izbriše žeton, EIMM in shranjene meritve.
+
+**Tehnično** (paket `si.semafor.app.mojelektro`):
+
+| Del | Datoteka |
+| :--- | :--- |
+| HTTP odjemalec (HttpURLConnection, glava `X-API-TOKEN`, brez preusmeritev) | `MojElektroClient.kt` |
+| Razčlenjevanje JSON (org.json) po uradni specifikaciji OpenAPI | `MojElektroParser.kt` |
+| Šifriranje (Keystore) in shramba povezave | `MojElektroCrypto.kt`, `MojElektroCredentialStore.kt` |
+| Repozitorij in preverjanje povezave | `MojElektroRepository.kt` |
+| Šifriran predpomnilnik meritev (6 h), urnik blokov z uro.si | `UsageCache.kt`, `BlockSchedules.kt` |
+| Analiza (čisti Kotlin, enotni testi) | `UsageAnalysis.kt` |
+| Stanje zaslonov | `MojElektroViewModel.kt`, `UsageViewModel.kt`, `UsageRepository.kt` |
+| Grafi (Compose Canvas, brez knjižnice) | `ui/compose/charts/UsageCharts.kt` |
+
+Kode registrov (A+, A-, A+_T0, A-_T0) se preberejo iz uradnega kataloga `GET /reading-type`. Časovni blok vsake ure preteklih dni se pridobi z uradnega API-ja uro.si; pravila blokov niso zapisana v aplikaciji. Ali časovna oznaka 15-minutne meritve pomeni začetek ali konec intervala, aplikacija ugotovi iz podatkov (primerjava z dnevnim stanjem števca).
 
 ---
 

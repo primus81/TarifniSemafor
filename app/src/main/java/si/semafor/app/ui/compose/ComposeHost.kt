@@ -2,6 +2,7 @@ package si.semafor.app.ui.compose
 
 import android.content.Context
 import android.widget.FrameLayout
+import androidx.annotation.IdRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -27,13 +28,17 @@ val LocalScreenInsets = compositionLocalOf { ScreenInsets.None }
 /**
  * Wraps a Compose screen into a [ComposeView] that can sit in the Activity's `contentContainer` next to the legacy
  * View screens. The view is cached and detached by the screen switcher, so the composition is kept (scroll position
- * included) until the Activity's lifecycle is destroyed.
+ * included) until the Activity's lifecycle is destroyed. [viewId] must be a fixed id from res/values/ids.xml.
  */
 fun composeScreen(
     context: Context,
+    @IdRes viewId: Int,
     insets: State<ScreenInsets>,
     content: @Composable () -> Unit
 ): ComposeView = ComposeView(context).apply {
+    // A fixed, unique id per screen: Compose saves the screen's saveable state (typed values, scroll position)
+    // under this id when the Activity is recreated. Without it only the first ComposeView would be saved.
+    id = viewId
     layoutParams = FrameLayout.LayoutParams(
         FrameLayout.LayoutParams.MATCH_PARENT,
         FrameLayout.LayoutParams.MATCH_PARENT

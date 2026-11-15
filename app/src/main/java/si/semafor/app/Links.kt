@@ -10,6 +10,9 @@ object Links {
         "https://www.agen-rs.si/novice/-/journal/rss/46801?doAsGroupId=10926&refererPlid=10944&controlPanelCategory=current_site.pages&_15_groupId=10926&newsrss"
     const val NEWS_PAGE = "https://www.agen-rs.si/novice"
 
+    // Portal of the distribution operators where the user creates the read-only API token (optional connection).
+    const val MOJ_ELEKTRO = "https://mojelektro.si"
+
     // Sem vpiši pravi naslov objavljene politike zasebnosti (npr. stran na GitHub Pages).
     // Če vrednost vsebuje "REPLACE_WITH", se vrstica v pogovornem oknu "O aplikaciji" ne prikaže.
     const val PRIVACY_POLICY = "https://primus81.github.io/Tarifni-semafor-pravilnik-zasebnosti/"

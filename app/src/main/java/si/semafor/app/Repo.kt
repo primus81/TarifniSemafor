@@ -47,9 +47,13 @@ object Repo {
     }
 
     fun dataState(info: Info): DataState {
+        // Data whose current block does not contain the current Slovenian hour is never shown as current,
+        // even if it was just downloaded (for example the server still answers with the previous block
+        // right after a block boundary).
+        if (!coversNow(info.now)) return DataState.UNVERIFIED
         if (info.fresh) return DataState.FRESH
         val age = System.currentTimeMillis() - info.time
-        return if (age in 0 until MAX_CACHE_AGE_MS && coversNow(info.now)) DataState.CACHED else DataState.UNVERIFIED
+        return if (age in 0 until MAX_CACHE_AGE_MS) DataState.CACHED else DataState.UNVERIFIED
     }
 
     private fun urlFor(date: Date): URL {

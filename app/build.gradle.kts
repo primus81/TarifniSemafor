@@ -28,8 +28,8 @@ android {
         applicationId = "si.semafor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 17
-        versionName = "2.1.9"
+        versionCode = 18
+        versionName = "2.2.2"
     }
     signingConfigs {
         if (hasReleaseSigning) {
@@ -65,6 +65,11 @@ android {
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
+    // Home screen state: HomeViewModel (viewModelScope), lifecycleScope/repeatOnLifecycle and by viewModels().
+    // These versions were already on the classpath through activity-compose; now they are declared explicitly.
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
+    implementation("androidx.activity:activity-ktx:1.13.0")
     // Pull-to-refresh on the home and news screens.
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0")
 

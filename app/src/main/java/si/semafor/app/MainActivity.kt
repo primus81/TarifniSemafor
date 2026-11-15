@@ -41,6 +41,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -50,19 +53,28 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.animation.PathInterpolatorCompat
 import androidx.core.view.doOnLayout
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import si.semafor.app.ui.components.UiKit
 import si.semafor.app.ui.components.asButton
 import si.semafor.app.ui.components.asLink
 import si.semafor.app.ui.compose.ScreenInsets
 import si.semafor.app.ui.compose.composeScreen
+import si.semafor.app.mojelektro.MojElektroRepository
+import si.semafor.app.mojelektro.MojElektroViewModel
+import si.semafor.app.mojelektro.UsageViewModel
 import si.semafor.app.ui.compose.screens.CalcScreen
+import si.semafor.app.ui.compose.screens.MojElektroScreen
+import si.semafor.app.ui.compose.screens.UsageScreen
 import si.semafor.app.ui.compose.screens.SettingsScreen
 import si.semafor.app.ui.compose.screens.SettingsUiState
 import si.semafor.app.ui.compose.screens.TipsScreen
 import si.semafor.app.ui.theme.Palette
+import kotlinx.coroutines.launch
 
-enum class Screen { HOME, CALC, NEWS, PRICES, TIPS, SETTINGS }
+enum class Screen { HOME, CALC, NEWS, PRICES, TIPS, SETTINGS, MOJELEKTRO, USAGE }
 
 class MainActivity : ComponentActivity() {
     private lateinit var box: LinearLayout
@@ -110,9 +122,8 @@ class MainActivity : ComponentActivity() {
     // Device clock or time zone changed: drop throttles and re-validate the shown data.
     private val timeChangeReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            lastFreshFetchTime = 0L
             lastReloadTime = 0L
-            fetchFreshData(force = true)
+            homeVm.onClockChanged()
         }
     }
 
@@ -121,15 +132,27 @@ class MainActivity : ComponentActivity() {
     private var currentBestBlock: BestBlock? = null
 
     private var lastReloadTime: Long = 0L
-    private var lastFreshFetchTime: Long = 0L
-    @Volatile
-    private var isFetchingData: Boolean = false
 
-    // Back goes to the home screen from every other screen; on the home screen it is disabled, so the system
-    // default (leave the app, with the predictive back animation) applies.
+    // Home screen state and data loading (survives rotation); this Activity only renders it.
+    private val homeVm: HomeViewModel by viewModels()
+
+    // Optional Moj Elektro connection (screen state; the token never becomes part of it).
+    private val mojElektroVm: MojElektroViewModel by viewModels()
+    private var mojElektroView: View? = null
+
+    // "Moja poraba": the user's own readings (only with a Moj Elektro connection).
+    private val usageVm: UsageViewModel by viewModels()
+    private var usageView: View? = null
+
+    // The home state that is on screen now; the same state is not rebuilt again.
+    private var renderedHomeState: HomeUiState? = null
+
+    // Back goes to the home screen from every other screen (from Moj Elektro to Nastavitve, where it is opened);
+    // on the home screen it is disabled, so the system default (leave the app, with the predictive back animation)
+    // applies.
     private val backCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
-            showScreen(Screen.HOME)
+            showScreen(if (currentScreen == Screen.MOJELEKTRO) Screen.SETTINGS else Screen.HOME)
         }
     }
 
@@ -144,6 +167,9 @@ class MainActivity : ComponentActivity() {
         const val REQ_BLOCK_NOTIFICATIONS = 1001
         const val REQ_STATUS_ICON = 1002
         const val REQ_FIRST_RUN = 1003
+
+        // Saved instance state: the screen that was open (rotation, process death).
+        const val KEY_SCREEN = "screen"
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -351,6 +377,45 @@ class MainActivity : ComponentActivity() {
         }
         SemaforWidget.schedule(this)
         maybeAskNotificationPermissionOnFirstRun()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { homeVm.state.collect { renderHome(it) } }
+                // Only the end of a load matters: it dismisses the pull-to-refresh spinner (success and error alike).
+                launch { homeVm.loading.collect { if (!it) homeRefresh.isRefreshing = false } }
+            }
+        }
+
+        // Back to the screen that was open before the Activity was recreated.
+        b?.getString(KEY_SCREEN)
+            ?.let { name -> Screen.entries.firstOrNull { it.name == name } }
+            ?.takeIf { it != Screen.HOME }
+            ?.let { showScreen(it) }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_SCREEN, currentScreen.name)
+    }
+
+    /** Draws [state] on the home screen. A new best block alone only updates its card (no rebuild of the screen). */
+    private fun renderHome(state: HomeUiState) {
+        val previous = renderedHomeState
+        if (state === previous) return
+        renderedHomeState = state
+        when (state) {
+            HomeUiState.Loading -> showLoading()
+            is HomeUiState.Content ->
+                if (previous is HomeUiState.Content && previous.info === state.info &&
+                    previous.offlineFailure == state.offlineFailure
+                ) {
+                    updateBestCard(state.best)
+                } else {
+                    show(state.info, state.best, state.offlineFailure)
+                }
+
+            is HomeUiState.Error -> showErrorState(state.lastUpdate)
+        }
     }
 
     override fun onResume() {
@@ -360,9 +425,7 @@ class MainActivity : ComponentActivity() {
         refreshSettingsState()
         // A catch-up after an offline period (SyncRecovery) refreshes the home screen straight away.
         SyncRecovery.uiListener = { info ->
-            runOnUiThread {
-                if (!isFinishing && !isDestroyed) show(info, Repo.getMemoryCachedBest(), isOfflineFailure = false)
-            }
+            runOnUiThread { homeVm.onRecovered(info) }
         }
         ContextCompat.registerReceiver(
             this,
@@ -374,25 +437,12 @@ class MainActivity : ComponentActivity() {
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
 
-        val cached = Repo.cached(this)
-        val memBest = Repo.getMemoryCachedBest()
-
-        if (cached != null && isInfoSuitable(cached)) {
-            show(cached, memBest, isOfflineFailure = false)
-        } else {
-            showLoading()
-        }
-
-        val now = System.currentTimeMillis()
-        if (now - lastFreshFetchTime >= 60_000L) {
-            fetchFreshData(force = false)
-        }
+        // Stored data first (if it can still be trusted), then a refresh if the last one is older than a minute.
+        homeVm.onScreenResumed()
     }
 
     private fun formatStamp(millis: Long): String =
         SloTime.formatDateTime(millis)
-
-    private fun isInfoSuitable(info: Info): Boolean = Repo.dataState(info) != DataState.UNVERIFIED
 
     override fun onPause() {
         super.onPause()
@@ -480,7 +530,9 @@ class MainActivity : ComponentActivity() {
             blockNotifications = blockOn,
             notificationMode = AppSettings.notificationMode(this),
             statusIcon = statusOn,
-            notificationsBlocked = !canPostAny && (blockOn || statusOn || AppSettings.permissionDenied(this))
+            notificationsBlocked = !canPostAny && (blockOn || statusOn || AppSettings.permissionDenied(this)),
+            // Cheap: only checks that a connection is stored (no decryption, no network).
+            mojElektroConnected = MojElektroRepository(this).isConnected()
         )
     }
 
@@ -517,7 +569,7 @@ class MainActivity : ComponentActivity() {
 
         val next: View = when (s) {
             Screen.HOME -> homeRefresh
-            Screen.CALC -> calcView ?: composeScreen(this, screenInsets) {
+            Screen.CALC -> calcView ?: composeScreen(this, R.id.compose_calc, screenInsets) {
                 CalcScreen(
                     onNavigateHome = { showScreen(Screen.HOME) },
                     onOpenUrl = ::openUrl,
@@ -526,7 +578,7 @@ class MainActivity : ComponentActivity() {
             }.also { calcView = it }
             Screen.NEWS -> newsView ?: createNewsView().also { newsView = it }
             Screen.PRICES -> pricesView ?: createPricesView().also { pricesView = it }
-            Screen.TIPS -> tipsView ?: composeScreen(this, screenInsets) {
+            Screen.TIPS -> tipsView ?: composeScreen(this, R.id.compose_tips, screenInsets) {
                 TipsScreen(
                     onNavigateHome = { showScreen(Screen.HOME) },
                     onOpenUrl = ::openUrl
@@ -535,17 +587,45 @@ class MainActivity : ComponentActivity() {
             Screen.SETTINGS -> {
                 // The state is read again on every visit, so the switches and the explanation match the real state.
                 refreshSettingsState()
-                settingsView ?: composeScreen(this, screenInsets) {
+                settingsView ?: composeScreen(this, R.id.compose_settings, screenInsets) {
                     SettingsScreen(
                         state = settingsState.value,
                         onNavigateHome = { showScreen(Screen.HOME) },
                         onBlockNotificationsChange = ::onBlockNotificationsChange,
                         onNotificationModeChange = ::onNotificationModeChange,
                         onStatusIconChange = ::onStatusIconChange,
-                        onOpenNotificationSettings = ::openNotificationSettings
+                        onOpenNotificationSettings = ::openNotificationSettings,
+                        onOpenMojElektro = { showScreen(Screen.MOJELEKTRO) }
                     )
                 }.also { settingsView = it }
             }
+            Screen.MOJELEKTRO -> mojElektroView ?: composeScreen(this, R.id.compose_mojelektro, screenInsets) {
+                val state by mojElektroVm.state.collectAsState()
+                MojElektroScreen(
+                    state = state,
+                    onBack = { showScreen(Screen.SETTINGS) },
+                    onConnect = mojElektroVm::connect,
+                    onVerify = mojElektroVm::verify,
+                    onDisconnect = mojElektroVm::disconnect,
+                    onOpenMojElektro = { openUrl(Links.MOJ_ELEKTRO) },
+                    onOpenUsage = { showScreen(Screen.USAGE) }
+                )
+            }.also { mojElektroView = it }
+            Screen.USAGE -> usageView ?: composeScreen(this, R.id.compose_usage, screenInsets) {
+                val state by usageVm.state.collectAsState()
+                val range by usageVm.rangeDays.collectAsState()
+                val refreshing by usageVm.refreshing.collectAsState()
+                UsageScreen(
+                    state = state,
+                    rangeDays = range,
+                    ranges = UsageViewModel.RANGES,
+                    refreshing = refreshing,
+                    onBack = { showScreen(Screen.HOME) },
+                    onRefresh = usageVm::refresh,
+                    onRangeChange = usageVm::setRange,
+                    onOpenConnection = { showScreen(Screen.MOJELEKTRO) }
+                )
+            }.also { usageView = it }
         }
         // Rebuilding the same screen in place (e.g. after the permission result) is not animated.
         swapContent(next, animate = screenChanged)
@@ -553,6 +633,8 @@ class MainActivity : ComponentActivity() {
         when (s) {
             Screen.NEWS -> loadNews()
             Screen.PRICES -> renderPrices()
+            // Stored data first; Moj Elektro is asked only for what is missing or too old.
+            Screen.USAGE -> usageVm.onScreenShown()
             else -> Unit
         }
         updateBackCallback()
@@ -1174,53 +1256,9 @@ class MainActivity : ComponentActivity() {
         box.addView(refreshBtn)
     }
 
+    /** Refresh of the home screen data; [force] = manual refresh, block boundary or new day (see [HomeViewModel.refresh]). */
     private fun fetchFreshData(force: Boolean = false) {
-        // Never run two network refreshes at once (manual refresh included).
-        if (isFetchingData) return
-        isFetchingData = true
-
-        Thread {
-            try {
-                val freshInfo = Repo.load(this)
-                // Failed fetch: schedule the catch-up for when the network returns. Success (also a manual
-                // refresh): cancel a pending one.
-                val recovered = SyncRecovery.afterFetch(this, freshInfo)
-                val memBest = Repo.getMemoryCachedBest()
-
-                if (freshInfo != null && freshInfo.fresh) {
-                    lastFreshFetchTime = System.currentTimeMillis()
-                    runOnUiThread {
-                        show(freshInfo, memBest, isOfflineFailure = false)
-                    }
-                } else {
-                    val cached = Repo.cached(this)
-                    runOnUiThread {
-                        // Stored data is shown only while it can still be trusted; otherwise say so.
-                        if (cached != null && Repo.dataState(cached) != DataState.UNVERIFIED) {
-                            show(cached, memBest, isOfflineFailure = true)
-                        } else {
-                            showErrorState(cached?.time)
-                        }
-                    }
-                }
-
-                val targetInfo = freshInfo ?: Repo.cached(this)
-                val best = if (targetInfo != null) Repo.findBestUpcoming(this, targetInfo) else null
-                SemaforWidget.render(this, targetInfo, best)
-                Notifier.onData(this, targetInfo, recovered)
-
-                if (targetInfo != null) {
-                    runOnUiThread {
-                        updateBestCard(best)
-                    }
-                }
-            } finally {
-                isFetchingData = false
-                // Dismiss the pull-to-refresh spinner on success and on error alike. A pull that arrives while another
-                // fetch is running is covered too: it returns early above and this finally ends the spinner.
-                runOnUiThread { homeRefresh.isRefreshing = false }
-            }
-        }.start()
+        homeVm.refresh(force)
     }
 
     private fun tick() {
@@ -1762,6 +1800,13 @@ class MainActivity : ComponentActivity() {
             showScreen(Screen.NEWS)
         })
 
+        // Only with a Moj Elektro connection (optional feature); cheap check, no decryption.
+        if (MojElektroRepository(this).isConnected()) {
+            popupLayout.addView(createMenuItem("Moja poraba", "Podatki Moj Elektro, z zamikom") {
+                showScreen(Screen.USAGE)
+            })
+        }
+
         popupLayout.addView(createMenuItem("Nastavitve", "Obvestila in druge nastavitve") {
             showScreen(Screen.SETTINGS)
         })
@@ -1877,7 +1922,7 @@ class MainActivity : ComponentActivity() {
         val version = try {
             packageManager.getPackageInfo(packageName, 0).versionName
         } catch (e: Exception) {
-            "2.1.1"
+            "2.2.2"
         }
 
         val layout = LinearLayout(this).apply {

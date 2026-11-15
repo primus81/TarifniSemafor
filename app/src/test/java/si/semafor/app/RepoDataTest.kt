@@ -110,6 +110,13 @@ class RepoDataTest {
     }
 
     @Test
+    fun freshData_notCoveringNow_isUnverified() {
+        // Just downloaded, but the server still answered with a block that is not running now.
+        val b = notCoveringBlock()
+        assertEquals(DataState.UNVERIFIED, Repo.dataState(Info(b, b, System.currentTimeMillis(), true)))
+    }
+
+    @Test
     fun storedData_stillCoveringNow_isCached() {
         val b = coveringBlock()
         val hourAgo = System.currentTimeMillis() - 3_600_000L

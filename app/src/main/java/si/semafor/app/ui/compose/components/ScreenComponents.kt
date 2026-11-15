@@ -77,7 +77,12 @@ fun ScreenScaffold(content: @Composable ColumnScope.() -> Unit) {
  * Same look as `UiKit.screenHeader` of the View screens.
  */
 @Composable
-fun ScreenHeader(title: String, onBack: () -> Unit, subtitle: String? = null) {
+fun ScreenHeader(
+    title: String,
+    onBack: () -> Unit,
+    subtitle: String? = null,
+    backDescription: String = "Nazaj na domači zaslon"
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -91,7 +96,7 @@ fun ScreenHeader(title: String, onBack: () -> Unit, subtitle: String? = null) {
                 .clickable(onClick = onBack)
                 .semantics {
                     role = Role.Button
-                    contentDescription = "Nazaj na domači zaslon"
+                    contentDescription = backDescription
                 },
             contentAlignment = Alignment.Center
         ) {

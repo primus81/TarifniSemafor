@@ -21,6 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +51,12 @@ import si.semafor.app.TariffCalculator
 import si.semafor.app.estimateNote
 import si.semafor.app.ui.compose.theme.BodyLineHeight
 
+/** Saves the five typed values of one input group as a plain list of strings. */
+private val StringListSaver = listSaver<SnapshotStateList<String>, String>(
+    save = { it.toList() },
+    restore = { it.toMutableStateList() }
+)
+
 /**
  * Quick local estimate of the monthly network charge: season, billing power (kW) and consumption (kWh) per block
  * as inputs, the result is updated on every change. The maths is in [TariffCalculator.estimate] (unit tested), the
@@ -57,12 +67,13 @@ import si.semafor.app.ui.compose.theme.BodyLineHeight
 fun NetworkCalculator() {
     val colors = MaterialTheme.colorScheme
     val today = remember { SloTime.today() }
-    // Defaults to the season that is active today.
-    var season by remember { mutableStateOf(Season.of(today)) }
-    var samePower by remember { mutableStateOf(true) }
-    var powerAll by remember { mutableStateOf("") }
-    val powerBlocks = remember { mutableStateListOf("", "", "", "", "") }
-    val energy = remember { mutableStateListOf("", "", "", "", "") }
+    // Defaults to the season that is active today. Everything the user typed or chose is saveable, so it survives
+    // rotation and the system ending the process in the background.
+    var season by rememberSaveable { mutableStateOf(Season.of(today)) }
+    var samePower by rememberSaveable { mutableStateOf(true) }
+    var powerAll by rememberSaveable { mutableStateOf("") }
+    val powerBlocks = rememberSaveable(saver = StringListSaver) { mutableStateListOf("", "", "", "", "") }
+    val energy = rememberSaveable(saver = StringListSaver) { mutableStateListOf("", "", "", "", "") }
 
     val estimate = TariffCalculator.estimate(season, today, samePower, powerAll, powerBlocks, energy)
     val small = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
