@@ -1,6 +1,7 @@
 package si.semafor.app.mojelektro
 
 import android.app.Application
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** What the "Moja poraba" screen shows. */
+@Immutable
 sealed interface UsageUiState {
     data object NotConnected : UsageUiState
     data class Loading(val step: String) : UsageUiState
@@ -35,8 +37,38 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
 
     private var job: Job? = null
 
+    // When the shown content was produced; a page that is swiped to again within a few minutes is not re-analysed.
+    private var shownAt = 0L
+
     /** Called whenever the screen is opened: shows stored data, downloads only what is missing or too old. */
-    fun onScreenShown() = load(force = false)
+    fun onScreenShown() {
+        val shown = _state.value as? UsageUiState.Content
+        if (shown != null && shown.data.rangeDays == _rangeDays.value &&
+            System.currentTimeMillis() - shownAt in 0 until REUSE_MS
+        ) {
+            return
+        }
+        load(force = false)
+    }
+
+    // The connected metering point last reported by the host; "unset" until the first report.
+    private var knownEimm: String? = null
+    private var eimmKnown = false
+
+    /**
+     * The host reports the connected metering point (null = none) whenever it is read. If it differs from the last
+     * report (added, removed or replaced), nothing shown so far may be kept.
+     */
+    fun onConnection(eimm: String?) {
+        val changed = eimmKnown && eimm != knownEimm
+        eimmKnown = true
+        knownEimm = eimm
+        if (!changed) return
+        job?.cancel()
+        shownAt = 0L
+        _refreshing.value = false
+        _state.value = UsageUiState.Loading("Nalagam …")
+    }
 
     fun refresh() = load(force = true)
 
@@ -64,7 +96,10 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             _state.value = when (result) {
-                is MojElektroResult.Success -> UsageUiState.Content(result.data)
+                is MojElektroResult.Success -> {
+                    shownAt = System.currentTimeMillis()
+                    UsageUiState.Content(result.data)
+                }
                 is MojElektroResult.Failure ->
                     if (result.error == MojElektroError.NotConnected) UsageUiState.NotConnected
                     else UsageUiState.Error(mojElektroErrorMessage(result.error))
@@ -80,6 +115,7 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         const val DEFAULT_RANGE = 7
+        private const val REUSE_MS = 5 * 60 * 1000L
         val RANGES = listOf(7, 30)
     }
 }

@@ -23,6 +23,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +40,7 @@ import si.semafor.app.mojelektro.MojElektroRepository
 import si.semafor.app.mojelektro.MojElektroViewModel
 import si.semafor.app.mojelektro.UsageViewModel
 import si.semafor.app.ui.compose.AppShell
+import si.semafor.app.ui.compose.HomePager
 import si.semafor.app.ui.compose.MenuEntry
 import si.semafor.app.ui.compose.components.AboutDialog
 import si.semafor.app.ui.compose.components.SourcesDialog
@@ -50,11 +52,11 @@ import si.semafor.app.ui.compose.screens.PricesScreen
 import si.semafor.app.ui.compose.screens.SettingsScreen
 import si.semafor.app.ui.compose.screens.SettingsUiState
 import si.semafor.app.ui.compose.screens.TipsScreen
-import si.semafor.app.ui.compose.screens.UsageScreen
+import si.semafor.app.ui.compose.screens.UsageDashboardScreen
 import si.semafor.app.ui.compose.theme.AppColors
 import si.semafor.app.ui.compose.theme.AppTheme
 
-enum class Screen { HOME, CALC, NEWS, PRICES, TIPS, SETTINGS, MOJELEKTRO, USAGE }
+enum class Screen { HOME, CALC, NEWS, PRICES, TIPS, SETTINGS, MOJELEKTRO }
 
 /** Dialogs opened from the menu. */
 private enum class AppDialog { SOURCES, ABOUT }
@@ -71,8 +73,14 @@ class MainActivity : ComponentActivity() {
     // Optional Moj Elektro connection (screen state; the token never becomes part of it).
     private val mojElektroVm: MojElektroViewModel by viewModels()
 
-    // "Moja poraba": the user's own readings (only with a Moj Elektro connection).
+    // "Moj semafor porabe": the user's own readings (second home page, only with a Moj Elektro connection).
     private val usageVm: UsageViewModel by viewModels()
+
+    // A page the home pager should go to (menu entry "Moja poraba"); null = none.
+    private val homePageRequest = mutableStateOf<Int?>(null)
+
+    // Where back from the Moj Elektro screen leads: the screen it was opened from.
+    private var mojElektroReturn = Screen.SETTINGS
 
     private val screen = mutableStateOf(Screen.HOME)
     private val dialog = mutableStateOf<AppDialog?>(null)
@@ -159,6 +167,7 @@ class MainActivity : ComponentActivity() {
         handler.post(tickRunnable)
         // The user may have changed the notification settings of the phone while the app was in the background.
         refreshSettingsState()
+        mojElektroVm.refreshConnection()
         // A catch-up after an offline period (SyncRecovery) refreshes the home screen straight away.
         SyncRecovery.uiListener = { info -> runOnUiThread { homeVm.onRecovered(info) } }
         ContextCompat.registerReceiver(
@@ -195,13 +204,18 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun AppContent() {
         val homeState by homeVm.state.collectAsStateWithLifecycle()
+        val connection by mojElektroVm.state.collectAsStateWithLifecycle()
         val current by screen
+        val connectedEimm = connection.connectedEimm
+        LaunchedEffect(connection.loaded, connectedEimm) {
+            if (connection.loaded) usageVm.onConnection(connectedEimm)
+        }
         val blockId = (homeState as? HomeUiState.Content)?.info?.now?.id
 
         // Back goes to the home screen from every other screen (from Moj Elektro to Nastavitve, where it is opened);
         // on the home screen the system default applies (leave the app, with the predictive back animation).
         BackHandler(enabled = current != Screen.HOME) {
-            showScreen(if (current == Screen.MOJELEKTRO) Screen.SETTINGS else Screen.HOME)
+            showScreen(if (current == Screen.MOJELEKTRO) mojElektroReturn else Screen.HOME)
         }
 
         AppShell(nowMillis = nowMillis.longValue, blockId = blockId, menuEntries = ::menuEntries) {
@@ -218,7 +232,7 @@ class MainActivity : ComponentActivity() {
                 },
                 label = "screen"
             ) { s ->
-                saveable.SaveableStateProvider(s.name) { ScreenContent(s, homeState) }
+                saveable.SaveableStateProvider(s.name) { ScreenContent(s, homeState, connectedEimm != null) }
             }
         }
 
@@ -230,19 +244,17 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun ScreenContent(s: Screen, homeState: HomeUiState) {
+    private fun ScreenContent(s: Screen, homeState: HomeUiState, usageEnabled: Boolean) {
         val goHome = { showScreen(Screen.HOME) }
         when (s) {
-            Screen.HOME -> {
-                val pulling by homeVm.pullRefreshing.collectAsStateWithLifecycle()
-                HomeScreen(
-                    state = homeState,
-                    nowMillis = nowMillis.longValue,
-                    pullRefreshing = pulling,
-                    onRefresh = { homeVm.refresh(force = true) },
-                    onPullRefresh = homeVm::pullRefresh,
-                    onOpenDonation = ::openDonationUrl
-                )
+            Screen.HOME -> HomePager(
+                usageEnabled = usageEnabled,
+                requestedPage = homePageRequest.value,
+                onRequestHandled = { homePageRequest.value = null },
+                // Stored data first; Moj Elektro is asked only for what is missing or too old.
+                onPageApproached = { if (it == 1) usageVm.onScreenShown() }
+            ) { page ->
+                if (page == 0) HomePage(homeState) else UsagePage()
             }
 
             Screen.CALC -> CalcScreen(onNavigateHome = goHome, onOpenUrl = ::openUrl, onSendMail = ::openMail)
@@ -274,38 +286,53 @@ class MainActivity : ComponentActivity() {
                 onNotificationModeChange = ::onNotificationModeChange,
                 onStatusIconChange = ::onStatusIconChange,
                 onOpenNotificationSettings = ::openNotificationSettings,
-                onOpenMojElektro = { showScreen(Screen.MOJELEKTRO) }
+                onOpenMojElektro = { openMojElektro(from = Screen.SETTINGS) }
             )
 
             Screen.MOJELEKTRO -> {
                 val state by mojElektroVm.state.collectAsStateWithLifecycle()
                 MojElektroScreen(
                     state = state,
-                    onBack = { showScreen(Screen.SETTINGS) },
+                    onBack = { showScreen(mojElektroReturn) },
                     onConnect = mojElektroVm::connect,
                     onVerify = mojElektroVm::verify,
                     onDisconnect = mojElektroVm::disconnect,
                     onOpenMojElektro = { openUrl(Links.MOJ_ELEKTRO) },
-                    onOpenUsage = { showScreen(Screen.USAGE) }
+                    onOpenUsage = ::openUsage,
+                    backDescription = if (mojElektroReturn == Screen.HOME) "Nazaj na Moj semafor porabe" else "Nazaj na nastavitve"
                 )
             }
 
-            Screen.USAGE -> {
-                val state by usageVm.state.collectAsStateWithLifecycle()
-                val range by usageVm.rangeDays.collectAsStateWithLifecycle()
-                val refreshing by usageVm.refreshing.collectAsStateWithLifecycle()
-                UsageScreen(
-                    state = state,
-                    rangeDays = range,
-                    ranges = UsageViewModel.RANGES,
-                    refreshing = refreshing,
-                    onBack = goHome,
-                    onRefresh = usageVm::refresh,
-                    onRangeChange = usageVm::setRange,
-                    onOpenConnection = { showScreen(Screen.MOJELEKTRO) }
-                )
-            }
         }
+    }
+
+    @Composable
+    private fun HomePage(homeState: HomeUiState) {
+        val pulling by homeVm.pullRefreshing.collectAsStateWithLifecycle()
+        HomeScreen(
+            state = homeState,
+            nowMillis = nowMillis.longValue,
+            pullRefreshing = pulling,
+            onRefresh = { homeVm.refresh(force = true) },
+            onPullRefresh = homeVm::pullRefresh,
+            onOpenDonation = ::openDonationUrl
+        )
+    }
+
+    @Composable
+    private fun UsagePage() {
+        val state by usageVm.state.collectAsStateWithLifecycle()
+        val range by usageVm.rangeDays.collectAsStateWithLifecycle()
+        val refreshing by usageVm.refreshing.collectAsStateWithLifecycle()
+        UsageDashboardScreen(
+            state = state,
+            rangeDays = range,
+            ranges = UsageViewModel.RANGES,
+            refreshing = refreshing,
+            onRefresh = usageVm::refresh,
+            onRangeChange = usageVm::setRange,
+            onManageConnection = { openMojElektro(from = Screen.HOME) }
+        )
     }
 
     /** The main menu; built each time it opens. */
@@ -317,11 +344,23 @@ class MainActivity : ComponentActivity() {
         add(MenuEntry("Novice") { showScreen(Screen.NEWS) })
         // Only with a Moj Elektro connection (optional feature); cheap check, no decryption.
         if (MojElektroRepository(this@MainActivity).isConnected()) {
-            add(MenuEntry("Moja poraba", "Podatki Moj Elektro, z zamikom") { showScreen(Screen.USAGE) })
+            add(MenuEntry("Moja poraba", "Moj semafor porabe, podatki z zamikom") { openUsage() })
         }
         add(MenuEntry("Nastavitve", "Obvestila in druge nastavitve") { showScreen(Screen.SETTINGS) })
         add(MenuEntry("Viri podatkov", dividerBefore = true) { dialog.value = AppDialog.SOURCES })
         add(MenuEntry("O aplikaciji") { dialog.value = AppDialog.ABOUT })
+    }
+
+    /** The usage dashboard: the second page of the home screen. */
+    private fun openUsage() {
+        showScreen(Screen.HOME)
+        homePageRequest.value = 1
+        usageVm.onScreenShown()
+    }
+
+    private fun openMojElektro(from: Screen) {
+        mojElektroReturn = from
+        showScreen(Screen.MOJELEKTRO)
     }
 
     /** Switches to [s] and runs what that screen needs on every visit. */
@@ -331,8 +370,6 @@ class MainActivity : ComponentActivity() {
             Screen.NEWS -> newsVm.load()
             // The state is read again on every visit, so the switches and the explanation match the real state.
             Screen.SETTINGS -> refreshSettingsState()
-            // Stored data first; Moj Elektro is asked only for what is missing or too old.
-            Screen.USAGE -> usageVm.onScreenShown()
             else -> Unit
         }
         if (s == Screen.HOME) tick()

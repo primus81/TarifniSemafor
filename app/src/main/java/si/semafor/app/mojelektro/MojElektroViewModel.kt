@@ -36,6 +36,15 @@ class MojElektroViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<MojElektroUiState> = _state.asStateFlow()
 
     init {
+        refreshConnection()
+    }
+
+    /**
+     * Reads the stored connection again (the app comes back to the foreground; the stored data may also have been
+     * deleted elsewhere because it could no longer be decrypted). Not while a request is running.
+     */
+    fun refreshConnection() {
+        if (_state.value.busy) return
         viewModelScope.launch {
             val eimm = withContext(Dispatchers.IO) { repository.connectedEimm() }
             _state.update { it.copy(loaded = true, connectedEimm = eimm) }

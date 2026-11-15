@@ -65,7 +65,8 @@ fun MojElektroScreen(
     onVerify: () -> Unit,
     onDisconnect: () -> Unit,
     onOpenMojElektro: () -> Unit,
-    onOpenUsage: () -> Unit
+    onOpenUsage: () -> Unit,
+    backDescription: String = "Nazaj na nastavitve"
 ) {
     val colors = MaterialTheme.colorScheme
     val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
@@ -76,13 +77,14 @@ fun MojElektroScreen(
             title = "Moj Elektro",
             subtitle = "Povezava tvojega merilnega mesta",
             onBack = onBack,
-            backDescription = "Nazaj na nastavitve"
+            backDescription = backDescription
         )
 
         InfoCard {
             Text(
                 text = "Povezava je neobvezna; aplikacija brez nje deluje enako. Z njo lahko aplikacija iz portala " +
-                    "Moj Elektro prebere podatke tvojega merilnega mesta in ti na zaslonu Moja poraba pokaže porabo po " +
+                    "Moj Elektro prebere podatke tvojega merilnega mesta in ti na strani Moj semafor porabe (podrsaj levo na " +
+                    "domačem zaslonu ali meni Moja poraba) pokaže porabo po " +
                     "časovnih blokih, 15-minutne konice ob dogovorjeni moči in, če jo imaš, oddano energijo.",
                 style = body,
                 color = colors.onSurface

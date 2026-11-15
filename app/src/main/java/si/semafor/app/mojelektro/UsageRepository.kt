@@ -1,13 +1,17 @@
 package si.semafor.app.mojelektro
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import si.semafor.app.DataState
 import si.semafor.app.Repo
 import si.semafor.app.SloTime
 import java.time.LocalDate
 
-/** Everything the "Moja poraba" screen shows, already analysed. */
+/** Everything the "Moj semafor porabe" screen shows, already analysed. */
+@Immutable
 data class UsageData(
+    /** The connected metering point. */
+    val eimm: String,
     val rangeDays: Int,
     /** When the readings were downloaded from Moj Elektro. */
     val fetchedAtMillis: Long,
@@ -19,13 +23,25 @@ data class UsageData(
     /** Block that is running now (from the app's URO data); null if not known. */
     val currentBlockId: Int?,
     val agreed: AgreedPower?,
-    /** 15-minute intervals of [lastDay]. */
-    val peakDay: DayProfile?,
+    /** When the agreed power was read from Moj Elektro (0 = never). */
+    val agreedFetchedAtMillis: Long,
+    /** 15-minute intervals of every day of the range that has readings, in date order (blocks from URO). */
+    val profiles: List<DayProfile>,
+    /** The highest interval of each day of [profiles]. */
+    val dailyPeaks: List<DailyPeak>,
+    /** Agreed power, highest interval and excesses per block over [profiles]. */
+    val blockRows: List<BlockPowerRow>,
+    val registers: RegisterSummary,
+    /** Descriptions of the status codes in [registers] (Moj Elektro catalogue); empty if not available. */
+    val qualityDescriptions: Map<String, String>,
     /** Energy per day and block in the chosen range. */
     val daily: List<DailyBlocks>,
     /** Taken vs delivered energy of [lastDay]; null if the metering point delivers no energy. */
     val production: ProductionDay?
-)
+) {
+    /** 15-minute intervals of [lastDay] (the latest complete day). */
+    val peakDay: DayProfile? get() = lastDay?.let { d -> profiles.firstOrNull { it.date == d } }
+}
 
 /**
  * Loads, caches and analyses the readings for the "Moja poraba" screen.
@@ -113,8 +129,8 @@ class UsageRepository(context: Context) {
             }
         }
         val lastDay = UsageAnalysis.lastCompleteDay(byDate)
-        val peakDay = lastDay?.let {
-            UsageAnalysis.dayProfile(it, byDate.getValue(it), scheduleMap[it], s.agreed, label)
+        val profiles = byDate.keys.sorted().map { date ->
+            UsageAnalysis.dayProfile(date, byDate.getValue(date), scheduleMap[date], s.agreed, label)
         }
         val hasExport = exportByDate.values.any { day -> day.any { it.second > 0.0 } }
         val production = if (hasExport && lastDay != null) {
@@ -122,11 +138,13 @@ class UsageRepository(context: Context) {
         } else {
             null
         }
+        val registers = UsageAnalysis.registerSummary(imports, exports, label, start, hasExport)
         val currentBlock = Repo.cached(appContext)
             ?.takeIf { Repo.dataState(it) != DataState.UNVERIFIED }
             ?.now?.id
 
         return UsageData(
+            eimm = s.eimm,
             rangeDays = rangeDays,
             fetchedAtMillis = s.fetchedAtMillis,
             fromCacheAfterError = fromCacheAfterError,
@@ -134,7 +152,12 @@ class UsageRepository(context: Context) {
             lastDay = lastDay,
             currentBlockId = currentBlock,
             agreed = s.agreed,
-            peakDay = peakDay,
+            agreedFetchedAtMillis = s.agreedFetchedAtMillis,
+            profiles = profiles,
+            dailyPeaks = UsageAnalysis.dailyPeaks(profiles),
+            blockRows = UsageAnalysis.blockPowerRows(profiles, s.agreed),
+            registers = registers,
+            qualityDescriptions = if (registers.flaggedCount > 0) repository.qualityDescriptions() else emptyMap(),
             daily = UsageAnalysis.dailyByBlocks(byDate, scheduleMap, label),
             production = production
         )

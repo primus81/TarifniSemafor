@@ -67,6 +67,16 @@ internal object MojElektroParser {
             )
         }
 
+    /**
+     * Answer of GET /reading-qualities: status code ("readingQualityType") -> description. Entries without a code are
+     * skipped; an entry without a description maps to the code itself.
+     */
+    fun readingQualities(text: String): Map<String, String> =
+        JSONArray(text).objects().mapNotNull { q ->
+            val code = q.str("readingQualityType") ?: return@mapNotNull null
+            code to (q.str("description") ?: code)
+        }.toMap()
+
     fun meterReadings(text: String): MeterReadings {
         val o = JSONObject(text)
         val series = o.optJSONArray("intervalBlocks").objects().mapNotNull { block ->

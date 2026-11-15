@@ -39,6 +39,9 @@ internal object MojElektroClient {
 
     fun readingTypes(token: String): Response = get(token, "/reading-type", emptyList())
 
+    /** Catalogue of the status codes a reading can carry, with descriptions (GET /reading-qualities). */
+    fun readingQualities(token: String): Response = get(token, "/reading-qualities", emptyList())
+
     fun meterReadings(
         token: String,
         usagePoint: String,

@@ -41,6 +41,7 @@ class MojElektroRepository(context: Context) {
 
     // Public, non-personal metadata (register codes of the official catalogue); plain private preferences.
     private val meta = appContext.getSharedPreferences(META_PREFS, Context.MODE_PRIVATE)
+    private val qualities = appContext.getSharedPreferences(QUALITIES_PREFS, Context.MODE_PRIVATE)
 
     /** True if a connection is stored (cheap, no decryption and no network). */
     fun isConnected(): Boolean = store.hasCredentials()
@@ -125,6 +126,26 @@ class MojElektroRepository(context: Context) {
         }
     }
 
+    /**
+     * Descriptions of the reading status codes (public catalogue, no personal data), kept for a week in plain private
+     * preferences. Not essential: any failure gives the stored descriptions or an empty map.
+     */
+    fun qualityDescriptions(): Map<String, String> {
+        val age = System.currentTimeMillis() - qualities.getLong(KEY_QUALITIES_TIME, 0L)
+        val stored = qualities.all.filterKeys { it.startsWith(QUALITY_PREFIX) }
+            .mapNotNull { (k, v) -> (v as? String)?.let { k.removePrefix(QUALITY_PREFIX) to it } }
+            .toMap()
+        if (stored.isNotEmpty() && age in 0 until CODES_MAX_AGE_MS) return stored
+        val fetched = withCredentials { c ->
+            mapResponse(MojElektroClient.readingQualities(c.token), MojElektroParser::readingQualities)
+        }
+        val map = (fetched as? MojElektroResult.Success)?.data ?: return stored
+        val e = qualities.edit().clear()
+        map.forEach { (code, text) -> e.putString(QUALITY_PREFIX + code, text) }
+        e.putLong(KEY_QUALITIES_TIME, System.currentTimeMillis()).apply()
+        return map
+    }
+
     /** 15-minute energy taken from (A+) and, if the catalogue has it, delivered to (A-) the grid. */
     fun fifteenMinuteReadings(start: LocalDate, end: LocalDate): MojElektroResult<MeterReadings> =
         readingsOf(start, end, listOf(ReadingRegister.IMPORT_15MIN, ReadingRegister.EXPORT_15MIN))
@@ -185,6 +206,9 @@ class MojElektroRepository(context: Context) {
         const val META_PREFS = "mojelektro_meta"
         const val KEY_CODES_TIME = "codes_time"
         const val CODES_MAX_AGE_MS = 7 * 24 * 3600 * 1000L
+        const val QUALITIES_PREFS = "mojelektro_qualities"
+        const val KEY_QUALITIES_TIME = "time"
+        const val QUALITY_PREFIX = "q_"
     }
 
     private fun <T> withCredentials(block: (MojElektroCredentials) -> MojElektroResult<T>): MojElektroResult<T> =
