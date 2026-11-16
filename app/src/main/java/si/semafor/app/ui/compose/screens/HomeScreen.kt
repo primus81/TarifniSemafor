@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -51,6 +52,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import si.semafor.app.ui.compose.WidthClass
+import si.semafor.app.ui.compose.currentWidthClass
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -94,7 +97,13 @@ fun HomeScreen(
     var nowAdviceExpanded by rememberSaveable { mutableStateOf(true) }
     var nextAdviceExpanded by rememberSaveable { mutableStateOf(true) }
 
-    RefreshableScreen(refreshing = pullRefreshing, onRefresh = onPullRefresh) {
+    // Wide windows (large tablet, desktop): the current block on the left, the advice on the right.
+    val twoColumns = currentWidthClass() == WidthClass.EXPANDED && state is HomeUiState.Content
+    RefreshableScreen(
+        refreshing = pullRefreshing,
+        onRefresh = onPullRefresh,
+        maxWidth = if (twoColumns) 1100.dp else 640.dp
+    ) {
         when (state) {
             HomeUiState.Loading -> {
                 HomeSkeleton()
@@ -115,26 +124,44 @@ fun HomeScreen(
 
             is HomeUiState.Content -> {
                 val now = state.info.now
-                CurrentBlockCard(now, state.nextChangeMillis, nowMillis)
-                StatusRow(state, onRefresh)
-                state.best?.let { BestBlockCard(it, nowMillis) }
-
-                SectionDivider()
-                AdviceSection(stringResource(R.string.home_advice_now), now, nowAdviceExpanded) { nowAdviceExpanded = it }
-                SectionDivider()
-                AdviceSection(stringResource(R.string.home_advice_next), state.info.next, nextAdviceExpanded) {
-                    nextAdviceExpanded = it
+                val blockPart: @Composable ColumnScope.() -> Unit = {
+                    CurrentBlockCard(now, state.nextChangeMillis, nowMillis)
+                    StatusRow(state, onRefresh)
+                    state.best?.let { BestBlockCard(it, nowMillis) }
                 }
-                Text(
-                    text = stringResource(R.string.home_advice_source_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
+                val advicePart: @Composable ColumnScope.() -> Unit = {
+                    AdviceSection(stringResource(R.string.home_advice_now), now, nowAdviceExpanded) { nowAdviceExpanded = it }
+                    SectionDivider()
+                    AdviceSection(stringResource(R.string.home_advice_next), state.info.next, nextAdviceExpanded) {
+                        nextAdviceExpanded = it
+                    }
+                    Text(
+                        text = stringResource(R.string.home_advice_source_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
 
-                if (DonationConfig.DONATIONS_ENABLED) {
-                    SectionDivider(thickness = 2.dp)
-                    DonationCard(onOpenDonation)
+                if (twoColumns) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            blockPart()
+                            if (DonationConfig.DONATIONS_ENABLED) {
+                                SectionDivider(thickness = 2.dp)
+                                DonationCard(onOpenDonation)
+                            }
+                        }
+                        Column(Modifier.weight(1f)) { advicePart() }
+                    }
+                } else {
+                    blockPart()
+                    SectionDivider()
+                    advicePart()
+                    if (DonationConfig.DONATIONS_ENABLED) {
+                        SectionDivider(thickness = 2.dp)
+                        DonationCard(onOpenDonation)
+                    }
                 }
             }
         }

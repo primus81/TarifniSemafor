@@ -8,6 +8,8 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
@@ -20,6 +22,7 @@ import androidx.compose.ui.Modifier
 fun RefreshableScreen(
     refreshing: Boolean,
     onRefresh: () -> Unit,
+    maxWidth: Dp = 640.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val state = rememberPullToRefreshState()
@@ -38,6 +41,6 @@ fun RefreshableScreen(
             )
         }
     ) {
-        ScreenScaffold(content)
+        ScreenScaffold(maxWidth, content)
     }
 }

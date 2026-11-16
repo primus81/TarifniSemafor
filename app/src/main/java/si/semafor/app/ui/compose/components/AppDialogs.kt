@@ -169,3 +169,30 @@ fun AboutDialog(version: String, onDismiss: () -> Unit, onOpenUrl: (String) -> U
         }
     }
 }
+
+/**
+ * Shown once before the system asks for the notification permission (Android 13+), so the user knows what the
+ * permission is for. [onAllow] continues to the system dialog; [onLater] (or dismissing) leaves notifications off
+ * until the user switches them on in Settings.
+ */
+@Composable
+fun NotificationIntroDialog(onAllow: () -> Unit, onLater: () -> Unit) {
+    AppDialog(
+        title = stringResource(R.string.notif_intro_title),
+        onDismiss = onLater,
+        buttons = {
+            TextButton(onClick = onLater) {
+                Text(stringResource(R.string.notif_intro_later), fontSize = 14.sp, color = AppColors.TextSecondary)
+            }
+            TextButton(onClick = onAllow) {
+                Text(stringResource(R.string.notif_intro_allow), fontSize = 14.sp, color = AppColors.Accent)
+            }
+        }
+    ) {
+        Text(
+            text = stringResource(R.string.notif_intro_text),
+            fontSize = 15.sp,
+            color = AppColors.TextPrimary
+        )
+    }
+}

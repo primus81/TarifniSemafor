@@ -124,4 +124,10 @@
     <string name="about_and">" in "</string>
     <string name="about_version">Verzija: %1$s</string>
     <string name="about_privacy_policy">Politika zasebnosti</string>
+
+    <!-- Before the system asks for the notification permission (first start, Android 13+). -->
+    <string name="notif_intro_title">Obvestila ob menjavi bloka</string>
+    <string name="notif_intro_text">Tarifni semafor te lahko obvesti, ko se začne nov časovni blok, in v vrstici stanja pokaže ikono trenutnega bloka. Za to Android potrebuje tvoje dovoljenje.\n\nObvestila nastaviš ali izklopiš kadar koli v Nastavitvah. Aplikacija ne pošilja oglasov ali drugih sporočil.</string>
+    <string name="notif_intro_allow">Nadaljuj</string>
+    <string name="notif_intro_later">Ne zdaj</string>
 </resources>

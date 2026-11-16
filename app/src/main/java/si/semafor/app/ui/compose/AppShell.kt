@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
@@ -32,6 +33,9 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.material3.Icon
@@ -42,6 +46,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,6 +94,7 @@ fun AppShell(
     blockId: Int?,
     menuEntries: () -> List<MenuEntry>,
     bottomBar: (@Composable () -> Unit)? = null,
+    navigationRail: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Column(
@@ -109,14 +115,24 @@ fun AppShell(
         val imeBottom = WindowInsets.ime.getBottom(density)
         val navBottom = WindowInsets.navigationBars.getBottom(density)
         val keyboard = with(density) { (imeBottom - navBottom).coerceAtLeast(0).toDp() }
-        Box(
+        Row(
             Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(bottom = keyboard)
-                // With the bottom bar, the bar keeps clear of the navigation bar, so the screens must not add it again.
-                .then(if (bottomBar != null) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier)
-        ) { content() }
+        ) {
+            // Wide windows (tablet, unfolded foldable, landscape): the main destinations move to a rail on the left.
+            navigationRail?.invoke()
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .padding(bottom = keyboard)
+                    // With the bottom bar, the bar keeps clear of the navigation bar, so the screens must not add it again.
+                    .then(if (bottomBar != null) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier)
+                    // With the rail, the rail keeps clear of the left system bar and cutout.
+                    .then(if (navigationRail != null) Modifier.consumeWindowInsets(SideStartInsets) else Modifier)
+            ) { content() }
+        }
         bottomBar?.invoke()
     }
 }
@@ -127,7 +143,8 @@ private fun TopBar(nowMillis: Long, blockId: Int?, menuEntries: () -> List<MenuE
     val titleDescription = if (icon.lit) stringResource(R.string.top_title_block, icon.blockId!!) else stringResource(R.string.top_title_no_data)
     val menuDescription = stringResource(R.string.top_menu)
     val lang = LocalLang.current
-    var menuOpen by remember { mutableStateOf(false) }
+    // Saveable: an open menu stays open after rotation or folding / unfolding.
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
@@ -275,6 +292,51 @@ fun MainBottomBar(selected: Int, blockId: Int?, onSelect: (Int) -> Unit) {
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            )
+        }
+    }
+}
+
+/** The left system bar and display cutout (landscape), kept clear by the navigation rail. */
+private val SideStartInsets: WindowInsets
+    @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Start)
+
+/**
+ * The same destinations as [MainBottomBar], as a Material 3 navigation rail for wide windows. It keeps clear of the
+ * left system bar, the cutout and the navigation bar; the top bar above it already covers the status bar.
+ */
+@Composable
+fun MainNavigationRail(selected: Int, blockId: Int?, onSelect: (Int) -> Unit) {
+    val haptics = LocalHapticFeedback.current
+    NavigationRail(
+        containerColor = AppColors.TopBar,
+        windowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
+            .only(WindowInsetsSides.Start + WindowInsetsSides.Bottom)
+    ) {
+        Spacer(Modifier.height(8.dp))
+        MainTab.entries.forEachIndexed { i, tab ->
+            NavigationRailItem(
+                selected = selected == i,
+                onClick = {
+                    if (selected != i) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    onSelect(i)
+                },
+                icon = {
+                    if (tab == MainTab.HOME) {
+                        SemaforLogo(blockId = blockId, modifier = Modifier.size(26.dp))
+                    } else {
+                        Icon(painter = painterResource(tab.iconRes), contentDescription = null)
+                    }
+                },
+                label = { Text(stringResource(tab.labelRes), maxLines = 1) },
+                colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier.padding(vertical = 4.dp)
             )
         }
     }

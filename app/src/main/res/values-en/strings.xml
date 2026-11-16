@@ -124,4 +124,10 @@
     <string name="about_and">" and "</string>
     <string name="about_version">Version: %1$s</string>
     <string name="about_privacy_policy">Privacy policy</string>
+
+    <!-- Before the system asks for the notification permission (first start, Android 13+). -->
+    <string name="notif_intro_title">Notifications when the block changes</string>
+    <string name="notif_intro_text">Tarifni semafor can tell you when a new time block begins and show the current block as an icon in the status bar. Android needs your permission for this.\n\nYou can change or turn off notifications at any time in Settings. The app never sends ads or other messages.</string>
+    <string name="notif_intro_allow">Continue</string>
+    <string name="notif_intro_later">Not now</string>
 </resources>

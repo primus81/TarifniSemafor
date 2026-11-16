@@ -47,10 +47,13 @@ import si.semafor.app.mojelektro.UsageViewModel
 import si.semafor.app.ui.compose.AppShell
 import si.semafor.app.ui.compose.LocalLang
 import si.semafor.app.ui.compose.MainBottomBar
+import si.semafor.app.ui.compose.MainNavigationRail
+import si.semafor.app.ui.compose.currentWidthClass
 import si.semafor.app.ui.compose.MainPager
 import si.semafor.app.ui.compose.MainTab
 import si.semafor.app.ui.compose.MenuEntry
 import si.semafor.app.ui.compose.components.AboutDialog
+import si.semafor.app.ui.compose.components.NotificationIntroDialog
 import si.semafor.app.ui.compose.components.PrivacySheet
 import si.semafor.app.ui.compose.components.SourcesDialog
 import si.semafor.app.ui.compose.screens.CalcScreen
@@ -104,6 +107,9 @@ class MainActivity : AppCompatActivity() {
 
     // The privacy notice: opens by itself at the first start, later from Settings.
     private val showPrivacy = mutableStateOf(false)
+
+    // First start (Android 13+): a short explanation before the system's notification permission dialog.
+    private val showNotificationIntro = mutableStateOf(false)
 
     // Wall clock of the UI (top bar, countdowns); ticks once per second while the Activity is resumed.
     private val nowMillis = mutableLongStateOf(System.currentTimeMillis())
@@ -183,7 +189,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         SemaforWidget.schedule(this)
-        maybeAskNotificationPermissionOnFirstRun()
+        // At the very first start the privacy notice comes first; the notification question follows when it closes.
+        if (!showPrivacy.value) maybeAskNotificationPermissionOnFirstRun()
 
         // Back to the screen that was open before the Activity was recreated.
         savedInstanceState?.getString(KEY_SCREEN)
@@ -259,13 +266,22 @@ class MainActivity : AppCompatActivity() {
             tabRequest.value = null
         }
 
+        val useRail = currentWidthClass().useRail
         AppShell(
             nowMillis = nowMillis.longValue,
             blockId = blockId,
             menuEntries = ::menuEntries,
-            bottomBar = if (current == Screen.MAIN) {
+            // Phones in portrait: bottom bar. Wider windows (landscape, tablet, unfolded foldable): rail on the left.
+            bottomBar = if (current == Screen.MAIN && !useRail) {
                 {
                     MainBottomBar(selected = pager.targetPage, blockId = blockId) { tab ->
+                        scope.launch { pager.animateScrollToPage(tab) }
+                    }
+                }
+            } else null,
+            navigationRail = if (current == Screen.MAIN && useRail) {
+                {
+                    MainNavigationRail(selected = pager.targetPage, blockId = blockId) { tab ->
                         scope.launch { pager.animateScrollToPage(tab) }
                     }
                 }
@@ -323,8 +339,23 @@ class MainActivity : AppCompatActivity() {
                     AppSettings.setPrivacyNoticeSeen(this, true)
                     showPrivacy.value = false
                     refreshSettingsState()
+                    maybeAskNotificationPermissionOnFirstRun()
                 },
                 onOpenPolicy = { openUrl(Links.PRIVACY_POLICY) }
+            )
+        } else if (showNotificationIntro.value) {
+            NotificationIntroDialog(
+                onAllow = {
+                    showNotificationIntro.value = false
+                    AppSettings.setPermissionAsked(this, true)
+                    requestNotificationPermission(PermissionRequest.FIRST_RUN)
+                },
+                onLater = {
+                    // Not asked again by itself; the Settings screen explains why no notification appears.
+                    showNotificationIntro.value = false
+                    AppSettings.setPermissionAsked(this, true)
+                    refreshSettingsState()
+                }
             )
         }
     }
@@ -501,16 +532,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Notifications are on by default, so the first start asks for the permission once (Android 13+). If the user
-     * refuses, nothing is switched off: the Settings screen explains why no notification appears.
+     * Notifications are on by default, so the first start asks for the permission once (Android 13+): after the
+     * privacy notice, first a short explanation, then the system dialog. If the user refuses or chooses "Ne zdaj",
+     * nothing is switched off: the Settings screen explains why no notification appears.
      */
     private fun maybeAskNotificationPermissionOnFirstRun() {
         val wanted = AppSettings.blockNotificationsEnabled(this) || AppSettings.statusIconEnabled(this)
         if (wanted && needsNotificationPermission() &&
             !AppSettings.permissionAsked(this) && !AppSettings.permissionDenied(this)
         ) {
-            AppSettings.setPermissionAsked(this, true)
-            requestNotificationPermission(PermissionRequest.FIRST_RUN)
+            // Asked only after the explanation (NotificationIntroDialog); "asked" is stored when the user answers it,
+            // so a rotation or a closed app shows the explanation again instead of losing it.
+            showNotificationIntro.value = true
         }
     }
 

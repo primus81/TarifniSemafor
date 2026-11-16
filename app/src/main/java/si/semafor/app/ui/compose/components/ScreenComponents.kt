@@ -60,11 +60,11 @@ import si.semafor.app.ui.compose.theme.BodyLineHeight
 
 /**
  * A scrollable screen with the app's standard layout: 24 / 16 / 24 / 24 dp padding plus the system bars (left,
- * right and bottom; the content scrolls behind the navigation bar), content at most 640 dp wide and centred on
- * tablets and in landscape.
+ * right and bottom; the content scrolls behind the navigation bar), content at most [maxWidth] wide (640 dp, a
+ * comfortable line length) and centred on tablets and in landscape.
  */
 @Composable
-fun ScreenScaffold(content: @Composable ColumnScope.() -> Unit) {
+fun ScreenScaffold(maxWidth: Dp = 640.dp, content: @Composable ColumnScope.() -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -73,7 +73,7 @@ fun ScreenScaffold(content: @Composable ColumnScope.() -> Unit) {
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 640.dp)
+                .widthIn(max = maxWidth)
                 .fillMaxWidth()
                 .windowInsetsPadding(ContentInsets)
                 .padding(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 24.dp),
