@@ -44,7 +44,7 @@
 
     <!-- Privacy notice -->
     <string name="privacy_title">Your privacy</string>
-    <string name="privacy_intro">Tarifni semafor works without an account and without its own server. What you enter stays on this phone.</string>
+    <string name="privacy_intro">Tarifni semafor – moja poraba works without an account and without its own server. What you enter stays on this phone.</string>
     <string name="privacy_local_title">Your data stays on the phone</string>
     <string name="privacy_local_text">Time blocks and prices are downloaded from official public sources (uro.si, SODO, Energy Agency). The app sends no data about you when doing so.</string>
     <string name="privacy_keystore_title">Moj Elektro is encrypted</string>
@@ -76,12 +76,12 @@
     <string name="widget_no_data">No data</string>
     <string name="widget_last">Last: %1$s</string>
     <string name="widget_check_connection">Check connection</string>
-    <string name="widget_no_data_spoken">Tarifni semafor. No data. Check your internet connection. Tap to open the app.</string>
+    <string name="widget_no_data_spoken">Tarifni semafor – moja poraba. No data. Check your internet connection. Tap to open the app.</string>
     <string name="widget_until">until %1$s</string>
     <string name="widget_state">As of %1$s</string>
     <string name="widget_next">Next:</string>
     <string name="widget_best">Cheapest</string>
-    <string name="widget_spoken">Tarifni semafor. Block %1$d is in force until %2$s. Next is block %3$d, %4$s.%5$s Tap to open the app.</string>
+    <string name="widget_spoken">Tarifni semafor – moja poraba. Block %1$d is in force until %2$s. Next is block %3$d, %4$s.%5$s Tap to open the app.</string>
     <string name="widget_spoken_stored">" Showing stored data as of %1$s."</string>
     <string name="when_today">at %1$s</string>
     <string name="when_tomorrow">tomorrow at %1$s</string>
@@ -97,13 +97,13 @@
     <string name="calc_offers_title">Which offers are included?</string>
     <string name="calc_offers_text">The comparison includes all price lists that suppliers have entered into the application and that the Energy Agency has confirmed. The suppliers are responsible for the data being current and correct; the Agency performs a basic check. The list of suppliers is in the calculator itself (»Prikaz tržnih udeležencev«).</string>
     <string name="calc_personal_title">Personal data</string>
-    <string name="calc_personal_text">The calculator runs on the Energy Agency\'s website, not in Tarifni semafor. The app does not see, collect or store what you enter. By entering your annual consumption you agree that the Agency processes it to compare offers. Read the terms of use first; if you do not agree with them, do not enter any data.</string>
+    <string name="calc_personal_text">The calculator runs on the Energy Agency\'s website, not in Tarifni semafor – moja poraba. The app does not see, collect or store what you enter. By entering your annual consumption you agree that the Agency processes it to compare offers. Read the terms of use first; if you do not agree with them, do not enter any data.</string>
     <string name="calc_terms">Terms of use</string>
     <string name="calc_info">General information about the comparison tool</string>
     <string name="calc_open">Open the calculator</string>
     <string name="calc_opens_in_browser">Opens in your browser (aplikacije.agen-rs.si, in Slovenian).</string>
     <string name="calc_help">"Help with the calculator: "</string>
-    <string name="calc_summary_note">Summarised from the calculator\'s own description (as of November 2026). Tarifni semafor is not an official app of the Energy Agency.</string>
+    <string name="calc_summary_note">Summarised from the calculator\'s own description (as of November 2026). Tarifni semafor – moja poraba is not an official app of the Energy Agency.</string>
     <string name="calc_quick_title">Quick network charge estimate</string>
     <string name="calc_quick_intro">An approximate monthly network charge for user group 0. Enter your agreed power and expected consumption.</string>
     <string name="calc_season_high">Higher season (Nov–Feb)</string>

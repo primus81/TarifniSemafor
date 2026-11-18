@@ -91,7 +91,9 @@ fun HomeScreen(
     pullRefreshing: Boolean,
     onRefresh: () -> Unit,
     onPullRefresh: () -> Unit,
-    onOpenDonation: (String) -> Unit
+    onOpenDonation: (String) -> Unit,
+    /** The cards below the current block (advice, plan, price, power); [block] = current block or null. */
+    priceCard: (@Composable (block: Int?) -> Unit)? = null
 ) {
     // Open at every start; kept while the app runs (also across screen switches and rotation). Not a setting.
     var nowAdviceExpanded by rememberSaveable { mutableStateOf(true) }
@@ -125,9 +127,12 @@ fun HomeScreen(
             is HomeUiState.Content -> {
                 val now = state.info.now
                 val blockPart: @Composable ColumnScope.() -> Unit = {
+                    // A. Current state: block, countdown, data status, next favourable block.
                     CurrentBlockCard(now, state.nextChangeMillis, nowMillis)
                     StatusRow(state, onRefresh)
                     state.best?.let { BestBlockCard(it, nowMillis) }
+                    // B-E. What to do now, the day plan, my price, my power (block only if it covers this hour).
+                    priceCard?.invoke(if (Repo.coversNow(now)) now.id else null)
                 }
                 val advicePart: @Composable ColumnScope.() -> Unit = {
                     AdviceSection(stringResource(R.string.home_advice_now), now, nowAdviceExpanded) { nowAdviceExpanded = it }

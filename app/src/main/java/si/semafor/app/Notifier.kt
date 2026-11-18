@@ -44,9 +44,11 @@ object Notifier {
     private const val KEY_EXP_FROM = "notif_exp_from_id"
     private const val KEY_EXP_TO = "notif_exp_to_id"
 
-    /** Creates all notification channels of the app: block change and status bar indicator. */
+    /** Creates all notification channels of the app: block change, status bar indicator and price changes. */
     fun createChannel(ctx: Context) {
         StatusIndicator.createChannel(ctx)
+        si.semafor.app.pricing.PriceNotifier.createChannel(ctx)
+        si.semafor.app.reminders.Reminders.createChannel(ctx)
         // Re-creating a channel with a new name renames it, so the names follow the app's language.
         val res = AppLanguage.localized(ctx)
         val channel = NotificationChannel(

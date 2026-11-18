@@ -23,7 +23,13 @@ object Links {
     // Official description of the Moj Elektro API (the only server the optional connection talks to).
     const val MOJ_ELEKTRO_API_DOCS = "https://docs.informatika.si/mojelektro/api/"
 
-    // Sem vpiši pravi naslov objavljene politike zasebnosti (npr. stran na GitHub Pages).
-    // Če vrednost vsebuje "REPLACE_WITH", se vrstica v pogovornem oknu "O aplikaciji" ne prikaže.
-    const val PRIVACY_POLICY = "https://primus81.github.io/Tarifni-semafor-pravilnik-zasebnosti/"
+    // Privacy policy and disclaimer of the app and the website (both pages: Slovenian first, English under #en).
+    // Until 2.2.3 they were on primus81.github.io; those addresses now redirect here.
+    // If PRIVACY_POLICY contains "REPLACE_WITH", the line in the "O aplikaciji" dialog is not shown.
+    const val PRIVACY_POLICY = "https://tarifnisemafor.si/pravilnik-o-zasebnosti/"
+    const val DISCLAIMER = "https://tarifnisemafor.si/izjava-o-omejitvi-odgovornosti/"
+
+    /** The privacy policy in the app's language: the English part of the page for English. */
+    fun privacyPolicy(language: String): String =
+        if (language == AppSettings.LANGUAGE_EN) "$PRIVACY_POLICY#en" else PRIVACY_POLICY
 }

@@ -186,14 +186,20 @@ private fun TopBar(nowMillis: Long, blockId: Int?, menuEntries: () -> List<MenuE
         ) {
             SemaforLogo(blockId = blockId, modifier = Modifier.size(34.dp))
             Spacer(Modifier.width(8.dp))
-            BasicText(
-                text = stringResource(R.string.app_name),
-                style = TextStyle(color = AppColors.TextPrimary, fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = 20.sp, stepSize = 1.sp),
-                modifier = Modifier
-                    .weight(1f, fill = false)
-            )
+            // "Tarifni semafor" as the title and "moja poraba" smaller under it.
+            Column(modifier = Modifier.weight(1f, fill = false)) {
+                BasicText(
+                    text = stringResource(R.string.app_name_main),
+                    style = TextStyle(color = AppColors.TextPrimary, fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = 19.sp, stepSize = 1.sp)
+                )
+                BasicText(
+                    text = stringResource(R.string.app_name_sub),
+                    style = TextStyle(color = AppColors.TextSecondary, fontSize = 12.sp, lineHeight = 13.sp),
+                    maxLines = 1
+                )
+            }
         }
 
         Column(

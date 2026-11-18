@@ -69,9 +69,16 @@ import si.semafor.app.ui.compose.screens.UsageDashboardScreen
 import si.semafor.app.ui.compose.theme.AppTheme
 import si.semafor.app.ui.compose.theme.LocalAppPalette
 import si.semafor.app.ui.compose.theme.isDarkTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import si.semafor.app.mojelektro.UsageUiState
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.res.stringResource
 
 /** MAIN = the three tabs (Domov, Semafor porabe, Nastavitve); the others are detail screens opened from them. */
-enum class Screen { MAIN, CALC, NEWS, PRICES, TIPS, MOJELEKTRO }
+enum class Screen { MAIN, CALC, NEWS, PRICES, TIPS, MOJELEKTRO, ENERGY_PRICE, PLANNER }
 
 /** Dialogs opened from the menu or from Settings. */
 private enum class AppDialog { SOURCES, ABOUT }
@@ -92,6 +99,12 @@ class MainActivity : AppCompatActivity() {
 
     // "Semafor porabe": the user's own readings (second tab).
     private val usageVm: UsageViewModel by viewModels()
+
+    // "Cena elektrike": final price with network charge, levies and VAT (home card, price screen, calculator).
+    private val priceVm: si.semafor.app.pricing.EnergyPriceViewModel by viewModels()
+
+    // "Pametni dnevni načrt": appliances and their recommended starts (uses the prices of priceVm).
+    private val plannerVm: si.semafor.app.planner.PlannerViewModel by viewModels()
 
     private val screen = mutableStateOf(Screen.MAIN)
     private val dialog = mutableStateOf<AppDialog?>(null)
@@ -154,7 +167,7 @@ class MainActivity : AppCompatActivity() {
         val MotionEasing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
 
         // Only shown if PackageManager cannot report the version (keep in step with versionName).
-        const val FALLBACK_VERSION = "2.2.3"
+        const val FALLBACK_VERSION = "2.3.0"
 
         const val PAGE_HOME = 0
         const val PAGE_USAGE = 1
@@ -189,6 +202,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         SemaforWidget.schedule(this)
+        // Price lists: a daily local check whether a download is due (only then the website is contacted).
+        si.semafor.app.pricing.PriceSync.schedule(this)
         // At the very first start the privacy notice comes first; the notification question follows when it closes.
         if (!showPrivacy.value) maybeAskNotificationPermissionOnFirstRun()
 
@@ -196,6 +211,8 @@ class MainActivity : AppCompatActivity() {
         savedInstanceState?.getString(KEY_SCREEN)
             ?.let { name -> Screen.entries.firstOrNull { it.name == name } }
             ?.let { showScreen(it) }
+        // Opened from a notification or a widget area.
+        if (savedInstanceState == null) openFromIntent(intent)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -223,6 +240,7 @@ class MainActivity : AppCompatActivity() {
         )
         // Stored data first (if it can still be trusted), then a refresh if the last one is older than a minute.
         homeVm.onScreenResumed()
+        priceVm.onShown()
     }
 
     override fun onPause() {
@@ -241,6 +259,8 @@ class MainActivity : AppCompatActivity() {
         val now = System.currentTimeMillis()
         nowMillis.longValue = now
         if (screen.value == Screen.MAIN) homeVm.onTick(now)
+        priceVm.onTick(now)
+        plannerVm.onTick(now)
     }
 
     @Composable
@@ -250,6 +270,33 @@ class MainActivity : AppCompatActivity() {
         val current by screen
         val connectedEimm = connection.connectedEimm
         val blockId = (homeState as? HomeUiState.Content)?.info?.now?.id
+        // The planner and the reminders use the same hourly prices as the price screen.
+        val priceState by priceVm.state.collectAsStateWithLifecycle()
+        LaunchedEffect(priceState.hourly) {
+            plannerVm.onPrices(priceState.hourly)
+            val cheaper = si.semafor.app.pricing.EnergyPriceCalculator.nextCheaper(priceState.hourly)
+            val ctx = applicationContext
+            withContext(Dispatchers.IO) {
+                si.semafor.app.reminders.Reminders.saveCheaper(ctx, cheaper?.startMillis, cheaper?.block, cheaper?.total)
+                SemaforWidget.renderFromCache(ctx)
+            }
+        }
+        // The last known power (delayed Moj Elektro readings) for the home card, the planner and the power warnings.
+        val usageState by usageVm.state.collectAsStateWithLifecycle()
+        LaunchedEffect(usageState, connectedEimm) {
+            val data = (usageState as? UsageUiState.Content)?.data
+            if (connectedEimm == null) {
+                plannerVm.onPower(null)
+                return@LaunchedEffect
+            }
+            val summary = data?.let { si.semafor.app.mojelektro.PowerSummary.of(it) } ?: return@LaunchedEffect
+            plannerVm.onPower(summary)
+            val ctx = applicationContext
+            withContext(Dispatchers.IO) {
+                si.semafor.app.mojelektro.PowerSummaryStore.save(ctx, summary)
+                si.semafor.app.reminders.Reminders.onPowerSummary(ctx, summary)
+            }
+        }
         LaunchedEffect(connection.loaded, connectedEimm) {
             if (connection.loaded) usageVm.onConnection(connectedEimm)
             refreshSettingsState()
@@ -341,7 +388,7 @@ class MainActivity : AppCompatActivity() {
                     refreshSettingsState()
                     maybeAskNotificationPermissionOnFirstRun()
                 },
-                onOpenPolicy = { openUrl(Links.PRIVACY_POLICY) }
+                onOpenPolicy = { openUrl(Links.privacyPolicy(AppLanguage.current(this))) }
             )
         } else if (showNotificationIntro.value) {
             NotificationIntroDialog(
@@ -369,8 +416,115 @@ class MainActivity : AppCompatActivity() {
             pullRefreshing = pulling,
             onRefresh = { homeVm.refresh(force = true) },
             onPullRefresh = homeVm::pullRefresh,
-            onOpenDonation = ::openDonationUrl
+            onOpenDonation = ::openDonationUrl,
+            priceCard = { block -> HomeCards(block) }
         )
+    }
+
+    /**
+     * The cards of the home screen below the current block: what to do now, the day plan, my price and my power.
+     * [block] = the current block when the shown data covers this hour.
+     */
+    @Composable
+    private fun HomeCards(block: Int?) {
+        val price by priceVm.state.collectAsStateWithLifecycle()
+        val plan by plannerVm.state.collectAsStateWithLifecycle()
+        val connection by mojElektroVm.state.collectAsStateWithLifecycle()
+        val homeState by homeVm.state.collectAsStateWithLifecycle()
+        val now = nowMillis.longValue
+        val current = if (block == null) null else si.semafor.app.pricing.PriceNow.priceAt(price.data, price.setup, now, block)
+        val next = si.semafor.app.planner.DayPlanner.nextRun(plan.results, now)
+        val nextRun = next?.let { si.semafor.app.planner.PlannerStore.PlannedRun(it.device.id, it.device.name, it.startMillis, it.endMillis, it.cost) }
+        val best = (homeState as? HomeUiState.Content)?.best
+        val advice = si.semafor.app.planner.NowAdvisor.advise(
+            nowMillis = now,
+            prices = price.hourly,
+            flatEnergy = isFlatEnergy(price),
+            nextRun = nextRun,
+            power = plan.power,
+            currentBlock = block,
+            bestBlock = best?.id,
+            bestAtMillis = best?.startMillis
+        )
+        si.semafor.app.ui.compose.components.NowAdviceCard(
+            advice, now,
+            onSetPrice = { showScreen(Screen.ENERGY_PRICE) },
+            onOpen = if (price.setup.configured) ({ showScreen(Screen.PLANNER) }) else null
+        )
+        si.semafor.app.ui.compose.components.PlannerHomeCard(nextRun, now) { showScreen(Screen.PLANNER) }
+        val upcoming = price.hourly.take(24)
+        si.semafor.app.ui.compose.components.CurrentTotalPriceCard(
+            price = current,
+            next = si.semafor.app.pricing.EnergyPriceCalculator.nextCheaper(price.hourly),
+            configured = price.setup.configured,
+            hourlyKnown = price.hourly.size > 1,
+            nowMillis = now,
+            onSetup = { showScreen(Screen.ENERGY_PRICE) },
+            onClick = { showScreen(Screen.ENERGY_PRICE) },
+            title = getString(R.string.home_price_title),
+            extra = {
+                val locale = si.semafor.app.ui.compose.currentLocale
+                Text(
+                    priceSourceLine(price),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                if (upcoming.size > 1) {
+                    Text(
+                        stringResource(
+                            R.string.home_price_range,
+                            upcoming.size,
+                            si.semafor.app.pricing.PriceNow.formatKwh(upcoming.minOf { it.total }, locale),
+                            si.semafor.app.pricing.PriceNow.formatKwh(upcoming.maxOf { it.total }, locale)
+                        ),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                si.semafor.app.ui.compose.components.LinkText(stringResource(R.string.home_price_details)) { showScreen(Screen.ENERGY_PRICE) }
+            }
+        )
+        si.semafor.app.ui.compose.components.PowerHomeCard(connection.connectedEimm != null, plan.power) { openTab(PAGE_USAGE) }
+    }
+
+    /** Agreed power per block for the fixed costs: Moj Elektro first, otherwise the value typed in the planner. */
+    private fun agreedForPrices(): List<Double?> {
+        val plan = plannerVm.state.value
+        plan.power?.agreedByBlock?.takeIf { l -> l.any { it != null } }?.let { return it }
+        return plan.load.manualAgreedKw?.let { kw -> List(5) { kw } } ?: emptyList()
+    }
+
+    private fun agreedSourceLabel(): String? {
+        val plan = plannerVm.state.value
+        return when {
+            plan.power?.agreedByBlock?.any { it != null } == true -> getString(R.string.ep_source_moj)
+            plan.load.manualAgreedKw != null -> getString(R.string.ep_source_manual)
+            else -> null
+        }
+    }
+
+    /** True if the energy price is the same in every tariff (differences then come only from the network charge). */
+    private fun isFlatEnergy(price: si.semafor.app.pricing.EnergyPriceUiState): Boolean {
+        val data = price.data ?: return false
+        if (price.setup.meter == si.semafor.app.pricing.MeterType.SINGLE) return price.setup.configured
+        val today = SloTime.today()
+        val vt = si.semafor.app.pricing.EnergyPriceCalculator.energyNet(data, price.setup, today, si.semafor.app.pricing.EnergyTariff.VT)
+        val mt = si.semafor.app.pricing.EnergyPriceCalculator.energyNet(data, price.setup, today, si.semafor.app.pricing.EnergyTariff.MT)
+        return vt != null && mt != null && kotlin.math.abs(vt - mt) < 1e-9
+    }
+
+    /** "Cenik: GEN-I, Redni · velja od 1. 12. 2026" or "Lastna cena iz pogodbe". */
+    private fun priceSourceLine(price: si.semafor.app.pricing.EnergyPriceUiState): String {
+        val lang = AppLanguage.current(this)
+        val stored = price.stored ?: return ""
+        val pkg = if (stored.sourceType == si.semafor.app.pricing.PricingSettings.SOURCE_PACKAGE) price.data?.findPackage(stored.packageId) else null
+        if (pkg == null) return getString(R.string.home_price_custom) + ". " + getString(R.string.ep_vat_note)
+        val supplier = price.data?.supplierOf(pkg)?.name
+        val name = listOfNotNull(supplier, pkg.name).joinToString(", ")
+        val valid = pkg.validTo?.let { getString(R.string.ep_validity_to, SloTime.formatLocalDate(pkg.validFrom, lang), SloTime.formatLocalDate(it, lang)) }
+            ?: getString(R.string.ep_validity, SloTime.formatLocalDate(pkg.validFrom, lang))
+        return getString(R.string.ep_package_line, name) + ". " + valid + ". " + getString(R.string.ep_vat_note)
     }
 
     @Composable
@@ -405,8 +559,20 @@ class MainActivity : AppCompatActivity() {
                 onWipeMojElektro = mojElektroVm::disconnect,
                 onOpenTips = { showScreen(Screen.TIPS) },
                 onOpenPrices = { showScreen(Screen.PRICES) },
+                onOpenEnergyPrice = { showScreen(Screen.ENERGY_PRICE) },
+                onOpenPlanner = { showScreen(Screen.PLANNER) },
+                onRemindersChange = { v ->
+                    si.semafor.app.reminders.ReminderSettings.save(this, v)
+                    si.semafor.app.reminders.Reminders.reschedule(this)
+                    refreshSettingsState()
+                },
+                onPriceChangesChange = { on ->
+                    si.semafor.app.pricing.PricingSettings.setNotifyChanges(this, on)
+                    priceVm.setNotifyChanges(on)
+                    refreshSettingsState()
+                },
                 onOpenPrivacy = { showPrivacy.value = true },
-                onOpenPrivacyPolicy = { openUrl(Links.PRIVACY_POLICY) },
+                onOpenPrivacyPolicy = { openUrl(Links.privacyPolicy(AppLanguage.current(this))) },
                 onOpenSources = { dialog.value = AppDialog.SOURCES },
                 onOpenAbout = { dialog.value = AppDialog.ABOUT }
             )
@@ -417,7 +583,45 @@ class MainActivity : AppCompatActivity() {
     private fun DetailScreen(s: Screen, homeState: HomeUiState) {
         val back = { showScreen(Screen.MAIN) }
         when (s) {
-            Screen.CALC -> CalcScreen(onNavigateHome = back, onOpenUrl = ::openUrl, onSendMail = ::openMail)
+            Screen.CALC -> {
+                val price by priceVm.state.collectAsStateWithLifecycle()
+                CalcScreen(
+                    onNavigateHome = back,
+                    onOpenUrl = ::openUrl,
+                    onSendMail = ::openMail,
+                    billSection = { inputs ->
+                        si.semafor.app.ui.compose.screens.WholeBillSection(inputs, price.data, price.setup) {
+                            showScreen(Screen.ENERGY_PRICE)
+                        }
+                    }
+                )
+            }
+
+            Screen.ENERGY_PRICE -> {
+                val price by priceVm.state.collectAsStateWithLifecycle()
+                val now = nowMillis.longValue
+                val info = (homeState as? HomeUiState.Content)?.info
+                val block = info?.now?.takeIf { Repo.coversNow(it) }?.id
+                val current = if (block == null) null else si.semafor.app.pricing.PriceNow.priceAt(price.data, price.setup, now, block)
+                si.semafor.app.ui.compose.screens.EnergyPriceScreen(
+                    state = price,
+                    current = current,
+                    nowMillis = now,
+                    actions = si.semafor.app.ui.compose.screens.EnergyPriceActions(
+                        onBack = back,
+                        onSave = { stored ->
+                            priceVm.save(stored)
+                            // The widget shows the total price as well.
+                            SemaforWidget.refreshNow(this)
+                        },
+                        onCheckNow = priceVm::checkNow,
+                        onNotifyChange = priceVm::setNotifyChanges,
+                        onOpenUrl = ::openUrl
+                    ),
+                    agreedKw = agreedForPrices(),
+                    agreedSource = agreedSourceLabel()
+                )
+            }
             Screen.NEWS -> {
                 val news by newsVm.state.collectAsStateWithLifecycle()
                 val pulling by newsVm.pullRefreshing.collectAsStateWithLifecycle()
@@ -453,12 +657,35 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
+            Screen.PLANNER -> {
+                val plan by plannerVm.state.collectAsStateWithLifecycle()
+                val price by priceVm.state.collectAsStateWithLifecycle()
+                si.semafor.app.ui.compose.screens.PlannerScreen(
+                    state = plan,
+                    configured = price.setup.configured,
+                    pricesLoading = price.hourlyLoading,
+                    pricesFailed = price.hourlyFailed,
+                    gap = price.gap,
+                    nowMillis = nowMillis.longValue,
+                    actions = si.semafor.app.ui.compose.screens.PlannerActions(
+                        onBack = back,
+                        onAdd = plannerVm::addDevice,
+                        onUpdate = plannerVm::updateDevice,
+                        onRemove = plannerVm::removeDevice,
+                        onLoad = plannerVm::setLoad,
+                        onOpenPrice = { showScreen(Screen.ENERGY_PRICE) }
+                    )
+                )
+            }
+
             Screen.MAIN -> Unit
         }
     }
 
     /** The main menu (tools and information); built each time it opens. The tabs are in the bottom bar. */
     private fun menuEntries(): List<MenuEntry> = buildList {
+        add(MenuEntry(getString(R.string.menu_planner), getString(R.string.menu_planner_sub)) { showScreen(Screen.PLANNER) })
+        add(MenuEntry(getString(R.string.menu_energy_price), getString(R.string.menu_energy_price_sub)) { showScreen(Screen.ENERGY_PRICE) })
         add(MenuEntry(getString(R.string.menu_calculator), getString(R.string.menu_calculator_sub)) { showScreen(Screen.CALC) })
         add(MenuEntry(getString(R.string.menu_prices)) { showScreen(Screen.PRICES) })
         add(MenuEntry(getString(R.string.menu_tips)) { showScreen(Screen.TIPS) })
@@ -466,6 +693,20 @@ class MainActivity : AppCompatActivity() {
         add(MenuEntry(getString(R.string.menu_news)) { showScreen(Screen.NEWS) })
         add(MenuEntry(getString(R.string.menu_sources), dividerBefore = true) { dialog.value = AppDialog.SOURCES })
         add(MenuEntry(getString(R.string.menu_about)) { dialog.value = AppDialog.ABOUT })
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openFromIntent(intent)
+    }
+
+    /** A notification or a widget area asked for a screen (see PriceNotifier.EXTRA_SCREEN). */
+    private fun openFromIntent(intent: Intent?) {
+        when (val name = intent?.getStringExtra(si.semafor.app.pricing.PriceNotifier.EXTRA_SCREEN) ?: return) {
+            si.semafor.app.pricing.PriceNotifier.SCREEN_USAGE -> openTab(PAGE_USAGE)
+            else -> Screen.entries.firstOrNull { it.name == name }?.let { showScreen(it) }
+        }
     }
 
     /** Shows the tabs at [page] (Domov, Semafor porabe, Nastavitve). */
@@ -478,6 +719,7 @@ class MainActivity : AppCompatActivity() {
     private fun showScreen(s: Screen) {
         screen.value = s
         if (s == Screen.NEWS) newsVm.load()
+        if (s == Screen.ENERGY_PRICE || s == Screen.CALC || s == Screen.PLANNER) priceVm.onShown()
         if (s == Screen.MAIN) tick()
     }
 
@@ -570,6 +812,8 @@ class MainActivity : AppCompatActivity() {
             // From the connection screen's state: no decryption on the main thread.
             mojElektroEimm = mojElektroVm.state.value.connectedEimm,
             analyticsConsent = AppSettings.analyticsConsent(this),
+            reminders = si.semafor.app.reminders.ReminderSettings.get(this),
+            priceChanges = si.semafor.app.pricing.PricingSettings.notifyChanges(this),
             version = appVersion()
         )
     }

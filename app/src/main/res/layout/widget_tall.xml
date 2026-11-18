@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- @android:id/background: Android 12+ launchers round this view to the system widget radius. -->
+    <FrameLayout
+        android:id="@android:id/background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:ignore="UselessParent">
+
+    <ImageView
+        android:id="@+id/bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_bg" />
+
+    <!-- Thin edge line (Material You tint on Android 12+). A FrameLayout, not a View: RemoteViews cannot inflate
+         android.view.View (only a fixed list of layouts and widgets), which left the whole widget empty. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_border"
+        android:importantForAccessibility="no" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:paddingStart="8dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="6dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="4dp">
+
+            <!-- First main cell (weight 2) -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingEnd="6dp">
+
+                <!-- Left subcell -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/num"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#1A1A1A"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/hours"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#1A1A1A"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/cur_price"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#1A1A1A"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- Lighter divider line (#22000000) -->
+                <FrameLayout
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/widget_divider_soft_bg" />
+
+                <!-- Right subcell -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingStart="6dp">
+
+                    <TextView
+                        android:id="@+id/next_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#1A1A1A"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/next_num"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#1A1A1A"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/next_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#1A1A1A"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Stronger divider line (#33000000) -->
+            <FrameLayout
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/widget_divider_strong_bg" />
+
+            <!-- Second main cell (weight 1) -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="vertical"
+                android:paddingStart="6dp">
+
+                <TextView
+                    android:id="@+id/best_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#1A1A1A"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/best_num"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#1A1A1A"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/best_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#1A1A1A"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/best_price"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#1A1A1A"
+                    android:textSize="10sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Taller widget only: recommendation, next planned appliance, last known power (each opens its screen). -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/widget_divider_strong_bg" />
+
+            <TextView
+                android:id="@+id/extra_rec"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="2"
+                android:paddingTop="4dp"
+                android:textColor="#1A1A1A"
+                android:textSize="12sp" android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/extra_plan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="2"
+                android:paddingTop="4dp"
+                android:textColor="#1A1A1A"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/extra_power"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="2"
+                android:paddingTop="4dp"
+                android:textColor="#1A1A1A"
+                android:textSize="11sp" />
+    </LinearLayout>
+    </FrameLayout>
+</FrameLayout>

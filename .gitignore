@@ -42,3 +42,4 @@ hs_err_pid*
 # OS generated files
 .DS_Store
 Thumbs.db
+debug-apk/

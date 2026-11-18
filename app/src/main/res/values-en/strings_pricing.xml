@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Price change notification -->
+    <string name="price_channel_name">Price changes</string>
+    <string name="price_channel_description">Notification when new price lists are published.</string>
+    <string name="price_change_title">Price lists updated</string>
+    <string name="price_change_package">The price of your package has changed.</string>
+    <string name="price_change_network">The network charge price list has changed.</string>
+    <string name="price_change_charges">The levies have changed (contributions, excise duty or VAT).</string>
+    <string name="price_change_suppliers">Supplier price lists have changed.</string>
+
+    <!-- Menu and settings -->
+    <string name="menu_energy_price">Electricity price</string>
+    <string name="menu_energy_price_sub">Total price with network charge and VAT</string>
+
+    <!-- Energy price screen: header and current price -->
+    <string name="ep_title">Electricity price</string>
+    <string name="ep_subtitle">Energy, network charge, levies and VAT</string>
+    <string name="ep_now_badge">NOW</string>
+    <string name="ep_now_line">Now: %1$s</string>
+    <string name="ep_now_suffix">including network charge and VAT</string>
+    <string name="ep_now_spoken">Now %1$s euros per kilowatt hour including network charge and VAT. Block %2$d, %3$s.</string>
+    <string name="ep_chip_block">Block %1$d</string>
+    <string name="ep_tariff_et">ET</string>
+    <string name="ep_tariff_vt">VT</string>
+    <string name="ep_tariff_mt">MT</string>
+    <string name="ep_tariff_et_long">single tariff</string>
+    <string name="ep_tariff_vt_long">higher tariff</string>
+    <string name="ep_tariff_mt_long">lower tariff</string>
+    <string name="ep_next_cheaper">From %1$s (block %2$d, %3$s): %4$s</string>
+    <string name="ep_next_cheaper_tomorrow">Tomorrow from %1$s (block %2$d, %3$s): %4$s</string>
+    <string name="ep_no_cheaper">No cheaper time in the coming hours.</string>
+    <string name="ep_not_configured_title">Set your energy price</string>
+    <string name="ep_not_configured_text">For the total price, choose a supplier package or enter the price from your contract. Your choice stays on this phone.</string>
+    <string name="ep_setup_button">Set price</string>
+    <string name="ep_missing">The price cannot be calculated now: the energy price or today\'s network charge price list is missing.</string>
+    <string name="ep_tariff_rule">VT applies on working days from %1$d:00 to %2$d:00, MT at night and all day on Saturdays, Sundays and public holidays.</string>
+
+    <!-- Items of the price -->
+    <string name="ep_breakdown_title">What the price is made of</string>
+    <string name="ep_item_energy">Energy (supplier)</string>
+    <string name="ep_item_network_energy">Network charge for energy</string>
+    <string name="ep_item_network_power">Network charge for power</string>
+    <string name="ep_item_ure">Energy efficiency contribution</string>
+    <string name="ep_item_market">Market operator contribution</string>
+    <string name="ep_item_excise">Excise duty</string>
+    <string name="ep_item_res">RES and CHP contribution</string>
+    <string name="ep_item_fee">Supplier fee</string>
+    <string name="ep_item_vat">VAT (%1$s %%)</string>
+    <string name="ep_breakdown_note">Items not billed per kWh (network charge for power, RES and CHP contribution on the agreed power, supplier fee) are in the estimate of the whole bill in the Calculator.</string>
+    <string name="ep_share">%1$s %%</string>
+
+    <!-- Hourly chart -->
+    <string name="ep_hourly_title">Price in the coming hours</string>
+    <string name="ep_hourly_loading">Loading the time block schedule …</string>
+    <string name="ep_hourly_failed">The time block schedule could not be loaded. Check the connection.</string>
+    <string name="ep_hourly_spoken">Chart of the price by hour. Now %1$s, lowest %2$s at %3$s, highest %4$s at %5$s.</string>
+    <string name="ep_legend_energy">Energy</string>
+    <string name="ep_legend_network">Network charge</string>
+    <string name="ep_legend_charges">Contributions and excise</string>
+    <string name="ep_legend_vat">VAT</string>
+    <string name="ep_hourly_note">The bar of the current hour has an outline, the cheapest hour is marked with a dot.</string>
+
+    <!-- Appliance calculator -->
+    <string name="ep_appliance_title">When to switch on an appliance</string>
+    <string name="ep_app_ev">EV charging</string>
+    <string name="ep_app_washer">Washing machine</string>
+    <string name="ep_app_dryer">Tumble dryer</string>
+    <string name="ep_app_dishwasher">Dishwasher</string>
+    <string name="ep_app_boiler">Water heater</string>
+    <string name="ep_app_custom">Custom</string>
+    <string name="ep_app_energy">Energy (kWh)</string>
+    <string name="ep_app_power">Power (kW)</string>
+    <string name="ep_app_duration">The appliance uses %1$s kWh in about %2$s h.</string>
+    <string name="ep_app_cost_now">If you switch on now: %1$s</string>
+    <string name="ep_app_cost_best">Cheapest at %1$s: %2$s</string>
+    <string name="ep_app_cost_best_tomorrow">Cheapest tomorrow at %1$s: %2$s</string>
+    <string name="ep_app_saving">Saving: %1$s</string>
+    <string name="ep_app_already_best">Now is the cheapest time in the known hours.</string>
+    <string name="ep_app_not_fit">Not enough known prices for such a long run (the block schedule is known until the end of tomorrow).</string>
+    <string name="ep_app_invalid">Enter energy and power greater than 0.</string>
+    <string name="ep_app_note">Assumption: the appliance uses power evenly while it runs. The preset values are approximate, so enter the data of your appliance. For appliances other than an EV the default duration is 1 hour.</string>
+
+    <!-- Setup -->
+    <string name="ep_setup_title">My energy price</string>
+    <string name="ep_meter_label">Metering</string>
+    <string name="ep_meter_single">Single tariff (ET)</string>
+    <string name="ep_meter_dual">Two tariffs (VT and MT)</string>
+    <string name="ep_source_label">Energy price</string>
+    <string name="ep_source_package">Supplier package</string>
+    <string name="ep_source_custom">My own price</string>
+    <string name="ep_no_suppliers">The list of suppliers is not published yet. Enter the price from your contract or your last bill.</string>
+    <string name="ep_custom_et">ET (€/kWh)</string>
+    <string name="ep_custom_vt">VT (€/kWh)</string>
+    <string name="ep_custom_mt">MT (€/kWh)</string>
+    <string name="ep_custom_fee">Monthly fee (€, optional)</string>
+    <string name="ep_custom_vat">The entered prices include VAT</string>
+    <string name="ep_save">Save</string>
+    <string name="ep_custom_incomplete">Enter all prices for the chosen metering (a number between 0 and 2 €/kWh).</string>
+    <string name="ep_package_prices">%1$s (without VAT)</string>
+    <string name="ep_package_valid">Valid from %1$s</string>
+    <string name="ep_package_valid_to">Valid from %1$s to %2$s</string>
+    <string name="ep_package_unusable">The package has no price for the chosen metering or is not valid today.</string>
+    <string name="ep_pick_package">Choose a package.</string>
+
+    <!-- Price data and sources -->
+    <string name="ep_data_title">Price lists and sources</string>
+    <string name="ep_data_updated">Price lists of %1$s</string>
+    <string name="ep_data_checked">Last check on the server: %1$s</string>
+    <string name="ep_data_never">The price lists have not been checked on the server yet; the data built into the app is used.</string>
+    <string name="ep_check_now">Check now</string>
+    <string name="ep_checking">Checking …</string>
+    <string name="ep_sync_updated">The price lists have been updated.</string>
+    <string name="ep_sync_unchanged">No new price lists.</string>
+    <string name="ep_sync_failed">The server cannot be reached. Try again later.</string>
+    <string name="ep_notify_switch">Notify me about price changes</string>
+    <string name="ep_charge_value">%1$s %2$s, from %3$s</string>
+    <string name="ep_unit_kwh">€/kWh</string>
+    <string name="ep_unit_kw_month">€/kW per month</string>
+    <string name="ep_unit_month">€ per month</string>
+    <string name="ep_network_value">Network charge for energy by block: %1$s €/kWh</string>
+    <string name="ep_vat_value">VAT: %1$s %%</string>
+    <string name="ep_open_source">Open source</string>
+    <string name="ep_privacy">The app downloads the public price file from tarifnisemafor.si only when needed: a few days or weeks before the valid price list expires and occasionally during the year. It sends only the request for the file, without any data about you or your phone. Your price choice stays on the phone.</string>
+    <string name="ep_disclaimer">The price is for information. The exact amount is on the bill of the supplier and of the distribution system operator.</string>
+
+    <!-- Monthly bill in the calculator -->
+    <string name="calc_bill_title">Whole bill (estimate)</string>
+    <string name="calc_bill_mt_share" formatted="false">Share of use in MT (%)</string>
+    <string name="calc_bill_not_configured">To estimate the whole bill, set the energy price on the Electricity price screen.</string>
+    <string name="calc_bill_open">Open Electricity price</string>
+    <string name="calc_bill_net">Total without VAT</string>
+    <string name="calc_bill_total">Total with VAT</string>
+    <string name="calc_bill_unavailable">No estimate: the energy price for the chosen metering or the network price list is missing.</string>
+    <string name="calc_bill_note">Estimate for one month with the network price list above and the levies valid on %1$s. The RES and CHP contribution is billed on the agreed power in block %2$d.</string>
+    <string name="calc_bill_note_plain">Estimate for one month with the network price list above and the levies valid on %1$s.</string>
+    <string name="calc_bill_avg">On average %1$s with VAT</string>
+    <string name="calc_bill_chart_spoken">Share of the items in the bill: %1$s.</string>
+
+    <!-- Widget -->
+    <string name="widget_total_price">Now %1$s</string>
+</resources>

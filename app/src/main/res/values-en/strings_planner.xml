@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name parts (title in the top bar) -->
+    <string name="app_name_main">Tarifni semafor</string>
+    <string name="app_name_sub">moja poraba</string>
+
+    <!-- Menu -->
+    <string name="menu_planner">Smart day plan</string>
+    <string name="menu_planner_sub">When to run your appliances</string>
+
+    <!-- Planner screen -->
+    <string name="pl_title">Smart day plan</string>
+    <string name="pl_subtitle">When to run appliances with your price list</string>
+    <string name="pl_need_price">The plan needs your energy price. Set it on the Electricity price screen.</string>
+    <string name="pl_set_price">Set price</string>
+    <string name="pl_loading_prices">Loading the time block schedule and prices …</string>
+    <string name="pl_no_schedule">The time block schedule could not be loaded. Check the connection.</string>
+    <string name="pl_gap_schedule">The time block schedule for %1$s is not available yet, so the plan ends there.</string>
+    <string name="pl_gap_network">The network charge price list for %1$s is not published yet, so the plan ends there.</string>
+    <string name="pl_gap_energy">There is no valid energy price for %1$s (the package expires), so the plan ends there.</string>
+    <string name="pl_empty">Add an appliance you want to use. The app suggests the cheapest start.</string>
+    <string name="pl_add">Add appliance</string>
+    <string name="pl_dev_washer">Washing machine</string>
+    <string name="pl_dev_dishwasher">Dishwasher</string>
+    <string name="pl_dev_dryer">Tumble dryer</string>
+    <string name="pl_dev_boiler">Water heater</string>
+    <string name="pl_dev_heat_pump">Heat pump</string>
+    <string name="pl_dev_ev">Car charging</string>
+    <string name="pl_dev_heating">Electric heating</string>
+    <string name="pl_dev_custom">Other appliance</string>
+    <string name="pl_timeline_title">Timeline</string>
+    <string name="pl_timeline_spoken">Timeline from %1$s to %2$s with time blocks, price by hour and planned appliances: %3$s.</string>
+    <string name="pl_legend_price">lower bar = cheaper hour</string>
+    <string name="pl_legend_run">planned run</string>
+    <string name="pl_results_title">Recommended times</string>
+    <string name="pl_recommended">Recommended start</string>
+    <string name="pl_range">%1$s–%2$s</string>
+    <string name="pl_range_tomorrow">tomorrow %1$s–%2$s</string>
+    <string name="pl_cost">Estimated cost: %1$s</string>
+    <string name="pl_reason_cheapest">The cheapest time in your window with your price list.</string>
+    <string name="pl_reason_now">Now is already the cheapest time in your window.</string>
+    <string name="pl_reason_power">A cheaper time would exceed the agreed power together with other appliances, so this one is suggested.</string>
+    <string name="pl_reason_over">Every time exceeds the agreed power. The cheapest is shown; consider another time or a lower power.</string>
+    <string name="pl_now_more">If you start now: %1$s (%2$s more)</string>
+    <string name="pl_now_same">If you start now: %1$s</string>
+    <string name="pl_now_unknown">Starting now: prices are not known for the whole run.</string>
+    <string name="pl_alt">Alternative: %1$s, %2$s</string>
+    <string name="pl_blocks">Time blocks during the run: %1$s</string>
+    <string name="pl_overlap">Overlaps with: %1$s</string>
+    <string name="pl_peak">Planned load up to %1$s kW (agreed power %2$s kW).</string>
+    <string name="pl_peak_no_agreed">Planned load up to %1$s kW. The agreed power is not known.</string>
+    <string name="pl_basis_known">Calculated from your appliance data and your price list (even use during the run).</string>
+    <string name="pl_basis_estimate">Estimate: the energy is calculated from power and duration (even use during the run).</string>
+    <string name="pl_basis_preset">Estimate from preset values. Enter your appliance\'s data for a more accurate result.</string>
+    <string name="pl_no_window">The run does not fit your window (earliest start, deadline or days).</string>
+    <string name="pl_no_prices">No prices are known for this window.</string>
+    <string name="pl_not_active">Not in today\'s plan.</string>
+    <string name="pl_active">In the plan</string>
+    <string name="pl_edit">Edit</string>
+    <string name="pl_done">Done</string>
+    <string name="pl_name">Name</string>
+    <string name="pl_power">Power (kW)</string>
+    <string name="pl_energy">Energy per cycle (kWh, optional)</string>
+    <string name="pl_duration_h">Duration: hours</string>
+    <string name="pl_duration_m">Duration: minutes</string>
+    <string name="pl_advanced">Advanced: window and days</string>
+    <string name="pl_earliest">Earliest start</string>
+    <string name="pl_deadline">Finished by</string>
+    <string name="pl_hour">hour</string>
+    <string name="pl_minute">minute</string>
+    <string name="pl_days">Days of use (none selected = every day)</string>
+    <string name="pl_remove">Remove appliance</string>
+    <string name="pl_invalid">Power and duration must be greater than 0.</string>
+    <string name="pl_load_title">Agreed power and load</string>
+    <string name="pl_load_moj">Agreed power by block from Moj Elektro: %1$s kW. The household\'s other use is estimated from your readings (median by hour, about one day delayed).</string>
+    <string name="pl_load_manual_agreed">Agreed power (kW)</string>
+    <string name="pl_load_manual_base">Other use while running (kW)</string>
+    <string name="pl_load_none">The agreed power is not known, so the load is not checked. Enter it or connect Moj Elektro.</string>
+    <string name="pl_load_note">The planner does not see the appliances\' current use and cannot prevent exceeding the power. It warns you about planned overlaps.</string>
+    <string name="pl_note">Only the variable cost is compared (energy, network charge for energy, contributions, excise duty and VAT). Fixed monthly costs do not change when an appliance is moved. The result is for information.</string>
+
+    <!-- "What can I do now?" -->
+    <string name="adv_title">What can I do now?</string>
+    <string name="adv_tag_personal">Calculated for your price list</string>
+    <string name="adv_tag_general">General hint, without your price list</string>
+    <string name="adv_tag_history">From your latest Moj Elektro readings</string>
+    <string name="adv_good_now">Now is a good time for larger appliances.</string>
+    <string name="adv_good_now_detail">The price now (%1$s) is the lowest of the next %2$d hours.</string>
+    <string name="adv_wait">The next cheaper time is at %1$s.</string>
+    <string name="adv_wait_tomorrow">The next cheaper time is tomorrow at %1$s.</string>
+    <string name="adv_wait_detail">Block %1$d: %2$s instead of %3$s now.</string>
+    <string name="adv_device_now">Recommended start now for: %1$s.</string>
+    <string name="adv_device_soon">Recommended start in %1$d min for: %2$s.</string>
+    <string name="adv_device_next">Next planned appliance: %1$s at %2$s.</string>
+    <string name="adv_device_next_tomorrow">Next planned appliance: %1$s tomorrow at %2$s.</string>
+    <string name="adv_flat">Your energy price is the same all day. Differences between times come from the network charge.</string>
+    <string name="adv_power_over">Your latest readings (%1$s) show the agreed power exceeded in block %2$d. Take care when running several large appliances.</string>
+    <string name="adv_power_near">Your latest readings (%1$s) show a load close to the agreed power (%2$s %%).</string>
+    <string name="adv_general_best">The next cheaper block is block %1$d at %2$s.</string>
+    <string name="adv_general_now">Block %1$d is in force now.</string>
+    <string name="adv_general_hint">Set your energy price for recommendations based on your price list.</string>
+
+    <!-- Home screen cards -->
+    <string name="home_plan_title">Smart day plan</string>
+    <string name="home_plan_next">Next: %1$s, %2$s (%3$s)</string>
+    <string name="home_plan_empty">Tell the app which appliances you want to use and it suggests the cheapest start.</string>
+    <string name="home_plan_open">Open the planner</string>
+    <string name="home_price_title">My electricity price</string>
+    <string name="home_price_custom">My own price from the contract</string>
+    <string name="home_price_range">In the next %1$d hours from %2$s to %3$s, depending on block and tariff.</string>
+    <string name="home_price_details">Items and comparison</string>
+    <string name="home_power_title">My power and consumption</string>
+    <string name="home_power_last">Latest known quarter hour: %1$s kW (%2$s)</string>
+    <string name="home_power_agreed">Agreed power in block %1$d: %2$s kW, reached %3$s %%</string>
+    <string name="home_power_peak">Highest quarter hour of that day: %1$s kW at %2$s (%3$s %% of the agreed power)</string>
+    <string name="home_power_delay">Moj Elektro data is about one day delayed. This is not the current power.</string>
+    <string name="home_power_connect">Connect Moj Elektro to see your power and consumption.</string>
+    <string name="home_power_open">Open Consumption</string>
+    <string name="home_power_no_agreed">The agreed power is not known.</string>
+
+    <!-- Reminders -->
+    <string name="rem_channel_name">Reminders and warnings</string>
+    <string name="rem_channel_description">Reminders for planned appliances, cheaper times and the agreed power.</string>
+    <string name="rem_device_title">Soon: %1$s</string>
+    <string name="rem_device_text">Recommended start at %1$s, end at %2$s.</string>
+    <string name="rem_cheaper_title">A cheaper time is coming</string>
+    <string name="rem_cheaper_text">From %1$s block %2$d applies: %3$s with network charge and VAT.</string>
+    <string name="rem_power_over_title">Agreed power exceeded</string>
+    <string name="rem_power_near_title">High load</string>
+    <string name="rem_power_text">Reading %1$s: %2$s kW with an agreed power of %3$s kW in block %4$d. Delayed data from Moj Elektro.</string>
+
+    <!-- Settings: reminders -->
+    <string name="set_rem_devices">Reminder for planned appliances</string>
+    <string name="set_rem_cheaper">Warning before a cheaper time</string>
+    <string name="set_rem_power">Agreed power warnings (Moj Elektro)</string>
+    <string name="set_rem_prices">Price list changes</string>
+    <string name="set_rem_lead">How early</string>
+    <string name="set_rem_lead_value">%1$d min</string>
+    <string name="set_rem_quiet">Quiet hours</string>
+    <string name="set_rem_quiet_from">From</string>
+    <string name="set_rem_quiet_to">To</string>
+    <string name="set_rem_hour">%1$d:00</string>
+    <string name="set_rem_note">Each reminder is sent only once and never during quiet hours. The warning before a cheaper time comes at most every 3 hours. Reminders may be a few minutes late (battery saving).</string>
+
+    <!-- Price screen: blocks, comparison, fixed costs -->
+    <string name="ep_vat_note">All prices in €/kWh include the network charge for energy, contributions, excise duty and VAT.</string>
+    <string name="ep_package_line">Price list: %1$s</string>
+    <string name="ep_validity">Valid from %1$s</string>
+    <string name="ep_validity_to">Valid from %1$s to %2$s</string>
+    <string name="ep_blocks_title">Price by time block</string>
+    <string name="ep_blocks_note">Final variable price for %1$s. The block sets the network charge, the tariff (ET, VT or MT) the energy price.</string>
+    <string name="ep_compare_title">Offer comparison</string>
+    <string name="ep_compare_empty">Supplier price lists are not published yet. The comparison appears once they are in the price lists.</string>
+    <string name="ep_compare_note">Final price for the current block %1$d (%2$s), with network charge, levies and VAT. The monthly fee is shown separately.</string>
+    <string name="ep_compare_fee">+ %1$s per month</string>
+    <string name="ep_compare_yours">your package</string>
+    <string name="ep_compare_na">no price</string>
+    <string name="ep_fixed_title">Fixed monthly costs</string>
+    <string name="ep_fixed_note">You pay them regardless of use. The amounts with VAT use the agreed power (%1$s).</string>
+    <string name="ep_fixed_note_rates">You pay them regardless of use. For the amounts, enter the agreed power in the planner or connect Moj Elektro.</string>
+    <string name="ep_fixed_power">Network charge for power, block %1$d</string>
+    <string name="ep_fixed_res">RES and CHP contribution (block %1$d)</string>
+    <string name="ep_fixed_fee">Supplier fee</string>
+    <string name="ep_fixed_total">Total fixed per month, with VAT</string>
+    <string name="ep_source_moj">Moj Elektro</string>
+    <string name="ep_source_manual">your entry</string>
+    <string name="ep_variable_title">Variable, depends on use</string>
+    <string name="ep_donut_center">%1$s\n€/kWh</string>
+    <!-- Tall widget -->
+    <string name="widget_rec_cheaper">Cheaper from %1$s (block %2$d): %3$s</string>
+    <string name="widget_rec_best">Next cheaper block: %1$d at %2$s</string>
+    <string name="widget_plan">Plan: %1$s at %2$s</string>
+    <string name="widget_plan_none">Plan: add an appliance in the app</string>
+    <string name="widget_power">Latest reading: %1$s kW (%2$s)</string>
+</resources>

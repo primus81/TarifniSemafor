@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name parts (title in the top bar) -->
+    <string name="app_name_main">Tarifni semafor</string>
+    <string name="app_name_sub">moja poraba</string>
+
+    <!-- Menu -->
+    <string name="menu_planner">Pametni dnevni načrt</string>
+    <string name="menu_planner_sub">Kdaj vklopiti naprave</string>
+
+    <!-- Planner screen -->
+    <string name="pl_title">Pametni dnevni načrt</string>
+    <string name="pl_subtitle">Kdaj vklopiti naprave glede na tvoj cenik</string>
+    <string name="pl_need_price">Za načrt potrebujem tvojo ceno energije. Nastaviš jo na zaslonu Cena elektrike.</string>
+    <string name="pl_set_price">Nastavi ceno</string>
+    <string name="pl_loading_prices">Nalagam urnik časovnih blokov in cene …</string>
+    <string name="pl_no_schedule">Urnika časovnih blokov ni bilo mogoče naložiti. Preveri povezavo.</string>
+    <string name="pl_gap_schedule">Urnik časovnih blokov za %1$s še ni na voljo, zato načrtujem samo do takrat.</string>
+    <string name="pl_gap_network">Cenik omrežnine za %1$s še ni objavljen, zato načrtujem samo do takrat.</string>
+    <string name="pl_gap_energy">Za %1$s ni veljavne cene energije (paket ne velja več), zato načrtujem samo do takrat.</string>
+    <string name="pl_empty">Dodaj napravo, ki jo želiš uporabiti. Aplikacija ti predlaga najugodnejši začetek.</string>
+    <string name="pl_add">Dodaj napravo</string>
+    <string name="pl_dev_washer">Pralni stroj</string>
+    <string name="pl_dev_dishwasher">Pomivalni stroj</string>
+    <string name="pl_dev_dryer">Sušilni stroj</string>
+    <string name="pl_dev_boiler">Bojler</string>
+    <string name="pl_dev_heat_pump">Toplotna črpalka</string>
+    <string name="pl_dev_ev">Polnjenje avtomobila</string>
+    <string name="pl_dev_heating">Električno ogrevanje</string>
+    <string name="pl_dev_custom">Druga naprava</string>
+    <string name="pl_timeline_title">Časovnica</string>
+    <string name="pl_timeline_spoken">Časovnica od %1$s do %2$s s časovnimi bloki, ceno po urah in načrtovanimi napravami: %3$s.</string>
+    <string name="pl_legend_price">nižji stolpec = cenejša ura</string>
+    <string name="pl_legend_run">načrtovano delovanje</string>
+    <string name="pl_results_title">Priporočeni termini</string>
+    <string name="pl_recommended">Priporočeni začetek</string>
+    <string name="pl_range">%1$s–%2$s</string>
+    <string name="pl_range_tomorrow">jutri %1$s–%2$s</string>
+    <string name="pl_cost">Predvideni strošek: %1$s</string>
+    <string name="pl_reason_cheapest">Najugodnejši termin v tvojem oknu glede na tvoj cenik.</string>
+    <string name="pl_reason_now">Zdaj je že najugodnejši čas v tvojem oknu.</string>
+    <string name="pl_reason_power">Cenejši termin bi skupaj z drugimi napravami presegel dogovorjeno moč, zato je predlagan ta.</string>
+    <string name="pl_reason_over">Vsi termini presegajo dogovorjeno moč. Prikazan je najcenejši; razmisli o drugem terminu ali manjši moči.</string>
+    <string name="pl_now_more">Če vklopiš zdaj: %1$s (%2$s več)</string>
+    <string name="pl_now_same">Če vklopiš zdaj: %1$s</string>
+    <string name="pl_now_unknown">Zagon zdaj: cene niso znane za ves čas delovanja.</string>
+    <string name="pl_alt">Druga možnost: %1$s, %2$s</string>
+    <string name="pl_blocks">Časovni bloki med delovanjem: %1$s</string>
+    <string name="pl_overlap">Prekriva se z: %1$s</string>
+    <string name="pl_peak">Načrtovana obremenitev do %1$s kW (dogovorjena moč %2$s kW).</string>
+    <string name="pl_peak_no_agreed">Načrtovana obremenitev do %1$s kW. Dogovorjena moč ni znana.</string>
+    <string name="pl_basis_known">Izračun iz tvojih podatkov o napravi in tvojega cenika (enakomerna poraba med delovanjem).</string>
+    <string name="pl_basis_estimate">Ocena: poraba je izračunana iz moči in trajanja (enakomerna poraba med delovanjem).</string>
+    <string name="pl_basis_preset">Ocena iz prednastavljenih vrednosti. Vpiši podatke svoje naprave za natančnejši izračun.</string>
+    <string name="pl_no_window">Delovanje ne ustreza tvojemu oknu (najzgodnejši začetek, rok ali dnevi uporabe).</string>
+    <string name="pl_no_prices">Za to okno ni znanih cen.</string>
+    <string name="pl_not_active">Ni v današnjem načrtu.</string>
+    <string name="pl_active">V načrtu</string>
+    <string name="pl_edit">Uredi</string>
+    <string name="pl_done">Končano</string>
+    <string name="pl_name">Naziv</string>
+    <string name="pl_power">Moč (kW)</string>
+    <string name="pl_energy">Poraba na cikel (kWh, neobvezno)</string>
+    <string name="pl_duration_h">Trajanje: ure</string>
+    <string name="pl_duration_m">Trajanje: minute</string>
+    <string name="pl_advanced">Napredno: okno in dnevi</string>
+    <string name="pl_earliest">Najzgodnejši začetek</string>
+    <string name="pl_deadline">Končano do</string>
+    <string name="pl_hour">ura</string>
+    <string name="pl_minute">minuta</string>
+    <string name="pl_days">Dnevi uporabe (brez izbire = vsak dan)</string>
+    <string name="pl_remove">Odstrani napravo</string>
+    <string name="pl_invalid">Moč in trajanje morata biti večja od 0.</string>
+    <string name="pl_load_title">Dogovorjena moč in obremenitev</string>
+    <string name="pl_load_moj">Dogovorjena moč po blokih iz Moj Elektro: %1$s kW. Ostala poraba gospodinjstva je ocenjena iz tvojih meritev (mediana po urah, zamik približno en dan).</string>
+    <string name="pl_load_manual_agreed">Dogovorjena moč (kW)</string>
+    <string name="pl_load_manual_base">Ostala poraba med delovanjem (kW)</string>
+    <string name="pl_load_none">Dogovorjena moč ni znana, zato obremenitve ne preverjam. Vpiši jo ali poveži Moj Elektro.</string>
+    <string name="pl_load_note">Načrtovalnik ne vidi trenutne porabe naprav in ne more preprečiti preseganja moči. Opozori te na načrtovana prekrivanja.</string>
+    <string name="pl_note">Primerja se samo spremenljivi strošek (energija, omrežnina za energijo, prispevki, trošarina in DDV). Stalni mesečni stroški se s premikom naprave ne spremenijo. Rezultat je informativen.</string>
+
+    <!-- "Kaj lahko naredim zdaj?" -->
+    <string name="adv_title">Kaj lahko naredim zdaj?</string>
+    <string name="adv_tag_personal">Izračunano za tvoj cenik</string>
+    <string name="adv_tag_general">Splošni nasvet, brez tvojega cenika</string>
+    <string name="adv_tag_history">Iz zadnjih meritev Moj Elektro</string>
+    <string name="adv_good_now">Zdaj je primeren čas za večje porabnike.</string>
+    <string name="adv_good_now_detail">Cena zdaj (%1$s) je najnižja v naslednjih %2$d urah.</string>
+    <string name="adv_wait">Naslednji ugodnejši termin je ob %1$s.</string>
+    <string name="adv_wait_tomorrow">Naslednji ugodnejši termin je jutri ob %1$s.</string>
+    <string name="adv_wait_detail">%1$d. blok: %2$s namesto %3$s zdaj.</string>
+    <string name="adv_device_now">Zdaj je priporočen začetek za: %1$s.</string>
+    <string name="adv_device_soon">Čez %1$d min je priporočen začetek za: %2$s.</string>
+    <string name="adv_device_next">Naslednja načrtovana naprava: %1$s ob %2$s.</string>
+    <string name="adv_device_next_tomorrow">Naslednja načrtovana naprava: %1$s jutri ob %2$s.</string>
+    <string name="adv_flat">Tvoja cena energije je enaka ves dan. Razlika med termini izhaja iz omrežnine.</string>
+    <string name="adv_power_over">Zadnje meritve (%1$s) kažejo preseganje dogovorjene moči v %2$d. bloku. Pazi pri hkratnem vklopu večjih naprav.</string>
+    <string name="adv_power_near">Zadnje meritve (%1$s) kažejo obremenitev blizu dogovorjene moči (%2$s %%).</string>
+    <string name="adv_general_best">Naslednji ugodnejši blok je %1$d. blok ob %2$s.</string>
+    <string name="adv_general_now">Zdaj velja %1$d. blok.</string>
+    <string name="adv_general_hint">Za priporočila po tvojem ceniku nastavi ceno energije.</string>
+
+    <!-- Home screen cards -->
+    <string name="home_plan_title">Pametni dnevni načrt</string>
+    <string name="home_plan_next">Naslednja: %1$s, %2$s (%3$s)</string>
+    <string name="home_plan_empty">Povej, katere naprave želiš uporabiti, in predlagam najugodnejši začetek.</string>
+    <string name="home_plan_open">Odpri načrtovalnik</string>
+    <string name="home_price_title">Moja cena elektrike</string>
+    <string name="home_price_custom">Lastna cena iz pogodbe</string>
+    <string name="home_price_range">V naslednjih %1$d urah od %2$s do %3$s, odvisno od bloka in tarife.</string>
+    <string name="home_price_details">Postavke in primerjava</string>
+    <string name="home_power_title">Moja moč in poraba</string>
+    <string name="home_power_last">Zadnja znana četrtura: %1$s kW (%2$s)</string>
+    <string name="home_power_agreed">Dogovorjena moč v %1$d. bloku: %2$s kW, doseženo %3$s %%</string>
+    <string name="home_power_peak">Najvišja četrtura tega dne: %1$s kW ob %2$s (%3$s %% dogovorjene moči)</string>
+    <string name="home_power_delay">Podatki Moj Elektro zamujajo približno en dan. To ni trenutna moč.</string>
+    <string name="home_power_connect">Poveži Moj Elektro za pregled svoje moči in porabe.</string>
+    <string name="home_power_open">Odpri Semafor porabe</string>
+    <string name="home_power_no_agreed">Dogovorjena moč ni znana.</string>
+
+    <!-- Reminders -->
+    <string name="rem_channel_name">Opomniki in opozorila</string>
+    <string name="rem_channel_description">Opomniki za načrtovane naprave, ugodnejše termine in dogovorjeno moč.</string>
+    <string name="rem_device_title">Kmalu: %1$s</string>
+    <string name="rem_device_text">Priporočen začetek ob %1$s, konec ob %2$s.</string>
+    <string name="rem_cheaper_title">Prihaja ugodnejši termin</string>
+    <string name="rem_cheaper_text">Od %1$s velja %2$d. blok: %3$s z omrežnino in DDV.</string>
+    <string name="rem_power_over_title">Preseganje dogovorjene moči</string>
+    <string name="rem_power_near_title">Visoka obremenitev</string>
+    <string name="rem_power_text">Meritev %1$s: %2$s kW pri dogovorjeni moči %3$s kW v %4$d. bloku. Podatek je iz Moj Elektro z zamikom.</string>
+
+    <!-- Settings: reminders -->
+    <string name="set_rem_devices">Opomnik za načrtovane naprave</string>
+    <string name="set_rem_cheaper">Opozorilo pred ugodnejšim terminom</string>
+    <string name="set_rem_power">Opozorila o dogovorjeni moči (Moj Elektro)</string>
+    <string name="set_rem_prices">Spremembe cenikov</string>
+    <string name="set_rem_lead">Koliko prej</string>
+    <string name="set_rem_lead_value">%1$d min</string>
+    <string name="set_rem_quiet">Tiho obdobje</string>
+    <string name="set_rem_quiet_from">Od</string>
+    <string name="set_rem_quiet_to">Do</string>
+    <string name="set_rem_hour">%1$d.00</string>
+    <string name="set_rem_note">Vsak opomnik se pošlje samo enkrat; v tihem obdobju se ne pošlje. Opozorilo pred ugodnejšim terminom pride največ na 3 ure. Opomniki so lahko nekaj minut zakasnjeni (varčevanje z baterijo).</string>
+
+    <!-- Price screen: blocks, comparison, fixed costs -->
+    <string name="ep_vat_note">Vse cene v €/kWh vključujejo omrežnino za energijo, prispevke, trošarino in DDV.</string>
+    <string name="ep_package_line">Cenik: %1$s</string>
+    <string name="ep_validity">Velja od %1$s</string>
+    <string name="ep_validity_to">Velja od %1$s do %2$s</string>
+    <string name="ep_blocks_title">Cena po časovnih blokih</string>
+    <string name="ep_blocks_note">Končna spremenljiva cena za %1$s. Blok določa omrežnino, tarifa (ET, VT ali MT) ceno energije.</string>
+    <string name="ep_compare_title">Primerjava ponudb</string>
+    <string name="ep_compare_empty">Ceniki dobaviteljev še niso objavljeni. Primerjava se pokaže, ko bodo v cenikih.</string>
+    <string name="ep_compare_note">Končna cena za trenutni %1$d. blok (%2$s), z omrežnino, dajatvami in DDV. Mesečno nadomestilo je navedeno posebej.</string>
+    <string name="ep_compare_fee">+ %1$s na mesec</string>
+    <string name="ep_compare_yours">tvoj paket</string>
+    <string name="ep_compare_na">ni cene</string>
+    <string name="ep_fixed_title">Stalni mesečni stroški</string>
+    <string name="ep_fixed_note">Plačaš jih ne glede na porabo. Zneski z DDV so izračunani z dogovorjeno močjo (%1$s).</string>
+    <string name="ep_fixed_note_rates">Plačaš jih ne glede na porabo. Za znesek vpiši dogovorjeno moč v načrtovalniku ali poveži Moj Elektro.</string>
+    <string name="ep_fixed_power">Omrežnina za moč, %1$d. blok</string>
+    <string name="ep_fixed_res">Prispevek OVE in SPTE (%1$d. blok)</string>
+    <string name="ep_fixed_fee">Nadomestilo dobavitelja</string>
+    <string name="ep_fixed_total">Skupaj stalno na mesec, z DDV</string>
+    <string name="ep_source_moj">Moj Elektro</string>
+    <string name="ep_source_manual">tvoj vnos</string>
+    <string name="ep_variable_title">Spremenljivo, odvisno od porabe</string>
+    <string name="ep_donut_center">%1$s\n€/kWh</string>
+    <!-- Tall widget -->
+    <string name="widget_rec_cheaper">Ugodneje od %1$s (%2$d. blok): %3$s</string>
+    <string name="widget_rec_best">Naslednji ugodnejši blok: %1$d. ob %2$s</string>
+    <string name="widget_plan">Načrt: %1$s ob %2$s</string>
+    <string name="widget_plan_none">Načrt: dodaj napravo v aplikaciji</string>
+    <string name="widget_power">Zadnja meritev: %1$s kW (%2$s)</string>
+</resources>

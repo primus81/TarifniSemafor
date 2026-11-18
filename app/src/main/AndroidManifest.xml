@@ -47,6 +47,9 @@
         <receiver
             android:name=".BlockChangeReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".reminders.ReminderReceiver"
+            android:exported="false" />
         <!-- Only system broadcasts (boot, app update, time change) reach it; same pattern as WorkManager's own RescheduleReceiver. -->
         <receiver
             android:name=".BootReceiver"

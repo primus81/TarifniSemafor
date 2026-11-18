@@ -10,7 +10,7 @@
     <string name="me_delay_heading">Podatki niso v realnem času</string>
     <string name="me_delay_text">Moj Elektro objavi merilne podatke z zamikom, običajno približno en dan. Aplikacija zato nikoli ne prikazuje tvoje trenutne porabe.</string>
     <string name="me_show_usage">Prikaži mojo porabo</string>
-    <string name="me_not_official">Aplikacija Tarifni semafor ni uradna aplikacija portala Moj Elektro.</string>
+    <string name="me_not_official">Aplikacija Tarifni semafor – moja poraba ni uradna aplikacija portala Moj Elektro.</string>
     <string name="me_connection_heading">Povezava</string>
     <string name="me_connected">Povezano merilno mesto: %1$s</string>
     <string name="me_checking">Preverjam …</string>

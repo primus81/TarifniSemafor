@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-18T12:00:00+01:00",
+  "validFrom": "2026-11-01",
+  "validTo": "2026-12-31",
+  "tariffTimes": {
+    "vtStartHour": 6,
+    "vtEndHour": 22,
+    "mtOnWeekendsAndHolidays": true,
+    "sourceUrl": "https://gen-i.si/en/households/electricity/pricelists-and-special-offers"
+  },
+  "taxes": {
+    "vatRate": 0.22,
+    "ureContribution": [
+      {
+        "value": 0.0008,
+        "unit": "EUR/kWh",
+        "validFrom": "2017-01-01",
+        "validTo": null,
+        "sourceUrl": "https://www.energetika-portal.si/podrocja/energetika/prihranki-energije/prispevek-za-energetsko-ucinkovitost/",
+        "note": "Uredba o zagotavljanju prihrankov energije (Uradni list RS, št. 96/2014 in spremembe): 0,08 centa na kWh."
+      }
+    ],
+    "borzenContribution": [
+      {
+        "value": 0.00013,
+        "unit": "EUR/kWh",
+        "validFrom": "2026-01-01",
+        "validTo": null,
+        "sourceUrl": "https://borzen.si/Portals/0/Trg%20z%20elektriko/Dokumenti/Financiranje%20GJS.pdf",
+        "note": "Vrednost iz dokumenta Borzen; datum veljavnosti v dokumentu ni naveden (preveri v veljavni uredbi)."
+      }
+    ],
+    "exciseDuty": [
+      {
+        "value": 0.00153,
+        "unit": "EUR/kWh",
+        "validFrom": "2025-09-01",
+        "validTo": null,
+        "sourceUrl": "https://pisrs.si/pregledPredpisa?id=URED8604",
+        "note": "Uredba o določitvi zneska trošarine za energente in električno energijo, 1. člen, točka 7.1 (I. stopnja, 0-20 MWh/leto): 1,53 EUR/MWh (čistopis od 16. 6. 2026)."
+      }
+    ],
+    "oveSpteContribution": [
+      {
+        "value": 0.77562,
+        "unit": "EUR/kW/month",
+        "validFrom": "2026-03-01",
+        "validTo": null,
+        "powerBlockHighSeason": 1,
+        "powerBlockLowSeason": 2,
+        "sourceUrl": "https://www.energetika-portal.si/podrocja/energetika/prispevek-za-obnovljive-vire/",
+        "note": "Gospodinjski odjemalci (NN 0,4 kV), polni prispevek. Osnova: dogovorjena moč v bloku 1 (višja sezona) oziroma v bloku 2 (nižja sezona). Za leto 2027 je v javni obravnavi prehod na 0,0037 EUR/kWh (še ni sprejeto)."
+      }
+    ]
+  },
+  "network": [
+    {
+      "validFrom": "2026-11-01",
+      "validTo": "2026-12-31",
+      "sourceUrl": "https://www.sodo.si/ceniki/2026-11-01/cenik-omreznin",
+      "note": "V višji sezoni 2026/27 se za blok 1 obračuna 70 % ciljne vrednosti postavke za moč (postopno uvajanje).",
+      "noteEn": "In the 2026/27 higher season, 70 % of the target power rate is charged for block 1 (gradual introduction).",
+      "blocks": [
+        { "block": 1, "powerEurPerKwMonth": 2.67611, "energyEurPerKwh": 0.02217 },
+        { "block": 2, "powerEurPerKwMonth": 1.09230, "energyEurPerKwh": 0.01998 },
+        { "block": 3, "powerEurPerKwMonth": 0.28902, "energyEurPerKwh": 0.01717 },
+        { "block": 4, "powerEurPerKwMonth": 0.02436, "energyEurPerKwh": 0.01805 },
+        { "block": 5, "powerEurPerKwMonth": 0.00245, "energyEurPerKwh": 0.01299 }
+      ]
+    }
+  ],
+  "suppliers": []
+}

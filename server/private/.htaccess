@@ -1,0 +1,2 @@
+# This folder must never be reachable from the web (source data, state, log, config).
+Require all denied

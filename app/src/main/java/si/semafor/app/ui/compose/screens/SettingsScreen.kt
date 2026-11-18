@@ -61,6 +61,10 @@ data class SettingsUiState(
     /** EIMM of the connected Moj Elektro metering point (optional feature); null = not connected. */
     val mojElektroEimm: String? = null,
     val analyticsConsent: Boolean = false,
+    /** Reminders of the planner, warnings and quiet hours. */
+    val reminders: si.semafor.app.reminders.ReminderSettings.Values? = null,
+    /** Notification when the price lists change. */
+    val priceChanges: Boolean = true,
     val version: String = ""
 )
 
@@ -77,6 +81,10 @@ data class SettingsActions(
     val onWipeMojElektro: () -> Unit = {},
     val onOpenTips: () -> Unit = {},
     val onOpenPrices: () -> Unit = {},
+    val onOpenEnergyPrice: () -> Unit = {},
+    val onOpenPlanner: () -> Unit = {},
+    val onRemindersChange: (si.semafor.app.reminders.ReminderSettings.Values) -> Unit = {},
+    val onPriceChangesChange: (Boolean) -> Unit = {},
     val onOpenPrivacy: () -> Unit = {},
     val onOpenPrivacyPolicy: () -> Unit = {},
     val onOpenSources: () -> Unit = {},
@@ -201,12 +209,15 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions) {
                 onCheckedChange = actions.onStatusIconChange
             )
             Text(stringResource(R.string.settings_status_note), style = note, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+            state.reminders?.let { r -> ReminderSettingsBlock(r, state.priceChanges, actions) }
         }
 
         // ---- Tips and tools ----
         SectionHeading(stringResource(R.string.settings_tools))
         InfoCard {
             NavRow(stringResource(R.string.menu_tips), stringResource(R.string.settings_tips_sub), actions.onOpenTips)
+            NavRow(stringResource(R.string.menu_planner), stringResource(R.string.menu_planner_sub), actions.onOpenPlanner)
+            NavRow(stringResource(R.string.menu_energy_price), stringResource(R.string.menu_energy_price_sub), actions.onOpenEnergyPrice)
             NavRow(stringResource(R.string.menu_prices), stringResource(R.string.settings_prices_sub), actions.onOpenPrices)
         }
 
@@ -317,4 +328,43 @@ private fun SettingsScreenPreview() {
             )
         }
     }
+}
+
+/** Separate switches for the reminders, how early they come and the quiet hours. */
+@Composable
+private fun ReminderSettingsBlock(
+    r: si.semafor.app.reminders.ReminderSettings.Values,
+    priceChanges: Boolean,
+    actions: SettingsActions
+) {
+    val colors = MaterialTheme.colorScheme
+    val note = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
+    val change = actions.onRemindersChange
+    Spacer(Modifier.height(10.dp))
+    SwitchRow(stringResource(R.string.set_rem_devices), r.devices, { change(r.copy(devices = it)) })
+    SwitchRow(stringResource(R.string.set_rem_cheaper), r.cheaper, { change(r.copy(cheaper = it)) })
+    SwitchRow(stringResource(R.string.set_rem_power), r.power, { change(r.copy(power = it)) })
+    SwitchRow(stringResource(R.string.set_rem_prices), priceChanges, actions.onPriceChangesChange)
+    Text(stringResource(R.string.set_rem_lead), style = MaterialTheme.typography.titleSmall, color = colors.onSurface, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
+    ChoiceChips(
+        si.semafor.app.reminders.ReminderSettings.LEAD_CHOICES.map { Choice(it, stringResource(R.string.set_rem_lead_value, it)) },
+        r.leadMin,
+        { change(r.copy(leadMin = it)) }
+    )
+    SwitchRow(stringResource(R.string.set_rem_quiet), r.quiet, { change(r.copy(quiet = it)) })
+    if (r.quiet) {
+        Text(stringResource(R.string.set_rem_quiet_from), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, modifier = Modifier.padding(bottom = 4.dp))
+        ChoiceChips(
+            si.semafor.app.reminders.ReminderSettings.QUIET_FROM_CHOICES.map { Choice(it, stringResource(R.string.set_rem_hour, it)) },
+            r.quietFrom,
+            { change(r.copy(quietFrom = it)) }
+        )
+        Text(stringResource(R.string.set_rem_quiet_to), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, modifier = Modifier.padding(top = 6.dp, bottom = 4.dp))
+        ChoiceChips(
+            si.semafor.app.reminders.ReminderSettings.QUIET_TO_CHOICES.map { Choice(it, stringResource(R.string.set_rem_hour, it)) },
+            r.quietTo,
+            { change(r.copy(quietTo = it)) }
+        )
+    }
+    Text(stringResource(R.string.set_rem_note), style = note, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
 }

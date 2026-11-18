@@ -68,8 +68,17 @@ private val StringListSaver = listSaver<SnapshotStateList<String>, String>(
  * rates come from [si.semafor.app.PriceLists]; nothing is estimated without an official list.
  * The typed texts live here (in the composition), everything else is derived from them.
  */
+/** What the whole-bill estimate below the network result needs: the list in use and the parsed inputs. */
+@androidx.compose.runtime.Immutable
+data class BillInputs(
+    val list: si.semafor.app.PriceList,
+    val powerKw: List<Double>,
+    val energyKwh: List<Double>,
+    val notValidToday: Boolean
+)
+
 @Composable
-fun NetworkCalculator() {
+fun NetworkCalculator(billSection: (@Composable (BillInputs) -> Unit)? = null) {
     val colors = MaterialTheme.colorScheme
     val today = remember { SloTime.today() }
     // Defaults to the season that is active today. Everything the user typed or chose is saveable, so it survives
@@ -197,6 +206,14 @@ fun NetworkCalculator() {
             modifier = Modifier.padding(top = 10.dp)
         )
     }
+
+    // ---- Whole bill (energy, levies, VAT), only with a valid network estimate ----
+    val ready = estimate as? Estimate.Ready
+    if (billSection != null && ready != null) {
+        val power = if (samePower) List(TariffCalculator.BLOCKS) { TariffCalculator.parseAmount(powerAll) ?: 0.0 }
+        else powerBlocks.map { TariffCalculator.parseAmount(it) ?: 0.0 }
+        billSection(BillInputs(ready.cost.list, power, energy.map { TariffCalculator.parseAmount(it) ?: 0.0 }, ready.notValidToday))
+    }
 }
 
 @Composable
@@ -226,7 +243,7 @@ private fun ResultRow(label: String, value: String, emphasis: Boolean = false, l
 
 /** A label on the left, a number field on the right; an invalid text turns the border red and says what to do. */
 @Composable
-private fun NumberRow(label: String, description: String, value: String, onValueChange: (String) -> Unit) {
+internal fun NumberRow(label: String, description: String, value: String, onValueChange: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val invalid = TariffCalculator.parseAmount(value) == null
     Column(modifier = Modifier.padding(vertical = 3.dp)) {

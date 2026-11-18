@@ -1,0 +1,12 @@
+<?php
+// Copy to config.php (same folder) and fill in. config.php is not published (the whole folder is protected).
+return [
+    // Where the reports (new price list published, changed source page, price list expiring) are sent.
+    'notify_email' => 'info@primush.online',
+    // Sender address on your domain (some hosts require one), e.g. 'cenik@tarifnisemafor.si'. Empty = host default.
+    'mail_from' => '',
+    // Start reminding this many days before a price list in use expires.
+    'lead_days' => 21,
+    // Paths; change only if your folders are laid out differently.
+    // 'public_file' => __DIR__ . '/../public_html/api/ceniki.json',
+];

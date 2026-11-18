@@ -38,7 +38,12 @@ private const val HELP_EMAIL = "primerjalnik@agen-rs.si"
  * Energy Agency comparison tool and its external link. The host supplies callbacks only (no Activity reference).
  */
 @Composable
-fun CalcScreen(onNavigateHome: () -> Unit, onOpenUrl: (String) -> Unit, onSendMail: (String) -> Unit) {
+fun CalcScreen(
+    onNavigateHome: () -> Unit,
+    onOpenUrl: (String) -> Unit,
+    onSendMail: (String) -> Unit,
+    billSection: (@Composable (si.semafor.app.ui.compose.components.BillInputs) -> Unit)? = null
+) {
     val colors = MaterialTheme.colorScheme
     val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
     val small = MaterialTheme.typography.bodySmall
@@ -65,7 +70,7 @@ fun CalcScreen(onNavigateHome: () -> Unit, onOpenUrl: (String) -> Unit, onSendMa
         )
 
         // Native quick estimate first; the existing Energy Agency comparison stays below it.
-        NetworkCalculator()
+        NetworkCalculator(billSection)
 
         Text(
             text = stringResource(R.string.calc_compare_heading),

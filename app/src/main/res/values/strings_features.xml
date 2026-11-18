@@ -44,7 +44,7 @@
 
     <!-- Privacy notice -->
     <string name="privacy_title">Tvoja zasebnost</string>
-    <string name="privacy_intro">Tarifni semafor deluje brez računa in brez lastnega strežnika. Kar vneseš, ostane v tem telefonu.</string>
+    <string name="privacy_intro">Tarifni semafor – moja poraba deluje brez računa in brez lastnega strežnika. Kar vneseš, ostane v tem telefonu.</string>
     <string name="privacy_local_title">Podatki ostanejo v telefonu</string>
     <string name="privacy_local_text">Časovni bloki in cenik se prenašajo z uradnih javnih virov (uro.si, SODO, Agencija za energijo). Aplikacija pri tem ne pošilja podatkov o tebi.</string>
     <string name="privacy_keystore_title">Moj Elektro je šifriran</string>
@@ -76,12 +76,12 @@
     <string name="widget_no_data">Ni podatkov</string>
     <string name="widget_last">Zadnje: %1$s</string>
     <string name="widget_check_connection">Preveri povezavo</string>
-    <string name="widget_no_data_spoken">Tarifni semafor. Ni podatkov. Preveri internetno povezavo. Dotakni se za odprtje aplikacije.</string>
+    <string name="widget_no_data_spoken">Tarifni semafor – moja poraba. Ni podatkov. Preveri internetno povezavo. Dotakni se za odprtje aplikacije.</string>
     <string name="widget_until">do %1$s</string>
     <string name="widget_state">Stanje: %1$s</string>
     <string name="widget_next">Naslednji:</string>
     <string name="widget_best">Najugodnejši</string>
-    <string name="widget_spoken">Tarifni semafor. Zdaj velja %1$d. blok, do %2$s. Naslednji je %3$d. blok, %4$s.%5$s Dotakni se za odprtje aplikacije.</string>
+    <string name="widget_spoken">Tarifni semafor – moja poraba. Zdaj velja %1$d. blok, do %2$s. Naslednji je %3$d. blok, %4$s.%5$s Dotakni se za odprtje aplikacije.</string>
     <string name="widget_spoken_stored">" Prikazani so shranjeni podatki, stanje %1$s."</string>
     <string name="when_today">ob %1$s uri</string>
     <string name="when_tomorrow">jutri ob %1$s uri</string>
@@ -97,13 +97,13 @@
     <string name="calc_offers_title">Katere ponudbe so vključene?</string>
     <string name="calc_offers_text">V primerjavo so zajeti vsi ceniki, ki so jih dobavitelji vnesli v aplikacijo in jih je potrdila Agencija za energijo. Za ažurnost in pravilnost podatkov so odgovorni dobavitelji, Agencija pa opravi osnovno preverjanje. Seznam dobaviteljev najdeš v samem kalkulatorju (»Prikaz tržnih udeležencev«).</string>
     <string name="calc_personal_title">Osebni podatki</string>
-    <string name="calc_personal_text">Kalkulator deluje na spletni strani Agencije za energijo, ne v aplikaciji Tarifni semafor. Aplikacija tvojih vnosov ne vidi, ne zbira in ne shranjuje. Z vpisom letnih agregatov porabe v kalkulator soglašaš z njihovo obdelavo s strani Agencije za namen primerjave ponudb. Pred uporabo preberi pravila in pogoje uporabe; če se z njimi ne strinjaš, podatkov ne vnašaj.</string>
+    <string name="calc_personal_text">Kalkulator deluje na spletni strani Agencije za energijo, ne v aplikaciji Tarifni semafor – moja poraba. Aplikacija tvojih vnosov ne vidi, ne zbira in ne shranjuje. Z vpisom letnih agregatov porabe v kalkulator soglašaš z njihovo obdelavo s strani Agencije za namen primerjave ponudb. Pred uporabo preberi pravila in pogoje uporabe; če se z njimi ne strinjaš, podatkov ne vnašaj.</string>
     <string name="calc_terms">Pravila in pogoji uporabe</string>
     <string name="calc_info">Splošne informacije o primerjalniku</string>
     <string name="calc_open">Odpri kalkulator</string>
     <string name="calc_opens_in_browser">Odpre se v brskalniku (aplikacije.agen-rs.si).</string>
     <string name="calc_help">"Pomoč pri uporabi kalkulatorja: "</string>
-    <string name="calc_summary_note">Povzeto po opisu na strani kalkulatorja (stanje: november 2026). Aplikacija Tarifni semafor ni uradna aplikacija Agencije za energijo.</string>
+    <string name="calc_summary_note">Povzeto po opisu na strani kalkulatorja (stanje: november 2026). Aplikacija Tarifni semafor – moja poraba ni uradna aplikacija Agencije za energijo.</string>
     <string name="calc_quick_title">Hitri izračun omrežnine</string>
     <string name="calc_quick_intro">Okvirni mesečni strošek omrežnine za uporabniško skupino 0. Vnesi dogovorjeno moč in pričakovano porabo.</string>
     <string name="calc_season_high">Višja sezona (nov–feb)</string>

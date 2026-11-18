@@ -10,7 +10,7 @@
     <string name="me_delay_heading">The data is not real-time</string>
     <string name="me_delay_text">Moj Elektro publishes meter data with a delay, usually about one day. The app therefore never shows your current consumption.</string>
     <string name="me_show_usage">Show my consumption</string>
-    <string name="me_not_official">Tarifni semafor is not an official app of the Moj Elektro portal.</string>
+    <string name="me_not_official">Tarifni semafor – moja poraba is not an official app of the Moj Elektro portal.</string>
     <string name="me_connection_heading">Connection</string>
     <string name="me_connected">Connected metering point: %1$s</string>
     <string name="me_checking">Checking …</string>

@@ -1,0 +1,19 @@
+# Public price data of the Tarifni semafor app: one static JSON file, no PHP, no WordPress, no cookies.
+Options -Indexes
+
+# Only ceniki.json is served from this folder.
+<FilesMatch "^(?!ceniki\.json$).*">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    <Files "ceniki.json">
+        Header set Content-Type "application/json; charset=utf-8"
+        Header set Cache-Control "public, max-age=3600"
+        Header set X-Content-Type-Options "nosniff"
+        Header unset Set-Cookie
+    </Files>
+</IfModule>
+
+# The access log (IP addresses) cannot be switched off here: Apache does not allow it in .htaccess.
+# Switch it off or anonymise the IP addresses in the control panel of your hosting (see server/README.md).

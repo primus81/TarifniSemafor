@@ -16,6 +16,11 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> true
             else -> false
         }
+        // Reminders of the planner use one alarm; alarms do not survive a reboot and follow the clock.
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> si.semafor.app.reminders.Reminders.reschedule(ctx)
+        }
         if (enqueue) {
             // No network work here; the worker reloads data, renders the widget and calls Notifier.scheduleNext.
             WorkManager.getInstance(ctx).enqueue(OneTimeWorkRequestBuilder<UpdateWorker>().build())

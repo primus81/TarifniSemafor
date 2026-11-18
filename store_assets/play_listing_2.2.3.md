@@ -56,7 +56,7 @@ ZASEBNOST
 - Brez registracije, računa, oglasov, analitike in piškotkov.
 - Razvijalec ne zbira tvojih osebnih podatkov. Vse ostane v tvojem telefonu.
 - Povezava Moj Elektro: žeton, EIMM in meritve so v telefonu šifrirani (Android Keystore, AES-256-GCM), niso del varnostnih kopij in se pošiljajo samo uradnemu strežniku Moj Elektro. Povezavo in vse meritve izbrišeš z enim dotikom.
-Pravilnik o zasebnosti: https://primus81.github.io/Tarifni-semafor-pravilnik-zasebnosti/
+Pravilnik o zasebnosti: https://tarifnisemafor.si/pravilnik-o-zasebnosti/
 
 VIRI PODATKOV
 - Časovni bloki, obremenitev omrežja, priporočila in barve blokov: portal uro.si, Agencija za energijo (https://www.uro.si).
@@ -66,7 +66,7 @@ VIRI PODATKOV
 
 POMEMBNO
 Tarifni semafor je neodvisna in neuradna aplikacija. Ni povezana z Agencijo za energijo, SODO d.o.o., portalom Moj Elektro ali drugimi državnimi organi in operaterji ter jih ne predstavlja. Podatki so informativni. Pravno zavezujoče podatke objavljajo izključno uradni viri.
-Izjava o omejitvi odgovornosti: https://primus81.github.io/Tarifni-semafor-DISCLAIMER/
+Izjava o omejitvi odgovornosti: https://tarifnisemafor.si/izjava-o-omejitvi-odgovornosti/
 
 Kontakt: info@primush.online
 
@@ -120,7 +120,7 @@ PRIVACY
 - No registration, account, ads, analytics or cookies.
 - The developer does not collect your personal data. Everything stays on your phone.
 - Moj Elektro connection: the token, EIMM and readings are encrypted on the phone (Android Keystore, AES-256-GCM), excluded from backups and sent only to the official Moj Elektro server. Delete the connection and all readings with one tap.
-Privacy policy: https://primus81.github.io/Tarifni-semafor-pravilnik-zasebnosti/#en
+Privacy policy: https://tarifnisemafor.si/pravilnik-o-zasebnosti/#en
 
 DATA SOURCES
 - Time blocks, network load, recommendations and block colours: uro.si portal, Energy Agency of Slovenia (https://www.uro.si).
@@ -130,6 +130,6 @@ DATA SOURCES
 
 IMPORTANT
 Tarifni semafor is an independent, unofficial app. It is not affiliated with and does not represent the Energy Agency of Slovenia, SODO d.o.o., the Moj Elektro portal or any other public authority or operator. The data is for information only; legally binding data is published exclusively by the official sources. Texts that uro.si publishes in Slovenian are translated unofficially.
-Disclaimer: https://primus81.github.io/Tarifni-semafor-DISCLAIMER/#en
+Disclaimer: https://tarifnisemafor.si/izjava-o-omejitvi-odgovornosti/#en
 
 Contact: info@primush.online

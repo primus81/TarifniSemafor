@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Slovenian (default language). Every key here must also exist in values-en (checked by StringsParityTest). -->
 <resources>
-    <string name="app_name">Tarifni semafor</string>
+    <string name="app_name">Tarifni semafor – moja poraba</string>
     <string name="widget_description">Trenutni časovni blok omrežnine, čas naslednje spremembe in najugodnejši blok.</string>
 
     <!-- Common -->
@@ -25,8 +25,8 @@
 
     <!-- Top bar, menu, bottom navigation -->
     <string name="top_menu">Meni</string>
-    <string name="top_title_block">Tarifni semafor. Trenutni blok: %1$d</string>
-    <string name="top_title_no_data">Tarifni semafor. Ni podatkov</string>
+    <string name="top_title_block">Tarifni semafor – moja poraba. Trenutni blok: %1$d</string>
+    <string name="top_title_no_data">Tarifni semafor – moja poraba. Ni podatkov</string>
     <string name="menu_calculator">Kalkulator</string>
     <string name="menu_calculator_sub">Primerjalnik stroškov oskrbe</string>
     <string name="menu_prices">Cenik omrežnine</string>
@@ -119,7 +119,7 @@
     <string name="sources_usage">Tvoje meritve (neobvezno):</string>
     <string name="sources_usage_link">Moj Elektro API</string>
     <string name="about_title">O aplikaciji</string>
-    <string name="about_disclaimer">Tarifni semafor je neuradna aplikacija. Ni povezana z Agencijo za energijo, SODO ali drugimi operaterji. Podatki so povzeti iz javnih virov (glej Viri podatkov); njihova točnost ni zagotovljena, veljavne podatke objavljajo uradni viri.</string>
+    <string name="about_disclaimer">Tarifni semafor – moja poraba je neuradna aplikacija. Ni povezana z Agencijo za energijo, SODO ali drugimi operaterji. Podatki so povzeti iz javnih virov (glej Viri podatkov); njihova točnost ni zagotovljena, veljavne podatke objavljajo uradni viri.</string>
     <string name="about_developer">"Aplikacijo razvila: "</string>
     <string name="about_and">" in "</string>
     <string name="about_version">Verzija: %1$s</string>
@@ -127,7 +127,7 @@
 
     <!-- Before the system asks for the notification permission (first start, Android 13+). -->
     <string name="notif_intro_title">Obvestila ob menjavi bloka</string>
-    <string name="notif_intro_text">Tarifni semafor te lahko obvesti, ko se začne nov časovni blok, in v vrstici stanja pokaže ikono trenutnega bloka. Za to Android potrebuje tvoje dovoljenje.\n\nObvestila nastaviš ali izklopiš kadar koli v Nastavitvah. Aplikacija ne pošilja oglasov ali drugih sporočil.</string>
+    <string name="notif_intro_text">Tarifni semafor – moja poraba te lahko obvesti, ko se začne nov časovni blok, in v vrstici stanja pokaže ikono trenutnega bloka. Za to Android potrebuje tvoje dovoljenje.\n\nObvestila nastaviš ali izklopiš kadar koli v Nastavitvah. Aplikacija ne pošilja oglasov ali drugih sporočil.</string>
     <string name="notif_intro_allow">Nadaljuj</string>
     <string name="notif_intro_later">Ne zdaj</string>
 </resources>

@@ -39,6 +39,7 @@ import si.semafor.app.BlockPalette
 import si.semafor.app.Links
 import si.semafor.app.R
 import si.semafor.app.SloTime
+import si.semafor.app.ui.compose.LocalLang
 import si.semafor.app.ui.compose.theme.AppColors
 
 /**
@@ -123,11 +124,20 @@ fun SourcesDialog(onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
 @Composable
 fun AboutDialog(version: String, onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
     val style = linkStyle()
+    val lang = LocalLang.current
     val developer = stringResource(R.string.about_developer)
     val andText = stringResource(R.string.about_and)
     val privacy = stringResource(R.string.about_privacy_policy)
     val privacySpoken = stringResource(R.string.common_link_suffix, privacy)
     AppDialog(stringResource(R.string.about_title), onDismiss) {
+        // The app's name: "Tarifni semafor" as the title, "moja poraba" smaller below it.
+        Text(stringResource(R.string.app_name_main), fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = AppColors.TextPrimary)
+        Text(
+            stringResource(R.string.app_name_sub),
+            fontSize = 13.sp,
+            color = AppColors.TextSecondary,
+            modifier = Modifier.padding(bottom = 10.dp)
+        )
         Text(
             text = stringResource(R.string.about_disclaimer),
             fontSize = 13.sp,
@@ -155,7 +165,7 @@ fun AboutDialog(version: String, onDismiss: () -> Unit, onOpenUrl: (String) -> U
                 modifier = Modifier
                     .padding(top = 16.dp)
                     .heightIn(min = 48.dp)
-                    .clickable { onOpenUrl(Links.PRIVACY_POLICY) }
+                    .clickable { onOpenUrl(Links.privacyPolicy(lang)) }
                     .semantics { contentDescription = privacySpoken },
                 contentAlignment = Alignment.CenterStart
             ) {

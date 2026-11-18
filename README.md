@@ -22,6 +22,11 @@ Vabljen k testiranju.
 
 ## Funkcionalnosti
 
+- **Skupna cena elektrike zdaj** (energija, omrežnina, prispevki, trošarina in DDV), razčlenjena po postavkah, z oznako bloka in tarife (ET, VT, MT), ceno v naslednjih urah in najugodnejšim terminom. Prikazana je na domačem zaslonu, v pripomočku in na zaslonu Cena elektrike.
+- **Pametni dnevni načrt:** izbereš naprave (pralni, pomivalni in sušilni stroj, bojler, toplotna črpalka, polnjenje avtomobila, električno ogrevanje ali po meri), aplikacija predlaga najugodnejši začetek v tvojem oknu (najzgodnejši začetek, rok, dnevi) po tvojem ceniku, pokaže strošek, drugo možnost, zagon zdaj in časovnico ter pri več napravah upošteva dogovorjeno moč.
+- **Kaj lahko naredim zdaj?** Kratko priporočilo na domačem zaslonu, vedno označeno: izračunano za tvoj cenik, iz meritev Moj Elektro ali splošni nasvet.
+- **Kdaj vklopiti napravo:** strošek vklopa zdaj in ob najcenejšem terminu (polnjenje EV, pralni, sušilni in pomivalni stroj, bojler ali po meri) ter prihranek.
+- **Ocena celotnega mesečnega računa** v kalkulatorju, po postavkah.
 - **Trenutni časovni blok** z odštevanjem do naslednje menjave, ceno omrežnine za energijo in naslednjim najugodnejšim blokom v 24 urah.
 - **Priporočila uro.si** za trenutni in naslednji blok (ogrevanje in hlajenje, gospodinjske naprave, polnjenje vozila).
 - **Semafor porabe** (neobvezno, povezava Moj Elektro): interaktivni graf 15-minutne moči ob uradnih časovnih blokih, dnevne konice s pragoma 90 % in 100 % dogovorjene moči, poraba po blokih za 7 ali 30 dni, prejeta in oddana energija ter podrobnosti registrov.
@@ -36,6 +41,7 @@ Vabljen k testiranju.
 
 - Brez registracije, računa, oglasov, piškotkov in analitike.
 - Aplikacija ne zbira osebnih podatkov. Časovne bloke, cenik in novice prenaša z uradnih javnih virov.
+- Ceniki (dobavitelji, omrežnina, dajatve) so javna statična datoteka na `tarifnisemafor.si/api/ceniki.json`. Aplikacija jo prenese samo, ko je potrebno (pred potekom cenika, sicer najpozneje vsakih 60 dni), brez kakršnih koli podatkov o uporabniku. Izbira cene energije ostane v telefonu. Strežniški del je v mapi `server/`.
 - Neobvezna povezava Moj Elektro: žeton API (samo branje), EIMM in meritve ostanejo samo v telefonu, šifrirani s ključem v Android Keystore (AES-256-GCM), in niso del varnostnih kopij. Aplikacija jih pošilja samo uradnemu strežniku `api.informatika.si`, nikoli razvijalcu ali tretjim. Prekinitev povezave izbriše žeton, EIMM in vse shranjene meritve.
 - Podatki Moj Elektro niso v realnem času: objavljeni so z zamikom, običajno približno en dan.
 
@@ -50,7 +56,7 @@ Vabljen k testiranju.
 | Hramba | Zasebni prostor aplikacije; podatki Moj Elektro šifrirani (Android Keystore) |
 | Jezika | Slovenščina (privzeto) in angleščina |
 | Minimalni Android | 8.0 (API 26) |
-| Uradni viri podatkov | Agencija za energijo ([uro.si](https://www.uro.si)), SODO, Moj Elektro |
+| Uradni viri podatkov | Agencija za energijo ([uro.si](https://www.uro.si)), SODO, Moj Elektro, uradni viri dajatev (energetika-portal.si, Uradni list RS) |
 
 ### Neobvezna povezava Moj Elektro (paket `si.semafor.app.mojelektro`)
 
@@ -70,6 +76,22 @@ Kode registrov (A+, A-, A+_T0, A-_T0) se preberejo iz uradnega kataloga `GET /re
 ## Opombe izdaje
 
 Izdaje so objavljene na GitHubu: https://github.com/primus81/TarifniSemafor/releases (oznake `v<verzija>`, verzije po [SemVer](https://semver.org/)). Podrobne opombe vsake izdaje so v mapi `store_assets/` (`release_notes_<verzija>.md`), besedilo izdaje za GitHub pa v `docs/releases/`.
+
+### 2.3.0 (v pripravi, versionCode še ni določen)
+
+Spremembe od verzije 2.2.3 (versionCode 19):
+
+- Nov zaslon Cena elektrike: skupna cena kWh zdaj z omrežnino, prispevki, trošarino in DDV, razčlenitev po postavkah, cena po urah za naslednji dan in najugodnejši termin.
+- Kartica s skupno ceno na domačem zaslonu in skupna cena v pripomočku (ko nastaviš ceno energije).
+- Izbira merjenja (ET ali VT/MT) in paketa dobavitelja ali lastne cene (z DDV ali brez); VT/MT upošteva sobote, nedelje in dela proste dni.
+- Kalkulator vklopa naprav s prihrankom ob zamiku in ocena celotnega mesečnega računa po postavkah v kalkulatorju.
+- Ceniki se po potrebi posodobijo s tarifnisemafor.si; neobvezno obvestilo o spremembah cen.
+- Pametni dnevni načrt (meni, Nastavitve, domači zaslon): najugodnejši začetek naprav po tvojem ceniku, preverjanje dogovorjene moči pri več napravah, časovnica dneva.
+- Prenovljen domači zaslon: trenutno stanje, »Kaj lahko naredim zdaj?«, naslednja načrtovana naprava, moja cena elektrike, moja moč in poraba (zadnja znana meritev Moj Elektro z jasno označenim zamikom).
+- Zaslon Cena elektrike: obročni graf strukture cene, cene po časovnih blokih, stalni mesečni stroški, primerjava ponudb.
+- Obvestila: opomnik za načrtovane naprave, opozorilo pred ugodnejšim terminom, opozorila o dogovorjeni moči, spremembe cenikov; čas opozorila, tiho obdobje, brez podvajanja.
+- Pripomoček: raztegnjen na dve vrstici pokaže še priporočilo, naslednjo načrtovano napravo in zadnjo znano moč; dotik cene ali vrstice odpre ustrezen zaslon.
+- Novo ime: Tarifni semafor – moja poraba.
 
 ### 2.2.3 (versionCode 19)
 

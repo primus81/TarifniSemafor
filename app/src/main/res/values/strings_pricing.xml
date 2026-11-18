@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Price change notification -->
+    <string name="price_channel_name">Spremembe cen</string>
+    <string name="price_channel_description">Obvestilo, ko so objavljeni novi ceniki.</string>
+    <string name="price_change_title">Ceniki so posodobljeni</string>
+    <string name="price_change_package">Cena tvojega paketa se je spremenila.</string>
+    <string name="price_change_network">Spremenil se je cenik omrežnine.</string>
+    <string name="price_change_charges">Spremenile so se dajatve (prispevki, trošarina ali DDV).</string>
+    <string name="price_change_suppliers">Spremenili so se ceniki dobaviteljev.</string>
+
+    <!-- Menu and settings -->
+    <string name="menu_energy_price">Cena elektrike</string>
+    <string name="menu_energy_price_sub">Skupna cena z omrežnino in DDV</string>
+
+    <!-- Energy price screen: header and current price -->
+    <string name="ep_title">Cena elektrike</string>
+    <string name="ep_subtitle">Energija, omrežnina, dajatve in DDV</string>
+    <string name="ep_now_badge">ZDAJ</string>
+    <string name="ep_now_line">Zdaj: %1$s</string>
+    <string name="ep_now_suffix">skupaj z omrežnino in DDV</string>
+    <string name="ep_now_spoken">Zdaj %1$s evra na kilovatno uro skupaj z omrežnino in DDV. %2$d. blok, %3$s.</string>
+    <string name="ep_chip_block">%1$d. blok</string>
+    <string name="ep_tariff_et">ET</string>
+    <string name="ep_tariff_vt">VT</string>
+    <string name="ep_tariff_mt">MT</string>
+    <string name="ep_tariff_et_long">enotna tarifa</string>
+    <string name="ep_tariff_vt_long">visoka tarifa</string>
+    <string name="ep_tariff_mt_long">mala tarifa</string>
+    <string name="ep_next_cheaper">Od %1$s dalje (%2$d. blok, %3$s): %4$s</string>
+    <string name="ep_next_cheaper_tomorrow">Jutri od %1$s dalje (%2$d. blok, %3$s): %4$s</string>
+    <string name="ep_no_cheaper">V naslednjih urah ni cenejšega termina.</string>
+    <string name="ep_not_configured_title">Nastavi svojo ceno energije</string>
+    <string name="ep_not_configured_text">Za skupno ceno izberi paket dobavitelja ali vpiši ceno iz svoje pogodbe. Izbira ostane samo v telefonu.</string>
+    <string name="ep_setup_button">Nastavi ceno</string>
+    <string name="ep_missing">Cene zdaj ni mogoče izračunati: manjka cena energije ali cenik omrežnine za današnji dan.</string>
+    <string name="ep_tariff_rule">VT velja ob delavnikih od %1$d. do %2$d. ure, MT ponoči ter ves dan ob sobotah, nedeljah in dela prostih dnevih.</string>
+
+    <!-- Items of the price -->
+    <string name="ep_breakdown_title">Iz česa je sestavljena cena</string>
+    <string name="ep_item_energy">Energija (dobavitelj)</string>
+    <string name="ep_item_network_energy">Omrežnina za energijo</string>
+    <string name="ep_item_network_power">Omrežnina za moč</string>
+    <string name="ep_item_ure">Prispevek za energetsko učinkovitost</string>
+    <string name="ep_item_market">Prispevek za operaterja trga</string>
+    <string name="ep_item_excise">Trošarina</string>
+    <string name="ep_item_res">Prispevek OVE in SPTE</string>
+    <string name="ep_item_fee">Nadomestilo dobavitelja</string>
+    <string name="ep_item_vat">DDV (%1$s %%)</string>
+    <string name="ep_breakdown_note">Postavke, ki se ne obračunajo po kWh (omrežnina za moč, prispevek OVE in SPTE na dogovorjeno moč, nadomestilo dobavitelja), so v oceni celotnega računa v Kalkulatorju.</string>
+    <string name="ep_share">%1$s %%</string>
+
+    <!-- Hourly chart -->
+    <string name="ep_hourly_title">Cena v naslednjih urah</string>
+    <string name="ep_hourly_loading">Nalagam urnik časovnih blokov …</string>
+    <string name="ep_hourly_failed">Urnika časovnih blokov ni bilo mogoče naložiti. Preveri povezavo.</string>
+    <string name="ep_hourly_spoken">Graf cene po urah. Zdaj %1$s, najnižja %2$s ob %3$s, najvišja %4$s ob %5$s.</string>
+    <string name="ep_legend_energy">Energija</string>
+    <string name="ep_legend_network">Omrežnina</string>
+    <string name="ep_legend_charges">Prispevki in trošarina</string>
+    <string name="ep_legend_vat">DDV</string>
+    <string name="ep_hourly_note">Stolpec za trenutno uro je obrobljen, najcenejša ura je označena s piko.</string>
+
+    <!-- Appliance calculator -->
+    <string name="ep_appliance_title">Kdaj vklopiti napravo</string>
+    <string name="ep_app_ev">Polnjenje EV</string>
+    <string name="ep_app_washer">Pralni stroj</string>
+    <string name="ep_app_dryer">Sušilni stroj</string>
+    <string name="ep_app_dishwasher">Pomivalni stroj</string>
+    <string name="ep_app_boiler">Bojler</string>
+    <string name="ep_app_custom">Po meri</string>
+    <string name="ep_app_energy">Energija (kWh)</string>
+    <string name="ep_app_power">Moč (kW)</string>
+    <string name="ep_app_duration">Naprava porabi %1$s kWh v približno %2$s h.</string>
+    <string name="ep_app_cost_now">Če vklopiš zdaj: %1$s</string>
+    <string name="ep_app_cost_best">Najceneje ob %1$s: %2$s</string>
+    <string name="ep_app_cost_best_tomorrow">Najceneje jutri ob %1$s: %2$s</string>
+    <string name="ep_app_saving">Prihranek: %1$s</string>
+    <string name="ep_app_already_best">Zdaj je najugodnejši čas v znanih urah.</string>
+    <string name="ep_app_not_fit">Za tako dolgo delovanje ni dovolj znanih cen (urnik blokov je znan do konca jutrišnjega dne).</string>
+    <string name="ep_app_invalid">Vpiši energijo in moč, večji od 0.</string>
+    <string name="ep_app_note">Predpostavka: naprava porablja enakomerno ves čas delovanja. Prednastavljene vrednosti so okvirne, zato vpiši podatke svoje naprave. Za naprave razen EV je privzeto trajanje 1 ura.</string>
+
+    <!-- Setup -->
+    <string name="ep_setup_title">Moja cena energije</string>
+    <string name="ep_meter_label">Merjenje</string>
+    <string name="ep_meter_single">Enotna tarifa (ET)</string>
+    <string name="ep_meter_dual">Dve tarifi (VT in MT)</string>
+    <string name="ep_source_label">Cena energije</string>
+    <string name="ep_source_package">Paket dobavitelja</string>
+    <string name="ep_source_custom">Lastna cena</string>
+    <string name="ep_no_suppliers">Seznam dobaviteljev še ni objavljen. Vpiši ceno iz svoje pogodbe ali zadnjega računa.</string>
+    <string name="ep_custom_et">ET (€/kWh)</string>
+    <string name="ep_custom_vt">VT (€/kWh)</string>
+    <string name="ep_custom_mt">MT (€/kWh)</string>
+    <string name="ep_custom_fee">Mesečno nadomestilo (€, neobvezno)</string>
+    <string name="ep_custom_vat">Vpisane cene vključujejo DDV</string>
+    <string name="ep_save">Shrani</string>
+    <string name="ep_custom_incomplete">Vpiši vse cene za izbrano merjenje (število med 0 in 2 €/kWh).</string>
+    <string name="ep_package_prices">%1$s (brez DDV)</string>
+    <string name="ep_package_valid">Velja od %1$s</string>
+    <string name="ep_package_valid_to">Velja od %1$s do %2$s</string>
+    <string name="ep_package_unusable">Paket nima cene za izbrano merjenje ali danes ne velja.</string>
+    <string name="ep_pick_package">Izberi paket.</string>
+
+    <!-- Price data and sources -->
+    <string name="ep_data_title">Ceniki in viri</string>
+    <string name="ep_data_updated">Ceniki z dne %1$s</string>
+    <string name="ep_data_checked">Zadnje preverjanje na strežniku: %1$s</string>
+    <string name="ep_data_never">Ceniki na strežniku še niso bili preverjeni; uporabljajo se podatki, vgrajeni v aplikacijo.</string>
+    <string name="ep_check_now">Preveri zdaj</string>
+    <string name="ep_checking">Preverjam …</string>
+    <string name="ep_sync_updated">Ceniki so posodobljeni.</string>
+    <string name="ep_sync_unchanged">Novih cenikov ni.</string>
+    <string name="ep_sync_failed">Strežnik ni dosegljiv. Poskusi pozneje.</string>
+    <string name="ep_notify_switch">Obvesti me o spremembah cen</string>
+    <string name="ep_charge_value">%1$s %2$s, od %3$s</string>
+    <string name="ep_unit_kwh">€/kWh</string>
+    <string name="ep_unit_kw_month">€/kW na mesec</string>
+    <string name="ep_unit_month">€ na mesec</string>
+    <string name="ep_network_value">Omrežnina za energijo po blokih: %1$s €/kWh</string>
+    <string name="ep_vat_value">DDV: %1$s %%</string>
+    <string name="ep_open_source">Odpri vir</string>
+    <string name="ep_privacy">Aplikacija prenese javno datoteko s cenami s tarifnisemafor.si samo, ko je potrebno: nekaj dni ali tednov pred potekom veljavnega cenika in občasno med letom. Pošlje samo zahtevo za datoteko, brez kakršnih koli podatkov o tebi ali telefonu. Tvoja izbira cene ostane v telefonu.</string>
+    <string name="ep_disclaimer">Cena je informativna. Točen znesek je na računu dobavitelja in operaterja distribucijskega omrežja.</string>
+
+    <!-- Monthly bill in the calculator -->
+    <string name="calc_bill_title">Celoten račun (ocena)</string>
+    <string name="calc_bill_mt_share" formatted="false">Delež porabe v MT (%)</string>
+    <string name="calc_bill_not_configured">Za oceno celotnega računa nastavi ceno energije na zaslonu Cena elektrike.</string>
+    <string name="calc_bill_open">Odpri Cena elektrike</string>
+    <string name="calc_bill_net">Skupaj brez DDV</string>
+    <string name="calc_bill_total">Skupaj z DDV</string>
+    <string name="calc_bill_unavailable">Ocene ni mogoče narediti: manjka cena energije za izbrano merjenje ali cenik omrežnine.</string>
+    <string name="calc_bill_note">Ocena za en mesec s cenikom omrežnine zgoraj in dajatvami, ki veljajo %1$s. Prispevek OVE in SPTE se obračuna na dogovorjeno moč v %2$d. bloku.</string>
+    <string name="calc_bill_note_plain">Ocena za en mesec s cenikom omrežnine zgoraj in dajatvami, ki veljajo %1$s.</string>
+    <string name="calc_bill_avg">Povprečno %1$s z DDV</string>
+    <string name="calc_bill_chart_spoken">Delež postavk v računu: %1$s.</string>
+
+    <!-- Widget -->
+    <string name="widget_total_price">Zdaj %1$s</string>
+</resources>

@@ -97,7 +97,9 @@ class SemaforWidget : AppWidgetProvider() {
                 // Very low cells cannot fit the last detail line without clipping.
                 val compactHeight = minHeightDp in 1..59
 
-                val layoutRes = if (isSmall) R.layout.widget_small else R.layout.widget_wide
+                // Stretched to at least two cells in height: the tall layout with the extra lines.
+                val isTall = !isSmall && minHeightDp >= 100
+                val layoutRes = if (isSmall) R.layout.widget_small else if (isTall) R.layout.widget_tall else R.layout.widget_wide
                 val v = RemoteViews(ctx.packageName, layoutRes)
 
                 if (info == null) {
@@ -135,10 +137,18 @@ class SemaforWidget : AppWidgetProvider() {
                     v.setTextViewText(R.id.hours, res.getString(R.string.widget_until, changeTimeStr))
 
                     val curPrice = PriceLists.energyPrice(PriceLists.current(), info.now.id)
+                    val totalNow = si.semafor.app.pricing.PriceNow.priceAt(ctx, System.currentTimeMillis(), info.now.id)
                     if (!recent) {
                         v.setTextViewText(
                             R.id.cur_price,
                             res.getString(R.string.widget_state, SloTime.formatStamp(info.time, lang = lang))
+                        )
+                        v.setViewVisibility(R.id.cur_price, View.VISIBLE)
+                    } else if (totalNow != null) {
+                        // The user set an energy price: the final price with network charge, levies and VAT.
+                        v.setTextViewText(
+                            R.id.cur_price,
+                            res.getString(R.string.widget_total_price, si.semafor.app.pricing.PriceNow.formatKwh(totalNow.total, locale))
                         )
                         v.setViewVisibility(R.id.cur_price, View.VISIBLE)
                     } else if (curPrice != null) {
@@ -161,7 +171,11 @@ class SemaforWidget : AppWidgetProvider() {
                             val bestDate = SloTime.dateOf(best.startMillis)
                             val bestPrice =
                                 PriceLists.energyPrice(PriceLists.forDate(bestDate), best.id)
-                            if (bestPrice != null && !compactHeight) {
+                            val bestTotal = si.semafor.app.pricing.PriceNow.priceAt(ctx, best.startMillis, best.id)
+                            if (bestTotal != null && !compactHeight) {
+                                v.setTextViewText(R.id.best_price, si.semafor.app.pricing.PriceNow.formatKwh(bestTotal.total, locale))
+                                v.setViewVisibility(R.id.best_price, View.VISIBLE)
+                            } else if (bestPrice != null && !compactHeight) {
                                 v.setTextViewText(R.id.best_price, PriceLists.formatKwh(bestPrice, locale))
                                 v.setViewVisibility(R.id.best_price, View.VISIBLE)
                             } else {
@@ -188,6 +202,9 @@ class SemaforWidget : AppWidgetProvider() {
                 }
 
                 v.setOnClickPendingIntent(R.id.root, open)
+                // The price opens the price screen; the extra lines of the tall widget open their screens.
+                v.setOnClickPendingIntent(R.id.cur_price, openScreen(ctx, si.semafor.app.pricing.PriceNotifier.SCREEN_ENERGY_PRICE, 21))
+                if (isTall) renderExtras(ctx, v, res, locale, lang, info?.let { best })
                 mgr.updateAppWidget(id, v)
             }
 
@@ -223,6 +240,59 @@ class SemaforWidget : AppWidgetProvider() {
         }
     }
 }
+
+/** The lines of the tall widget: recommendation, next planned appliance, last known power (all from local data). */
+private fun renderExtras(
+    ctx: Context,
+    v: RemoteViews,
+    res: Context,
+    locale: java.util.Locale,
+    lang: String,
+    best: BestBlock?
+) {
+    val now = System.currentTimeMillis()
+    val cheaper = si.semafor.app.reminders.Reminders.storedCheaper(ctx, now)
+    val rec = when {
+        cheaper != null -> res.getString(
+            R.string.widget_rec_cheaper, SloTime.formatHm(cheaper.first), cheaper.second,
+            si.semafor.app.pricing.PriceNow.formatKwh(cheaper.third, locale)
+        )
+        best != null && best.startMillis > now -> res.getString(R.string.widget_rec_best, best.id, Repo.whenText(res, best.startMillis))
+        else -> null
+    }
+    v.setTextViewText(R.id.extra_rec, rec ?: "")
+    v.setViewVisibility(R.id.extra_rec, if (rec == null) View.GONE else View.VISIBLE)
+    v.setOnClickPendingIntent(R.id.extra_rec, openScreen(ctx, si.semafor.app.pricing.PriceNotifier.SCREEN_ENERGY_PRICE, 22))
+
+    val run = si.semafor.app.planner.PlannerStore.nextRun(ctx, now)
+    v.setTextViewText(
+        R.id.extra_plan,
+        if (run != null) res.getString(R.string.widget_plan, run.name, Repo.whenText(res, run.startMillis))
+        else res.getString(R.string.widget_plan_none)
+    )
+    v.setOnClickPendingIntent(R.id.extra_plan, openScreen(ctx, si.semafor.app.pricing.PriceNotifier.SCREEN_PLANNER, 23))
+
+    val power = si.semafor.app.mojelektro.PowerSummaryStore.get(ctx)
+    if (power != null) {
+        v.setTextViewText(
+            R.id.extra_power,
+            res.getString(R.string.widget_power, String.format(locale, "%.2f", power.lastKw), SloTime.formatStamp(power.lastStartMillis, lang = lang))
+        )
+        v.setViewVisibility(R.id.extra_power, View.VISIBLE)
+        v.setOnClickPendingIntent(R.id.extra_power, openScreen(ctx, si.semafor.app.pricing.PriceNotifier.SCREEN_USAGE, 24))
+    } else {
+        v.setViewVisibility(R.id.extra_power, View.GONE)
+    }
+}
+
+/** Opens the app on the screen [screen] (see MainActivity.openFromIntent); [request] keeps the intents apart. */
+private fun openScreen(ctx: Context, screen: String, request: Int): PendingIntent = PendingIntent.getActivity(
+    ctx, request,
+    Intent(ctx, MainActivity::class.java)
+        .putExtra(si.semafor.app.pricing.PriceNotifier.EXTRA_SCREEN, screen)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+)
 
 class UpdateWorker(ctx: Context, p: WorkerParameters) : Worker(ctx, p) {
     override fun doWork(): Result {

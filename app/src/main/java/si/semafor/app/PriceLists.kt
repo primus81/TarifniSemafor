@@ -19,8 +19,9 @@ data class PriceList(
 
 object PriceLists {
     // User group 0 only (households and other low-voltage customers).
-    // TO ADD A NEW PRICE LIST: append a new PriceList to ALL with the correct validFrom/validTo. Only the list valid today is ever shown.
-    val ALL = listOf(
+    // TO ADD A NEW PRICE LIST: append a new PriceList to BUILT_IN with the correct validFrom/validTo. Only the list valid today is ever shown.
+    // Lists from the downloaded price data (si.semafor.app.pricing.PriceRepository) are added on top, see ALL.
+    private val BUILT_IN = listOf(
         PriceList(
             validFrom = LocalDate.of(2026, 11, 1),
             validTo = LocalDate.of(2026, 12, 31),
@@ -36,6 +37,25 @@ object PriceLists {
             noteEn = "In the 2026/27 higher season, 70 % of the target power rate is charged for block 1 (gradual introduction)."
         )
     )
+
+    /** Network tariffs from the downloaded, validated price data ("ceniki.json"); empty until it is loaded. */
+    @Volatile
+    private var downloaded: List<PriceList> = emptyList()
+
+    /**
+     * All known lists: the built-in ones plus the downloaded ones. A downloaded list with the same validFrom as a
+     * built-in one replaces it (it is the newer copy of the same official list).
+     */
+    val ALL: List<PriceList> get() = merge(BUILT_IN, downloaded)
+
+    internal fun setDownloaded(lists: List<PriceList>) {
+        downloaded = lists
+    }
+
+    internal fun merge(builtIn: List<PriceList>, extra: List<PriceList>): List<PriceList> {
+        val starts = extra.map { it.validFrom }.toSet()
+        return (builtIn.filter { it.validFrom !in starts } + extra).sortedBy { it.validFrom }
+    }
 
     private val SL: Locale = Locale.forLanguageTag("sl-SI")
 

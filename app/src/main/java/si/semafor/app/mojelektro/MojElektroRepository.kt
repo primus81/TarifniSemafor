@@ -73,6 +73,7 @@ class MojElektroRepository(context: Context) {
     /** Deletes the stored token and EIMM and every cached reading of the connected metering point. */
     fun disconnect() {
         UsageCache(appContext).clear()
+        PowerSummaryStore.clear(appContext)
         store.clear()
     }
 
