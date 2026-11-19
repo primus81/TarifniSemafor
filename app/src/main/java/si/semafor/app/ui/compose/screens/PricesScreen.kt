@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -59,8 +60,6 @@ fun PricesScreen(
     onBack: () -> Unit,
     onOpenUrl: (String) -> Unit
 ) {
-    val colors = MaterialTheme.colorScheme
-    val lang = LocalLang.current
     ScreenScaffold {
         ScreenHeader(
             title = stringResource(R.string.prices_title),
@@ -68,25 +67,44 @@ fun PricesScreen(
             onBack = onBack,
             bottomPadding = if (list == null) 12.dp else 2.dp
         )
+        PricesContent(list, currentBlockId, onOpenUrl)
+    }
+}
 
-        if (list == null) {
-            InfoCard {
-                Text(
-                    text = stringResource(R.string.prices_missing),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onSurface
-                )
-                ActionButton(
-                    label = stringResource(R.string.prices_open_sodo),
-                    onClick = { onOpenUrl(PriceLists.SOURCE_ALL) },
-                    modifier = Modifier.padding(top = 12.dp),
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    horizontalPadding = 24.dp
-                )
-            }
-            return@ScreenScaffold
+/**
+ * The SODO network price list (table of blocks 1-5), its validity and, behind the "i" button, the notes that explain
+ * it. Used inside the "Cene elektrike in omrežnine" screen and by [PricesScreen].
+ */
+@Composable
+fun ColumnScope.PricesContent(list: PriceList?, currentBlockId: Int?, onOpenUrl: (String) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val lang = LocalLang.current
+    if (list == null) {
+        InfoCard {
+            Text(
+                text = stringResource(R.string.prices_missing),
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.onSurface
+            )
+            ActionButton(
+                label = stringResource(R.string.prices_open_sodo),
+                onClick = { onOpenUrl(PriceLists.SOURCE_ALL) },
+                modifier = Modifier.padding(top = 12.dp),
+                textStyle = MaterialTheme.typography.bodyLarge,
+                horizontalPadding = 24.dp
+            )
         }
-
+        return
+    }
+    val notes = buildList {
+        add(stringResource(R.string.prices_note_group))
+        add(stringResource(R.string.prices_note_taxes))
+        add(stringResource(R.string.prices_note_power))
+        add(stringResource(R.string.prices_note_block1))
+        list.noteIn(lang)?.let { add(it) }
+        add(stringResource(R.string.prices_note_info))
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
         Text(
             text = stringResource(
                 R.string.prices_valid,
@@ -95,32 +113,14 @@ fun PricesScreen(
             ),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+            modifier = Modifier.weight(1f)
         )
-
-        PriceTable(list, currentBlockId)
-
-        val notes = buildList {
-            add(stringResource(R.string.prices_note_group))
-            add(stringResource(R.string.prices_note_taxes))
-            add(stringResource(R.string.prices_note_power))
-            add(stringResource(R.string.prices_note_block1))
-            list.noteIn(lang)?.let { add(it) }
-            add(stringResource(R.string.prices_note_info))
-        }
-        InfoCard {
-            notes.forEachIndexed { i, n ->
-                Text(
-                    text = "• $n",
-                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 14.3.sp),
-                    color = colors.onSurfaceVariant,
-                    modifier = Modifier.padding(top = if (i > 0) 6.dp else 0.dp)
-                )
-            }
-        }
-
-        LinkText(stringResource(R.string.prices_official)) { onOpenUrl(list.sourceUrl) }
+        si.semafor.app.ui.compose.components.InfoButton(stringResource(R.string.prices_title), notes)
     }
+
+    PriceTable(list, currentBlockId)
+
+    LinkText(stringResource(R.string.prices_official)) { onOpenUrl(list.sourceUrl) }
 }
 
 @Composable

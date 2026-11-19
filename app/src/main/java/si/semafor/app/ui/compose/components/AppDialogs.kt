@@ -35,7 +35,6 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
-import si.semafor.app.BlockPalette
 import si.semafor.app.Links
 import si.semafor.app.R
 import si.semafor.app.SloTime
@@ -95,88 +94,72 @@ internal fun AppDialog(
 @Composable
 private fun linkStyle() = TextLinkStyles(SpanStyle(color = AppColors.Accent, textDecoration = TextDecoration.Underline))
 
-/** "Viri podatkov": the official sources of every part of the app, each with a link. */
-@Composable
-fun SourcesDialog(onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
-    val sources = listOf(
-        Triple(R.string.sources_blocks, R.string.sources_blocks_link, Links.URO_URL),
-        Triple(R.string.sources_colors, R.string.sources_colors_link, BlockPalette.tableFor(SloTime.today().year).source),
-        Triple(R.string.sources_news, R.string.sources_news_link, Links.NEWS_PAGE),
-        Triple(R.string.sources_calc, R.string.sources_calc_link, Links.CALC_URL),
-        Triple(R.string.sources_tariff, R.string.sources_tariff_link, Links.TARIFF_INFO),
-        Triple(R.string.sources_icons, R.string.sources_icons_link, Links.MATERIAL_SYMBOLS),
-        Triple(R.string.sources_usage, R.string.sources_usage_link, Links.MOJ_ELEKTRO_API_DOCS)
-    ).map { (label, link, url) -> Triple(stringResource(label), stringResource(link), url) }
-    val style = linkStyle()
-    val text = buildAnnotatedString {
-        sources.forEachIndexed { i, (label, linkLabel, url) ->
-            if (i > 0) append("\n\n")
-            append("• $label ")
-            withLink(LinkAnnotation.Url(url, style) { onOpenUrl(url) }) { append(linkLabel) }
-        }
-    }
-    AppDialog(stringResource(R.string.sources_title), onDismiss) {
-        Text(text, fontSize = 14.sp, color = AppColors.TextPrimary)
-    }
-}
-
-/** "O aplikaciji": disclaimer, developer, version and the privacy policy. */
+/**
+ * "O aplikaciji": name, version, a short disclaimer, the developer (primus, linked to primush.online), the legal pages
+ * and the copyright line with the current year at the bottom.
+ */
 @Composable
 fun AboutDialog(version: String, onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
     val style = linkStyle()
     val lang = LocalLang.current
     val developer = stringResource(R.string.about_developer)
-    val andText = stringResource(R.string.about_and)
-    val privacy = stringResource(R.string.about_privacy_policy)
-    val privacySpoken = stringResource(R.string.common_link_suffix, privacy)
     AppDialog(stringResource(R.string.about_title), onDismiss) {
         // The app's name: "Tarifni semafor" as the title, "moja poraba" smaller below it.
         Text(stringResource(R.string.app_name_main), fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = AppColors.TextPrimary)
+        Text(stringResource(R.string.app_name_sub), fontSize = 13.sp, color = AppColors.TextSecondary)
         Text(
-            stringResource(R.string.app_name_sub),
+            text = stringResource(R.string.about_version, version),
             fontSize = 13.sp,
             color = AppColors.TextSecondary,
-            modifier = Modifier.padding(bottom = 10.dp)
-        )
-        Text(
-            text = stringResource(R.string.about_disclaimer),
-            fontSize = 13.sp,
-            color = AppColors.TextSecondary,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
         )
         Text(
             text = buildAnnotatedString {
                 append(developer)
                 withLink(LinkAnnotation.Url(Links.DEVELOPER, style) { onOpenUrl(Links.DEVELOPER) }) { append("primus") }
-                append(andText)
-                withLink(LinkAnnotation.Url(Links.ANTHROPIC, style) { onOpenUrl(Links.ANTHROPIC) }) { append("Claude") }
             },
             fontSize = 15.sp,
             color = AppColors.TextPrimary
         )
         Text(
-            text = stringResource(R.string.about_version, version),
-            fontSize = 15.sp,
-            color = AppColors.TextPrimary,
+            text = stringResource(R.string.about_disclaimer),
+            fontSize = 12.sp,
+            color = AppColors.TextSecondary,
+            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+        )
+        AboutLink(stringResource(R.string.about_privacy_policy)) { onOpenUrl(Links.privacyPolicy(lang)) }
+        AboutLink(stringResource(R.string.about_terms)) { onOpenUrl(Links.TERMS) }
+        AboutLink(stringResource(R.string.about_disclaimer_link)) { onOpenUrl(Links.DISCLAIMER) }
+        // Copyright at the very bottom; the year follows the calendar.
+        val year = SloTime.today().year
+        Text(
+            text = buildAnnotatedString {
+                append("© $year ")
+                withLink(LinkAnnotation.Url(Links.WEBSITE, style) { onOpenUrl(Links.WEBSITE) }) { append("tarifnisemafor.si") }
+            },
+            fontSize = 12.sp,
+            color = AppColors.TextSecondary,
             modifier = Modifier.padding(top = 16.dp)
         )
-        if (!Links.PRIVACY_POLICY.contains("REPLACE_WITH")) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 16.dp)
-                    .heightIn(min = 48.dp)
-                    .clickable { onOpenUrl(Links.privacyPolicy(lang)) }
-                    .semantics { contentDescription = privacySpoken },
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text(
-                    text = privacy,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textDecoration = TextDecoration.Underline
-                )
-            }
-        }
+    }
+}
+
+@Composable
+private fun AboutLink(label: String, onClick: () -> Unit) {
+    val spoken = stringResource(R.string.common_link_suffix, label)
+    Box(
+        modifier = Modifier
+            .heightIn(min = 44.dp)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = spoken },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            textDecoration = TextDecoration.Underline
+        )
     }
 }
 

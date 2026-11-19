@@ -38,6 +38,21 @@ sealed interface NowAdvice {
         override val personal = true
     }
 
+    /** In the last days with readings the agreed power was reached (90 %) or exceeded on several days. */
+    data class PowerRepeated(val nearDays: Int, val overDays: Int, val days: Int) : NowAdvice {
+        override val personal = true
+    }
+
+    /** The plan cannot keep a planned appliance below the agreed power. */
+    data class PlanOverPower(val name: String, val startMillis: Long) : NowAdvice {
+        override val personal = true
+    }
+
+    /** Several planned appliances run at the same time. */
+    data class PlanOverlap(val names: List<String>, val startMillis: Long) : NowAdvice {
+        override val personal = true
+    }
+
     /** No own prices: only the block information of uro.si ([bestBlock] / [bestAtMillis] may be null). */
     data class General(val currentBlock: Int?, val bestBlock: Int?, val bestAtMillis: Long?) : NowAdvice {
         override val personal = false
@@ -60,7 +75,9 @@ object NowAdvisor {
         power: PowerSummary?,
         currentBlock: Int?,
         bestBlock: Int?,
-        bestAtMillis: Long?
+        bestAtMillis: Long?,
+        /** The current plan (for the power and overlap warnings); empty = none. */
+        plan: List<PlanResult> = emptyList()
     ): List<NowAdvice> {
         val out = ArrayList<NowAdvice>()
         if (nextRun != null && nextRun.endMillis > nowMillis) {
@@ -82,17 +99,28 @@ object NowAdvisor {
         } else {
             out += NowAdvice.General(currentBlock, bestBlock, bestAtMillis?.takeIf { it > nowMillis })
         }
+        // Readings older than a few days say nothing about today: no warning from them.
+        val fresh = power != null && power.isFresh(si.semafor.app.SloTime.dateOf(nowMillis))
         val share = power?.peakShare
-        if (power != null && share != null && share >= 0.9) out += NowAdvice.PowerHigh(power, share)
+        if (fresh && share != null && share >= 0.9) out += NowAdvice.PowerHigh(power, share)
+        if (fresh && power.nearDays + power.overDays >= 2) out += NowAdvice.PowerRepeated(power.nearDays, power.overDays, power.recentDays)
+        val coming = plan.filter { it.status == PlanStatus.OK && it.endMillis > nowMillis }
+        coming.filter { it.overPower }.minByOrNull { it.startMillis }?.let { out += NowAdvice.PlanOverPower(it.device.name, it.startMillis) }
+        coming.filter { it.overlapsWith.isNotEmpty() }.minByOrNull { it.startMillis }?.let { r ->
+            if (out.none { it is NowAdvice.PlanOverPower }) out += NowAdvice.PlanOverlap(listOf(r.device.name) + r.overlapsWith, r.startMillis)
+        }
         // Order: what to do now first, then the appliance, then background information.
         return out.sortedBy {
             when (it) {
                 is NowAdvice.DeviceSoon -> 0
                 is NowAdvice.GoodNow, is NowAdvice.WaitForCheaper -> 1
                 is NowAdvice.General -> 1
+                is NowAdvice.PlanOverPower -> 2
                 is NowAdvice.DeviceNext -> 2
                 is NowAdvice.PowerHigh -> 3
-                NowAdvice.FlatEnergy -> 4
+                is NowAdvice.PlanOverlap -> 3
+                is NowAdvice.PowerRepeated -> 4
+                NowAdvice.FlatEnergy -> 5
             }
         }
     }

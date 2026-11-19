@@ -30,8 +30,8 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow<UsageUiState>(UsageUiState.Loading(UiText.res(R.string.usage_loading)))
     val state: StateFlow<UsageUiState> = _state.asStateFlow()
 
-    private val _rangeDays = MutableStateFlow(DEFAULT_RANGE)
-    val rangeDays: StateFlow<Int> = _rangeDays.asStateFlow()
+    private val _period = MutableStateFlow(UsagePeriod.LAST_7)
+    val period: StateFlow<UsagePeriod> = _period.asStateFlow()
 
     /** A refresh is running while charts stay on screen. */
     private val _refreshing = MutableStateFlow(false)
@@ -45,7 +45,7 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
     /** Called whenever the screen is opened: shows stored data, downloads only what is missing or too old. */
     fun onScreenShown() {
         val shown = _state.value as? UsageUiState.Content
-        if (shown != null && shown.data.rangeDays == _rangeDays.value &&
+        if (shown != null && shown.data.period == _period.value &&
             System.currentTimeMillis() - shownAt in 0 until REUSE_MS
         ) {
             return
@@ -74,15 +74,15 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
 
     fun refresh() = load(force = true)
 
-    fun setRange(days: Int) {
-        if (days == _rangeDays.value) return
-        _rangeDays.value = days
+    fun setPeriod(period: UsagePeriod) {
+        if (period == _period.value) return
+        _period.value = period
         load(force = false)
     }
 
     private fun load(force: Boolean) {
         if (job?.isActive == true) return
-        val range = _rangeDays.value
+        val range = _period.value
         job = viewModelScope.launch {
             val connected = withContext(Dispatchers.IO) { repository.isConnected() }
             if (!connected) {
@@ -110,14 +110,12 @@ class UsageViewModel(app: Application) : AndroidViewModel(app) {
         }.also { started ->
             // The range was changed while this load was running: load the new one once this one has finished.
             started.invokeOnCompletion { cause ->
-                if (cause == null && _rangeDays.value != range) viewModelScope.launch { load(force = false) }
+                if (cause == null && _period.value != range) viewModelScope.launch { load(force = false) }
             }
         }
     }
 
     companion object {
-        const val DEFAULT_RANGE = 7
         private const val REUSE_MS = 5 * 60 * 1000L
-        val RANGES = listOf(7, 30)
     }
 }

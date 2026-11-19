@@ -34,7 +34,6 @@
     <string name="settings_mojelektro_wipe_confirm">Disconnect and delete</string>
     <string name="settings_tools">Tips and tools</string>
     <string name="settings_tips_sub">How to move consumption to cheaper blocks</string>
-    <string name="settings_prices_sub">Power and energy rates by block</string>
     <string name="settings_privacy">Privacy</string>
     <string name="settings_privacy_summary">No account, no ads, no cookies. Usage analytics: %1$s.</string>
     <string name="settings_privacy_open">Privacy settings</string>
@@ -44,9 +43,9 @@
 
     <!-- Privacy notice -->
     <string name="privacy_title">Your privacy</string>
-    <string name="privacy_intro">Tarifni semafor – moja poraba works without an account and without its own server. What you enter stays on this phone.</string>
+    <string name="privacy_intro">Tarifni semafor – moja poraba works without an account. What you enter stays on this phone.</string>
     <string name="privacy_local_title">Your data stays on the phone</string>
-    <string name="privacy_local_text">Time blocks and prices are downloaded from official public sources (uro.si, SODO, Energy Agency). The app sends no data about you when doing so.</string>
+    <string name="privacy_local_text">Time blocks, the network price list and news come from official public sources (uro.si, SODO, Energy Agency), the public price file from tarifnisemafor.si. The app sends no data about you. The hosting provider of tarifnisemafor.si automatically records the IP address and time of each download; this record is deleted within about one day, and the developer does not use it or link it to anything.</string>
     <string name="privacy_keystore_title">Moj Elektro is encrypted</string>
     <string name="privacy_keystore_text">The token, the EIMM and your readings are encrypted (Android Keystore, AES-256-GCM), excluded from backups and sent only to the official Moj Elektro server. They are never sent to analytics.</string>
     <string name="privacy_cookies_title">No cookies, no ads</string>
@@ -90,13 +89,9 @@
     <string name="calc_title">Calculator</string>
     <string name="calc_subtitle">Supply cost comparison</string>
     <string name="calc_compare_heading">Supplier offer comparison</string>
-    <string name="calc_what_title">What is it?</string>
     <string name="calc_what_text">A free tool of the Energy Agency with which households and small businesses compare the offers of electricity and natural gas suppliers. The tool has existed since the market opened in 2007; the renewed version also covers offers with dynamic electricity prices.</string>
-    <string name="calc_how_title">How does it work?</string>
     <string name="calc_how_text">You enter your annual electricity (or gas) consumption in kWh and choose your municipality. The other fields are optional and refine the calculation to your consumption. For dynamic prices, several hourly load profiles are available that better reflect consumption by hour.</string>
-    <string name="calc_offers_title">Which offers are included?</string>
     <string name="calc_offers_text">The comparison includes all price lists that suppliers have entered into the application and that the Energy Agency has confirmed. The suppliers are responsible for the data being current and correct; the Agency performs a basic check. The list of suppliers is in the calculator itself (»Prikaz tržnih udeležencev«).</string>
-    <string name="calc_personal_title">Personal data</string>
     <string name="calc_personal_text">The calculator runs on the Energy Agency\'s website, not in Tarifni semafor – moja poraba. The app does not see, collect or store what you enter. By entering your annual consumption you agree that the Agency processes it to compare offers. Read the terms of use first; if you do not agree with them, do not enter any data.</string>
     <string name="calc_terms">Terms of use</string>
     <string name="calc_info">General information about the comparison tool</string>

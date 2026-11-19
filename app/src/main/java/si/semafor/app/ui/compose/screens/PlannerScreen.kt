@@ -54,7 +54,11 @@ import si.semafor.app.SloTime
 import si.semafor.app.TariffCalculator
 import si.semafor.app.planner.AgreedSource
 import si.semafor.app.planner.DeviceType
+import si.semafor.app.planner.Habit
+import si.semafor.app.planner.HouseholdProfile
 import si.semafor.app.planner.LoadSettings
+import si.semafor.app.planner.PlanGoal
+import si.semafor.app.planner.PlanSummary
 import si.semafor.app.planner.PlanReason
 import si.semafor.app.planner.PlanResult
 import si.semafor.app.planner.PlanStatus
@@ -65,6 +69,8 @@ import si.semafor.app.pricing.PriceGapReason
 import si.semafor.app.pricing.PriceNow
 import si.semafor.app.ui.compose.LocalLang
 import si.semafor.app.ui.compose.components.ActionButton
+import si.semafor.app.ui.compose.components.Choice
+import si.semafor.app.ui.compose.components.ChoiceChips
 import si.semafor.app.ui.compose.components.InfoCard
 import si.semafor.app.ui.compose.components.LinkText
 import si.semafor.app.ui.compose.components.NumberRow
@@ -84,7 +90,12 @@ data class PlannerActions(
     val onUpdate: (PlannerDevice) -> Unit,
     val onRemove: (String) -> Unit,
     val onLoad: (LoadSettings) -> Unit,
-    val onOpenPrice: () -> Unit
+    val onOpenPrice: () -> Unit,
+    val onProfile: (HouseholdProfile) -> Unit = {},
+    val onConfirmStart: (String) -> Unit = {},
+    val onApplyHabit: (Habit) -> Unit = {},
+    val onClearLog: () -> Unit = {},
+    val onDay: (Int) -> Unit = {}
 )
 
 @Composable
@@ -97,24 +108,38 @@ fun deviceTypeName(t: DeviceType): String = stringResource(
         DeviceType.HEAT_PUMP -> R.string.pl_dev_heat_pump
         DeviceType.EV -> R.string.pl_dev_ev
         DeviceType.HEATING -> R.string.pl_dev_heating
+        DeviceType.AIR_CON -> R.string.pl_dev_air_con
         DeviceType.CUSTOM -> R.string.pl_dev_custom
     }
 )
 
 fun deviceIcon(t: DeviceType): Int = when (t) {
     DeviceType.EV -> R.drawable.ic_device_ev
-    DeviceType.BOILER, DeviceType.HEATING, DeviceType.HEAT_PUMP -> R.drawable.ic_device_heating
+    DeviceType.BOILER, DeviceType.HEATING, DeviceType.HEAT_PUMP, DeviceType.AIR_CON -> R.drawable.ic_device_heating
     DeviceType.WASHER, DeviceType.DISHWASHER, DeviceType.DRYER -> R.drawable.ic_device_household
     DeviceType.CUSTOM -> R.drawable.ic_bolt
 }
 
-/** "22:00–00:30" or "jutri 01:00–03:30". */
+/** "22:00–00:30", "jutri 01:00–03:30" or "sob 21. 11. 10:00–12:00" (any later day). */
 @Composable
 fun runRange(start: Long, end: Long, nowMillis: Long): String {
     val a = SloTime.formatHm(start)
     val b = SloTime.formatHm(end)
-    return if (SloTime.dateOf(start) != SloTime.dateOf(nowMillis)) stringResource(R.string.pl_range_tomorrow, a, b)
-    else stringResource(R.string.pl_range, a, b)
+    val day = SloTime.dateOf(start)
+    val today = SloTime.dateOf(nowMillis)
+    return when {
+        day == today -> stringResource(R.string.pl_range, a, b)
+        day == today.plusDays(1) -> stringResource(R.string.pl_range_tomorrow, a, b)
+        else -> stringResource(R.string.pl_range_day, dayLabel(day, LocalLang.current), a, b)
+    }
+}
+
+/** "sob 21. 11." / "Sat 21 Nov". */
+fun dayLabel(date: java.time.LocalDate, lang: String): String {
+    val locale = si.semafor.app.AppLanguage.localeOf(lang)
+    val weekday = date.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale).trimEnd('.')
+    val pattern = if (lang == si.semafor.app.AppSettings.LANGUAGE_EN) "d MMM" else "d. M."
+    return weekday + " " + date.format(java.time.format.DateTimeFormatter.ofPattern(pattern, locale))
 }
 
 /**
@@ -139,22 +164,51 @@ fun PlannerScreen(
     ScreenScaffold {
         ScreenHeader(stringResource(R.string.pl_title), actions.onBack, stringResource(R.string.pl_subtitle))
 
+        // ---- Which day: today and up to 6 days ahead ----
+        if (configured) {
+            val today = SloTime.today()
+            ChoiceChips(
+                choices = (0..si.semafor.app.planner.PlannerViewModel.MAX_DAY_OFFSET).map { o ->
+                    Choice(
+                        o,
+                        when (o) {
+                            0 -> stringResource(R.string.pl_day_today)
+                            1 -> stringResource(R.string.pl_day_tomorrow)
+                            else -> dayLabel(today.plusDays(o.toLong()), lang)
+                        }
+                    )
+                },
+                selected = state.dayOffset,
+                onSelect = actions.onDay,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+        val later = state.dayOffset > 0
+        val shownPrices = state.shownPrices
+        val shownResults = state.shownResults
+
         if (!configured) {
             InfoCard {
                 Text(stringResource(R.string.pl_need_price), style = body, color = colors.onSurface)
                 Spacer(Modifier.height(8.dp))
                 ActionButton(stringResource(R.string.pl_set_price), onClick = actions.onOpenPrice)
             }
-        } else if (state.prices.isEmpty()) {
+        } else if (shownPrices.isEmpty()) {
             InfoCard {
                 Text(
-                    stringResource(if (pricesLoading) R.string.pl_loading_prices else R.string.pl_no_schedule),
+                    stringResource(
+                        when {
+                            pricesLoading -> R.string.pl_loading_prices
+                            later && state.prices.isNotEmpty() -> R.string.pl_day_no_prices
+                            else -> R.string.pl_no_schedule
+                        }
+                    ),
                     style = body,
                     color = colors.onSurfaceVariant
                 )
             }
         }
-        gap?.let {
+        gap?.takeIf { !later }?.let {
             val day = SloTime.formatLocalDate(it.date, lang)
             Text(
                 stringResource(
@@ -202,31 +256,68 @@ fun PlannerScreen(
         if (state.devices.isEmpty()) {
             InfoCard { Text(stringResource(R.string.pl_empty), style = body, color = colors.onSurfaceVariant) }
         } else {
+            // ---- The answer first: what to do today ----
+            state.summary?.let { SummaryCard(it, state.profile.goal, nowMillis, later) }
+
             // ---- Timeline ----
-            val runs = state.results.filter { it.status == PlanStatus.OK }
-            if (state.prices.isNotEmpty()) {
+            val runs = shownResults.filter { it.status == PlanStatus.OK }
+            if (shownPrices.isNotEmpty()) {
                 SectionHeading(stringResource(R.string.pl_timeline_title))
-                InfoCard { PlanTimeline(state, runs, nowMillis) }
+                InfoCard { PlanTimeline(shownPrices, runs, nowMillis) }
+            }
+
+            // ---- Recognised habits (only those that would change something) ----
+            val suggestions = state.habits.mapNotNull { h -> state.devices.firstOrNull { it.id == h.deviceId }?.let { d -> h to d } }
+                .filter { (h, d) ->
+                    when (h) {
+                        is Habit.TypicalStart -> d.earliestStartMin != h.fromMin
+                        is Habit.WeekendOnly -> d.days != setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
+                    }
+                }
+            if (suggestions.isNotEmpty()) {
+                si.semafor.app.ui.compose.components.SectionHeadingWithInfo(
+                    stringResource(R.string.pl_habits_title),
+                    stringResource(R.string.pl_habits_title),
+                    listOf(stringResource(R.string.pl_habits_note))
+                )
+                InfoCard { for ((h, d) in suggestions) HabitRow(h, d, actions.onApplyHabit) }
             }
 
             // ---- Results, one card per appliance ----
-            SectionHeading(stringResource(R.string.pl_results_title))
-            for (device in state.devices) {
-                val result = state.results.firstOrNull { it.device.id == device.id }
-                DeviceCard(device, result, nowMillis, actions)
+            si.semafor.app.ui.compose.components.SectionHeadingWithInfo(
+                stringResource(R.string.pl_results_title),
+                stringResource(R.string.pl_results_title),
+                listOf(stringResource(R.string.pl_note))
+            )
+            // Priority appliances first, then in the order they were added.
+            for (device in state.devices.sortedByDescending { it.favorite }) {
+                val result = shownResults.firstOrNull { it.device.id == device.id }
+                // "I started it" only makes sense for today's plan.
+                DeviceCard(device, result, nowMillis, state.profile.learn && !later, later, actions)
             }
         }
 
-        // ---- Load settings ----
-        SectionHeading(stringResource(R.string.pl_load_title))
-        InfoCard { LoadSection(state, actions.onLoad) }
+        // ---- Household goal and habits (optional, all of it) ----
+        si.semafor.app.ui.compose.components.SectionHeadingWithInfo(
+            stringResource(R.string.pl_profile_title),
+            stringResource(R.string.pl_profile_title),
+            listOf(stringResource(R.string.pl_profile_note), stringResource(R.string.pl_learn_note))
+        )
+        InfoCard { ProfileSection(state.profile, state.log.size, actions) }
 
-        Text(stringResource(R.string.pl_note), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
+        // ---- Load settings ----
+        si.semafor.app.ui.compose.components.SectionHeadingWithInfo(
+            stringResource(R.string.pl_load_title),
+            stringResource(R.string.pl_load_title),
+            listOf(stringResource(R.string.pl_load_note))
+        )
+        InfoCard { LoadSection(state, actions.onLoad) }
+        Spacer(Modifier.height(16.dp))
     }
 }
 
 @Composable
-private fun DeviceCard(device: PlannerDevice, result: PlanResult?, nowMillis: Long, actions: PlannerActions) {
+private fun DeviceCard(device: PlannerDevice, result: PlanResult?, nowMillis: Long, learn: Boolean, later: Boolean, actions: PlannerActions) {
     val colors = MaterialTheme.colorScheme
     val locale = currentLocale
     val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
@@ -245,14 +336,17 @@ private fun DeviceCard(device: PlannerDevice, result: PlanResult?, nowMillis: Lo
                     style = small,
                     color = colors.onSurfaceVariant
                 )
+                if (device.note.isNotBlank()) Text(device.note, style = small, color = colors.onSurfaceVariant)
             }
+            FavoriteToggle(device.favorite, name) { actions.onUpdate(device.copy(favorite = it)) }
         }
         SwitchRow(stringResource(R.string.pl_active), device.active, { actions.onUpdate(device.copy(active = it)) }, fontSize = 14.sp)
 
         if (!device.active) {
             Text(stringResource(R.string.pl_not_active), style = body, color = colors.onSurfaceVariant)
         } else if (result != null) {
-            ResultBody(result, nowMillis)
+            ResultBody(result, nowMillis, later)
+            if (learn && result.status == PlanStatus.OK) ConfirmStart(device.id, actions.onConfirmStart)
         }
 
         Spacer(Modifier.height(6.dp))
@@ -268,7 +362,7 @@ private fun DeviceCard(device: PlannerDevice, result: PlanResult?, nowMillis: Lo
 }
 
 @Composable
-private fun ResultBody(r: PlanResult, nowMillis: Long) {
+private fun ResultBody(r: PlanResult, nowMillis: Long, later: Boolean) {
     val colors = MaterialTheme.colorScheme
     val locale = currentLocale
     val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
@@ -287,6 +381,8 @@ private fun ResultBody(r: PlanResult, nowMillis: Long) {
                         PlanReason.NOW_IS_CHEAPEST -> R.string.pl_reason_now
                         PlanReason.CHEAPEST_WITHIN_POWER -> R.string.pl_reason_power
                         PlanReason.CHEAPEST_OVER_POWER -> R.string.pl_reason_over
+                        PlanReason.LOWER_PEAK -> R.string.pl_reason_lower_peak
+                        PlanReason.SOONER -> R.string.pl_reason_sooner
                     }
                 ),
                 style = small,
@@ -294,7 +390,8 @@ private fun ResultBody(r: PlanResult, nowMillis: Long) {
                 modifier = Modifier.padding(top = 2.dp)
             )
             val now = r.costNow
-            Text(
+            // A later day has no "now" to compare with.
+            if (!later) Text(
                 when {
                     now == null -> stringResource(R.string.pl_now_unknown)
                     now - r.cost >= 0.005 -> stringResource(R.string.pl_now_more, PriceNow.formatEur(now, locale), PriceNow.formatEur(now - r.cost, locale))
@@ -304,8 +401,15 @@ private fun ResultBody(r: PlanResult, nowMillis: Long) {
                 color = colors.onSurface,
                 modifier = Modifier.padding(top = 4.dp)
             )
-            if (r.altStartMillis != null && r.altCost != null) {
-                val dur = r.endMillis - r.startMillis
+            val dur = r.endMillis - r.startMillis
+            if (r.earlierStartMillis != null && r.earlierCost != null) {
+                Text(
+                    stringResource(R.string.pl_earlier, runRange(r.earlierStartMillis, r.earlierStartMillis + dur, nowMillis), PriceNow.formatEur(r.earlierCost, locale)),
+                    style = body,
+                    color = colors.onSurface
+                )
+            }
+            if (r.altStartMillis != null && r.altCost != null && r.altStartMillis != r.earlierStartMillis) {
                 Text(
                     stringResource(R.string.pl_alt, runRange(r.altStartMillis, r.altStartMillis + dur, nowMillis), PriceNow.formatEur(r.altCost, locale)),
                     style = body,
@@ -365,6 +469,7 @@ private fun DeviceEditor(device: PlannerDevice, onDone: (PlannerDevice) -> Unit,
 
     Text(stringResource(R.string.pl_name), style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
     PlainTextField(name, { name = it.take(40) }, stringResource(R.string.pl_name), deviceTypeName(device.type))
+    var note by rememberSaveable(device.id) { mutableStateOf(device.note) }
     NumberRow(stringResource(R.string.pl_power), stringResource(R.string.pl_power), kw) { kw = it }
     NumberRow(stringResource(R.string.pl_energy), stringResource(R.string.pl_energy), kwh) { kwh = it }
     NumberRow(stringResource(R.string.pl_duration_h), stringResource(R.string.pl_duration_h), hours) { hours = it }
@@ -383,6 +488,8 @@ private fun DeviceEditor(device: PlannerDevice, onDone: (PlannerDevice) -> Unit,
                 NumberRow(stringResource(R.string.pl_hour), stringResource(R.string.pl_deadline) + " " + stringResource(R.string.pl_hour), dh) { dh = it }
                 NumberRow(stringResource(R.string.pl_minute), stringResource(R.string.pl_deadline) + " " + stringResource(R.string.pl_minute), dm) { dm = it }
             }
+            Text(stringResource(R.string.pl_note_label), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, modifier = Modifier.padding(top = 6.dp))
+            PlainTextField(note, { note = it.take(si.semafor.app.planner.PlannerStore.NOTE_MAX) }, stringResource(R.string.pl_note_label), stringResource(R.string.pl_note_hint))
             Text(stringResource(R.string.pl_days), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, modifier = Modifier.padding(top = 6.dp, bottom = 4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 for (d in DayOfWeek.entries) {
@@ -431,6 +538,7 @@ private fun DeviceEditor(device: PlannerDevice, onDone: (PlannerDevice) -> Unit,
                     earliestStartMin = if (advanced && useEarliest) minuteOf(eh, em) else null,
                     deadlineMin = if (advanced && useDeadline) minuteOf(dh, dm) else null,
                     days = if (advanced) days.map { DayOfWeek.of(it) }.toSet() else emptySet(),
+                    note = if (advanced) note.trim() else device.note,
                     userValues = device.userValues || changed
                 )
             )
@@ -496,7 +604,6 @@ private fun LoadSection(state: PlannerUiState, onLoad: (LoadSettings) -> Unit) {
             Text(stringResource(R.string.pl_load_none), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
         }
     }
-    Text(stringResource(R.string.pl_load_note), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
 }
 
 /**
@@ -505,8 +612,7 @@ private fun LoadSection(state: PlannerUiState, onLoad: (LoadSettings) -> Unit) {
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun PlanTimeline(state: PlannerUiState, runs: List<PlanResult>, nowMillis: Long) {
-    val prices = state.prices
+private fun PlanTimeline(prices: List<si.semafor.app.pricing.KwhPrice>, runs: List<PlanResult>, nowMillis: Long) {
     if (prices.isEmpty()) return
     val colors = MaterialTheme.colorScheme
     val measurer = rememberTextMeasurer()
@@ -577,6 +683,191 @@ private fun PlanTimeline(state: PlannerUiState, runs: List<PlanResult>, nowMilli
             androidx.compose.foundation.layout.Box(Modifier.size(10.dp).clip(RoundedCornerShape(2.dp)).background(runColor))
             Spacer(Modifier.width(4.dp))
             Text(stringResource(R.string.pl_legend_run), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        }
+    }
+}
+
+/**
+ * The plan in one sentence and the numbers behind it: where the biggest saving is, the total of all runs, and any
+ * power or overlap problem with what to do about it.
+ */
+@Composable
+private fun SummaryCard(s: PlanSummary, goal: PlanGoal, nowMillis: Long, later: Boolean) {
+    val colors = MaterialTheme.colorScheme
+    val locale = currentLocale
+    val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
+    val small = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
+    InfoCard {
+        val best = s.bestSaving
+        val headline = if (later) {
+            // A later day: no "now" to compare with; the cheapest run of the day is the headline.
+            val main = s.mainRun
+            stringResource(R.string.pl_sum_day, main.device.name, runRange(main.startMillis, main.endMillis, nowMillis))
+        } else if (best != null) {
+            val start = SloTime.formatHm(best.startMillis)
+            val tomorrow = SloTime.dateOf(best.startMillis) != SloTime.dateOf(nowMillis)
+            stringResource(
+                if (tomorrow) R.string.pl_sum_best_tomorrow else R.string.pl_sum_best,
+                best.device.name, start, PriceNow.formatEur(best.savingVsNow ?: 0.0, locale)
+            )
+        } else stringResource(R.string.pl_sum_now_fine)
+        Text(headline, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, lineHeight = 23.sp)
+        Text(stringResource(R.string.pl_sum_total, PriceNow.formatEur(s.totalCost, locale)), style = body, color = colors.onSurface, modifier = Modifier.padding(top = 6.dp))
+        s.totalCostNow?.let {
+            if (it - s.totalCost >= PlanSummary.MIN_SAVING) {
+                Text(stringResource(R.string.pl_sum_total_now, PriceNow.formatEur(it, locale)), style = small, color = colors.onSurfaceVariant)
+            }
+        }
+        for (r in s.overPower) {
+            Text(stringResource(R.string.pl_sum_over, r.device.name), style = body, color = AppColors.Warning, modifier = Modifier.padding(top = 6.dp))
+        }
+        if (s.overPower.isEmpty() && s.overlapping.isNotEmpty()) {
+            val names = s.overlapping.map { it.device.name }.distinct().joinToString(", ")
+            Text(stringResource(R.string.pl_sum_overlap, names), style = body, color = AppColors.Warning, modifier = Modifier.padding(top = 6.dp))
+        }
+        val peak = s.peakRun
+        val agreed = peak.peakAgreedKw
+        Text(
+            if (agreed != null) stringResource(R.string.pl_sum_peak, String.format(locale, "%.1f", peak.peakKw), peak.device.name, String.format(locale, "%.1f", agreed))
+            else stringResource(R.string.pl_sum_peak_no_agreed, String.format(locale, "%.1f", peak.peakKw), peak.device.name),
+            style = small,
+            color = colors.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+        Text(stringResource(R.string.pl_sum_goal, goalName(goal)), style = small, color = colors.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun goalName(goal: PlanGoal): String = stringResource(
+    when (goal) {
+        PlanGoal.COST -> R.string.pl_goal_cost
+        PlanGoal.FEWER_PEAKS -> R.string.pl_goal_peaks
+        PlanGoal.COMFORT -> R.string.pl_goal_comfort
+    }
+)
+
+/** Star that marks a priority appliance (listed and planned first). */
+@Composable
+private fun FavoriteToggle(on: Boolean, name: String, onChange: (Boolean) -> Unit) {
+    val spoken = stringResource(if (on) R.string.pl_fav_on else R.string.pl_fav_off, name)
+    androidx.compose.foundation.layout.Box(
+        Modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .clickable(role = Role.Switch) { onChange(!on) }
+            .clearAndSetSemantics {
+                contentDescription = spoken
+                selected = on
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painterResource(if (on) R.drawable.ic_star else R.drawable.ic_star_outline),
+            contentDescription = null,
+            tint = if (on) AppColors.Near else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+/** "Zagnal sem": records the start on this phone, so recurring habits can be recognised. */
+@Composable
+private fun ConfirmStart(deviceId: String, onConfirm: (String) -> Unit) {
+    var done by rememberSaveable(deviceId) { mutableStateOf(false) }
+    if (done) {
+        Text(
+            stringResource(R.string.pl_confirmed),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+    } else {
+        LinkText(stringResource(R.string.pl_confirm)) {
+            onConfirm(deviceId)
+            done = true
+        }
+    }
+}
+
+/** One recognised habit with the change it suggests. Always worded as a pattern, never as a fact. */
+@Composable
+private fun HabitRow(h: Habit, device: PlannerDevice, onApply: (Habit) -> Unit) {
+    val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
+    fun hm(min: Int) = String.format(java.util.Locale.ROOT, "%02d:%02d", min / 60, min % 60)
+    val name = device.name.ifBlank { deviceTypeName(device.type) }
+    Text(
+        when (h) {
+            is Habit.TypicalStart -> stringResource(R.string.pl_habit_time, name, hm(h.fromMin), hm(h.toMin), h.count)
+            is Habit.WeekendOnly -> stringResource(R.string.pl_habit_weekend, name, h.count)
+        },
+        style = body,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(top = 4.dp)
+    )
+    LinkText(
+        stringResource(
+            when (h) {
+                is Habit.TypicalStart -> R.string.pl_habit_apply_time
+                is Habit.WeekendOnly -> R.string.pl_habit_apply_weekend
+            }
+        )
+    ) { onApply(h) }
+}
+
+/**
+ * The household's goal and usual times. Everything is optional and set when the user wants to: the planner works
+ * without any of it. Times are whole hours (enough for a window and much quicker to set).
+ */
+@Composable
+private fun ProfileSection(profile: HouseholdProfile, logSize: Int, actions: PlannerActions) {
+    val colors = MaterialTheme.colorScheme
+    val small = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
+    Text(stringResource(R.string.pl_goal_title), style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
+    ChoiceChips(
+        choices = PlanGoal.entries.map { Choice(it, goalName(it)) },
+        selected = profile.goal,
+        onSelect = { actions.onProfile(profile.copy(goal = it)) },
+        modifier = Modifier.padding(vertical = 6.dp)
+    )
+    Text(
+        stringResource(
+            when (profile.goal) {
+                PlanGoal.COST -> R.string.pl_goal_cost_text
+                PlanGoal.FEWER_PEAKS -> R.string.pl_goal_peaks_text
+                PlanGoal.COMFORT -> R.string.pl_goal_comfort_text
+            }
+        ),
+        style = small,
+        color = colors.onSurfaceVariant
+    )
+
+    Spacer(Modifier.height(10.dp))
+    HourSetting(stringResource(R.string.pl_chores_by), profile.choresDoneByMin, 7 * 60) { actions.onProfile(profile.copy(choresDoneByMin = it)) }
+    HourSetting(stringResource(R.string.pl_ev_from), profile.evFromMin, 22 * 60) { actions.onProfile(profile.copy(evFromMin = it)) }
+    HourSetting(stringResource(R.string.pl_ev_to), profile.evToMin, 6 * 60) { actions.onProfile(profile.copy(evToMin = it)) }
+
+    Spacer(Modifier.height(6.dp))
+    SwitchRow(stringResource(R.string.pl_learn), profile.learn, { actions.onProfile(profile.copy(learn = it)) }, fontSize = 14.sp)
+    if (profile.learn && logSize > 0) {
+        Text(learnCountText(logSize), style = small, color = colors.onSurfaceVariant)
+        LinkText(stringResource(R.string.pl_learn_clear), actions.onClearLog)
+    }
+}
+
+@Composable
+private fun learnCountText(count: Int): String =
+    androidx.compose.ui.res.pluralStringResource(R.plurals.pl_learn_count, count, count)
+
+/** An optional hour: a switch, and when on, the hour (0-23). */
+@Composable
+private fun HourSetting(label: String, minute: Int?, defaultMinute: Int, onChange: (Int?) -> Unit) {
+    SwitchRow(label, minute != null, { on -> onChange(if (on) defaultMinute else null) }, fontSize = 14.sp)
+    if (minute != null) {
+        var text by rememberSaveable(label) { mutableStateOf((minute / 60).toString()) }
+        NumberRow(stringResource(R.string.pl_hour_of_day), label, text) { t ->
+            text = t
+            t.trim().toIntOrNull()?.takeIf { it in 0..23 }?.let { onChange(it * 60) }
         }
     }
 }

@@ -10,12 +10,11 @@
     <string name="price_change_suppliers">Spremenili so se ceniki dobaviteljev.</string>
 
     <!-- Menu and settings -->
-    <string name="menu_energy_price">Cena elektrike</string>
-    <string name="menu_energy_price_sub">Skupna cena z omrežnino in DDV</string>
+    <string name="menu_energy_price">Cene elektrike in omrežnine</string>
+    <string name="menu_energy_price_sub">Moja cena, dobavitelji, omrežnina, kalkulator</string>
 
     <!-- Energy price screen: header and current price -->
-    <string name="ep_title">Cena elektrike</string>
-    <string name="ep_subtitle">Energija, omrežnina, dajatve in DDV</string>
+    <string name="ep_title">Cene elektrike in omrežnine</string>
     <string name="ep_now_badge">ZDAJ</string>
     <string name="ep_now_line">Zdaj: %1$s</string>
     <string name="ep_now_suffix">skupaj z omrežnino in DDV</string>
@@ -104,7 +103,6 @@
     <string name="ep_pick_package">Izberi paket.</string>
 
     <!-- Price data and sources -->
-    <string name="ep_data_title">Ceniki in viri</string>
     <string name="ep_data_updated">Ceniki z dne %1$s</string>
     <string name="ep_data_checked">Zadnje preverjanje na strežniku: %1$s</string>
     <string name="ep_data_never">Ceniki na strežniku še niso bili preverjeni; uporabljajo se podatki, vgrajeni v aplikacijo.</string>
@@ -112,16 +110,10 @@
     <string name="ep_checking">Preverjam …</string>
     <string name="ep_sync_updated">Ceniki so posodobljeni.</string>
     <string name="ep_sync_unchanged">Novih cenikov ni.</string>
-    <string name="ep_sync_failed">Strežnik ni dosegljiv. Poskusi pozneje.</string>
     <string name="ep_notify_switch">Obvesti me o spremembah cen</string>
-    <string name="ep_charge_value">%1$s %2$s, od %3$s</string>
-    <string name="ep_unit_kwh">€/kWh</string>
     <string name="ep_unit_kw_month">€/kW na mesec</string>
     <string name="ep_unit_month">€ na mesec</string>
-    <string name="ep_network_value">Omrežnina za energijo po blokih: %1$s €/kWh</string>
-    <string name="ep_vat_value">DDV: %1$s %%</string>
-    <string name="ep_open_source">Odpri vir</string>
-    <string name="ep_privacy">Aplikacija prenese javno datoteko s cenami s tarifnisemafor.si samo, ko je potrebno: nekaj dni ali tednov pred potekom veljavnega cenika in občasno med letom. Pošlje samo zahtevo za datoteko, brez kakršnih koli podatkov o tebi ali telefonu. Tvoja izbira cene ostane v telefonu.</string>
+    <string name="ep_privacy">Aplikacija prenese javno datoteko s cenami s tarifnisemafor.si samo, ko je potrebno: nekaj dni ali tednov pred potekom veljavnega cenika in občasno med letom. Pošlje samo zahtevo za datoteko, brez podatkov o tebi ali telefonu. Ponudnik gostovanja ob tem samodejno zapiše IP-naslov in čas zahteve; zapis se izbriše v približno enem dnevu, razvijalec ga ne uporablja. Tvoja izbira cene ostane v telefonu.</string>
     <string name="ep_disclaimer">Cena je informativna. Točen znesek je na računu dobavitelja in operaterja distribucijskega omrežja.</string>
 
     <!-- Monthly bill in the calculator -->
@@ -139,4 +131,14 @@
 
     <!-- Widget -->
     <string name="widget_total_price">Zdaj %1$s</string>
+    <!-- Price list check results -->
+    <string name="ep_sync_same">Strežnik je dosegljiv. Ceniki na strežniku so enaki tistim, ki so že v aplikaciji.</string>
+    <string name="ep_sync_no_connection">Povezava s tarifnisemafor.si ni uspela. Preveri internetno povezavo; aplikacija bo čez eno uro poskusila znova.</string>
+    <string name="ep_sync_server_error">Strežnik je vrnil napako %1$d. Aplikacija uporablja zadnje veljavne cenike in bo čez eno uro poskusila znova.</string>
+    <string name="ep_sync_invalid">Prenesena datoteka s ceniki ni veljavna, zato je aplikacija ni uporabila. Ostanejo zadnji veljavni ceniki.</string>
+    <!-- Supplier services and discounts -->
+    <string name="ep_item_extras">Ugodnosti in storitve</string>
+    <string name="ep_custom_extras">Ugodnosti in storitve (€ na mesec)</string>
+    <string name="ep_custom_extras_note">Seštevek vrstic »Ugodnosti in storitve« z računa, na primer 0,82 za storitev in −1,00 za popust da −0,18. Popust vpiši z minusom.</string>
+    <string name="ep_compare_extras">ugodnosti in storitve %1$s na mesec</string>
 </resources>

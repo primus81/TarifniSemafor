@@ -95,9 +95,9 @@ fun HomeScreen(
     /** The cards below the current block (advice, plan, price, power); [block] = current block or null. */
     priceCard: (@Composable (block: Int?) -> Unit)? = null
 ) {
-    // Open at every start; kept while the app runs (also across screen switches and rotation). Not a setting.
-    var nowAdviceExpanded by rememberSaveable { mutableStateOf(true) }
-    var nextAdviceExpanded by rememberSaveable { mutableStateOf(true) }
+    // Closed at first: the screen starts with the essentials; the uro.si recommendations open with one tap.
+    var nowAdviceExpanded by rememberSaveable { mutableStateOf(false) }
+    var nextAdviceExpanded by rememberSaveable { mutableStateOf(false) }
 
     // Wide windows (large tablet, desktop): the current block on the left, the advice on the right.
     val twoColumns = currentWidthClass() == WidthClass.EXPANDED && state is HomeUiState.Content
@@ -381,9 +381,9 @@ private fun AdviceSection(title: String, block: Block, expanded: Boolean, onExpa
 private fun AdviceRow(a: Advice) {
     // Symbol + description in addition to colour (colour alone must not carry the meaning).
     val (symbol, dotColor, description) = when (a.state) {
-        1 -> Triple("✓", Color(0xFF43A047), stringResource(R.string.home_advice_good))
-        2 -> Triple("!", Color(0xFFFFB300), stringResource(R.string.home_advice_mid))
-        else -> Triple("✕", AppColors.Over, stringResource(R.string.home_advice_bad))
+        1 -> Triple(R.drawable.ic_state_good, Color(0xFF43A047), stringResource(R.string.home_advice_good))
+        2 -> Triple(R.drawable.ic_state_mid, Color(0xFFFFB300), stringResource(R.string.home_advice_mid))
+        else -> Triple(R.drawable.ic_state_bad, AppColors.Over, stringResource(R.string.home_advice_bad))
     }
     val colors = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(16.dp)
@@ -410,7 +410,7 @@ private fun AdviceRow(a: Advice) {
                 .background(dotColor),
             contentAlignment = Alignment.Center
         ) {
-            Text(symbol, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF111111))
+            Icon(painterResource(symbol), contentDescription = null, tint = Color(0xFF111111), modifier = Modifier.size(16.dp))
         }
         // Device group icon (Material Icons), tinted like the text so it works in both themes.
         ApiTexts.deviceIcon(a.device)?.let { icon ->
@@ -427,45 +427,41 @@ private fun AdviceRow(a: Advice) {
     }
 }
 
+/**
+ * Small, unobtrusive donation card at the end of the home screen: one quiet line of text and one row of amounts.
+ * No border and muted colours, so it never competes with the information above it.
+ */
 @Composable
 private fun DonationCard(onOpenDonation: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val donationSpoken = stringResource(R.string.home_donation_title_spoken)
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(12.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 20.dp)
-            .background(colors.surface, shape)
-            .border(1.dp, colors.outline, shape)
-            .padding(14.dp)
+            .padding(top = 4.dp, bottom = 16.dp)
+            .background(colors.surface.copy(alpha = 0.5f), shape)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Text(
             text = stringResource(R.string.home_donation_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = colors.onSurface,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clearAndSetSemantics {
-                    heading()
-                    contentDescription = donationSpoken
-                }
+            style = MaterialTheme.typography.labelLarge,
+            color = colors.onSurfaceVariant,
+            modifier = Modifier.clearAndSetSemantics {
+                heading()
+                contentDescription = donationSpoken
+            }
         )
         Text(
             text = stringResource(R.string.home_donation_text),
             style = MaterialTheme.typography.bodySmall,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp)
+            color = colors.onSurfaceVariant
         )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(top = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             DonationButton("1 €", stringResource(R.string.home_donation_1), Modifier.weight(1f)) {
                 onOpenDonation(DonationConfig.URL_1)
@@ -476,15 +472,10 @@ private fun DonationCard(onOpenDonation: (String) -> Unit) {
             DonationButton("5 €", stringResource(R.string.home_donation_5), Modifier.weight(1f)) {
                 onOpenDonation(DonationConfig.URL_5)
             }
+            DonationButton(stringResource(R.string.home_donation_custom), stringResource(R.string.home_donation_any), Modifier.weight(1f)) {
+                onOpenDonation(DonationConfig.URL_CUSTOM)
+            }
         }
-        DonationButton(
-            stringResource(R.string.home_donation_custom),
-            stringResource(R.string.home_donation_any),
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            fontSize = 12
-        ) { onOpenDonation(DonationConfig.URL_CUSTOM) }
     }
 }
 
@@ -493,14 +484,14 @@ private fun DonationButton(
     label: String,
     description: String,
     modifier: Modifier,
-    fontSize: Int = 13,
+    fontSize: Int = 12,
     onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
             .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.outline)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(24.dp))
             .clickable(role = Role.Button, onClick = onClick)
             .clearAndSetSemantics {
                 role = Role.Button
@@ -509,6 +500,6 @@ private fun DonationButton(
             .padding(horizontal = 8.dp, vertical = 2.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, fontSize = fontSize.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text(label, fontSize = fontSize.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

@@ -22,7 +22,7 @@ internal object MojElektroParser {
         val contract = o.optJSONObject("pogodbeniPodatki")
         return MeteringPoint(
             eimm = eimm,
-            gsrn = id?.str("gsrn"),
+            gsrn = id.str("gsrn"),
             measurementPoints = points,
             has15MinuteData = contract?.bool("obstoj15MinutneMeritve"),
             remoteReading = contract?.bool("daljinskoCitanje")

@@ -176,6 +176,9 @@ function validate(array $d): array
                 if (!$hasEt && !($hasVt && $hasMt)) $e[] = "$pw: no prices";
                 $fee = $p['monthlyFeeWithoutVat'] ?? null;
                 if ($fee !== null && !check_number($fee, 0.0, 1000.0)) $e[] = "$pw.monthlyFeeWithoutVat";
+                // Services and discounts per month (may be negative).
+                $extras = $p['monthlyExtrasWithoutVat'] ?? null;
+                if ($extras !== null && !check_number($extras, -1000.0, 1000.0)) $e[] = "$pw.monthlyExtrasWithoutVat";
             }
         }
     }

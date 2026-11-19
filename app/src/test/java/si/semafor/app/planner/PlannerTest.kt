@@ -153,10 +153,10 @@ class PlannerTest {
         assertTrue(a.endMillis <= b.startMillis || b.endMillis <= a.startMillis)
         assertTrue(results.none { it.overPower })
         assertTrue(results.all { it.overlapsWith.isEmpty() })
-        // Without a limit they may run together, and the overlap is reported.
+        // Without a limit the night has many equally cheap starts: they are still spread, no needless peak.
         val free = DayPlanner.plan(listOf(washer, dryer), p, now, noLimit)
-        assertEquals(free[0].startMillis, free[1].startMillis)
-        assertEquals(listOf("susilni"), free[0].overlapsWith)
+        assertTrue(free.all { it.status == PlanStatus.OK && it.overlapsWith.isEmpty() })
+        assertTrue(free.all { kotlin.math.abs(it.cost - it.cheapestCost) < 1e-6 })
     }
 
     @Test

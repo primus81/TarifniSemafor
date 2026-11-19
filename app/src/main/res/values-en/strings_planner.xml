@@ -104,18 +104,14 @@
     <string name="home_plan_title">Smart day plan</string>
     <string name="home_plan_next">Next: %1$s, %2$s (%3$s)</string>
     <string name="home_plan_empty">Tell the app which appliances you want to use and it suggests the cheapest start.</string>
-    <string name="home_plan_open">Open the planner</string>
     <string name="home_price_title">My electricity price</string>
-    <string name="home_price_custom">My own price from the contract</string>
     <string name="home_price_range">In the next %1$d hours from %2$s to %3$s, depending on block and tariff.</string>
-    <string name="home_price_details">Items and comparison</string>
     <string name="home_power_title">My power and consumption</string>
     <string name="home_power_last">Latest known quarter hour: %1$s kW (%2$s)</string>
     <string name="home_power_agreed">Agreed power in block %1$d: %2$s kW, reached %3$s %%</string>
     <string name="home_power_peak">Highest quarter hour of that day: %1$s kW at %2$s (%3$s %% of the agreed power)</string>
     <string name="home_power_delay">Moj Elektro data is about one day delayed. This is not the current power.</string>
     <string name="home_power_connect">Connect Moj Elektro to see your power and consumption.</string>
-    <string name="home_power_open">Open Consumption</string>
     <string name="home_power_no_agreed">The agreed power is not known.</string>
 
     <!-- Reminders -->
@@ -127,7 +123,7 @@
     <string name="rem_cheaper_text">From %1$s block %2$d applies: %3$s with network charge and VAT.</string>
     <string name="rem_power_over_title">Agreed power exceeded</string>
     <string name="rem_power_near_title">High load</string>
-    <string name="rem_power_text">Reading %1$s: %2$s kW with an agreed power of %3$s kW in block %4$d. Delayed data from Moj Elektro.</string>
+    <string name="rem_power_text">Reading %1$s: %2$s kW with an agreed power of %3$s kW in block %4$d (delayed data from Moj Elektro). Check whether several large appliances run at that time and spread them out in the day plan.</string>
 
     <!-- Settings: reminders -->
     <string name="set_rem_devices">Reminder for planned appliances</string>
@@ -144,7 +140,6 @@
 
     <!-- Price screen: blocks, comparison, fixed costs -->
     <string name="ep_vat_note">All prices in €/kWh include the network charge for energy, contributions, excise duty and VAT.</string>
-    <string name="ep_package_line">Price list: %1$s</string>
     <string name="ep_validity">Valid from %1$s</string>
     <string name="ep_validity_to">Valid from %1$s to %2$s</string>
     <string name="ep_blocks_title">Price by time block</string>
@@ -172,4 +167,48 @@
     <string name="widget_plan">Plan: %1$s at %2$s</string>
     <string name="widget_plan_none">Plan: add an appliance in the app</string>
     <string name="widget_power">Latest reading: %1$s kW (%2$s)</string>
+    <!-- Info sheets -->
+    <string name="info_more">More about: %1$s</string>
+    <string name="info_close">Close</string>
+    <string name="calc_compare_short">Compare the offers of all electricity and gas suppliers with the Energy Agency\'s tool.</string>
+    <!-- Price screen tabs -->
+    <string name="ep_tab_my_price">My price</string>
+    <string name="ep_tab_suppliers">Suppliers</string>
+    <string name="ep_tab_network">Network</string>
+    <string name="ep_tab_calculator">Calculator</string>
+    <string name="ep_change_price">Change supplier or price</string>
+    <!-- Data sources screen -->
+    <string name="src_title">Data sources</string>
+    <string name="src_open">Open source</string>
+    <string name="src_updated">Last update: %1$s</string>
+    <string name="src_group_official">Official energy data</string>
+    <string name="src_blocks">Time blocks (Energy Agency, uro.si)</string>
+    <string name="src_blocks_what">Current and next block, recommendations and the block schedule by hour. Home, widget, notifications, prices by hour, plan.</string>
+    <string name="src_colors">Time block colours (uro.si)</string>
+    <string name="src_colors_what">Official table of block colours for the current year.</string>
+    <string name="src_network">Network charge price list (SODO)</string>
+    <string name="src_network_what">Power and energy rates by block, group 0. Network charge, price, calculator.</string>
+    <string name="src_network_missing">No valid price list for today in the app.</string>
+    <string name="src_charge_what">Part of the total price and the bill estimate.</string>
+    <string name="src_tariff_hours">VT and MT hours</string>
+    <string name="src_tariff_hours_what">VT on working days from %1$d:00 to %2$d:00, otherwise MT. Energy price by hour.</string>
+    <string name="src_holidays">Public holidays (gov.si)</string>
+    <string name="src_holidays_what">By the holidays act; on public holidays MT applies all day.</string>
+    <string name="src_group_prices">Supplier price lists and levies</string>
+    <string name="src_prices_file">Price file (tarifnisemafor.si)</string>
+    <string name="src_supplier_what">Public price list of the supplier.</string>
+    <string name="src_group_usage">Readings and consumption</string>
+    <string name="src_moj">Moj Elektro (api.informatika.si)</string>
+    <string name="src_moj_what">Your 15-minute readings and agreed power, about one day delayed. Consumption, my power, plan.</string>
+    <string name="src_moj_off">Not connected.</string>
+    <string name="src_group_other">Other sources</string>
+    <string name="src_news">News (Energy Agency)</string>
+    <string name="src_news_what">News from the RSS feed.</string>
+    <string name="src_icons">Icons (Material Symbols)</string>
+    <string name="src_icons_what">Free licence Apache 2.0.</string>
+    <string name="src_group_links">Links (open in the browser)</string>
+    <string name="src_link_calc">Comparison of electricity and gas offers (Energy Agency)</string>
+    <string name="src_link_tariff">All about the tariff system (Moj Elektro)</string>
+    <string name="about_terms">Terms of use</string>
+    <string name="about_disclaimer_link">Disclaimer</string>
 </resources>

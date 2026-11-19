@@ -27,11 +27,7 @@
     <string name="top_menu">Menu</string>
     <string name="top_title_block">Tarifni semafor – moja poraba. Current block: %1$d</string>
     <string name="top_title_no_data">Tarifni semafor – moja poraba. No data</string>
-    <string name="menu_calculator">Calculator</string>
-    <string name="menu_calculator_sub">Supply cost comparison</string>
-    <string name="menu_prices">Network charge prices</string>
     <string name="menu_tips">Tips</string>
-    <string name="menu_tariff_info">All about the tariff system</string>
     <string name="menu_news">News</string>
     <string name="menu_sources">Data sources</string>
     <string name="menu_about">About the app</string>
@@ -64,10 +60,10 @@
     <string name="home_advice_mid">In between</string>
     <string name="home_advice_bad">Less favourable</string>
     <string name="home_advice_source_note">Recommendations are published by uro.si.</string>
-    <string name="home_donation_title">☕ Support the app</string>
+    <string name="home_donation_title">Support the app</string>
     <string name="home_donation_title_spoken">Support the app</string>
-    <string name="home_donation_text">If you like the app and find it useful, a voluntary donation helps its further development. Thank you for your support!</string>
-    <string name="home_donation_custom">Any amount</string>
+    <string name="home_donation_text">Optional. A voluntary donation helps further development.</string>
+    <string name="home_donation_custom">Other</string>
     <string name="home_donation_1">Support development with a donation of 1 euro</string>
     <string name="home_donation_3">Support development with a donation of 3 euros</string>
     <string name="home_donation_5">Support development with a donation of 5 euros</string>
@@ -103,25 +99,9 @@
     <string name="prices_official">Official price list (SODO)</string>
 
     <!-- Dialogs -->
-    <string name="sources_title">Data sources</string>
-    <string name="sources_blocks">Tarifni semafor and time blocks:</string>
-    <string name="sources_blocks_link">Energy Agency, uro.si (API)</string>
-    <string name="sources_news">News:</string>
-    <string name="sources_news_link">Energy Agency (RSS)</string>
-    <string name="sources_calc">Calculator (supply cost comparison), summary and link:</string>
-    <string name="sources_calc_link">Energy Agency</string>
-    <string name="sources_tariff">Information on the tariff system:</string>
-    <string name="sources_tariff_link">MojElektro</string>
-    <string name="sources_colors">Colours of the time blocks:</string>
-    <string name="sources_colors_link">official uro.si table</string>
-    <string name="sources_icons">Icons (free licence Apache 2.0):</string>
-    <string name="sources_icons_link">Material Symbols (Google)</string>
-    <string name="sources_usage">Your readings (optional):</string>
-    <string name="sources_usage_link">Moj Elektro API</string>
     <string name="about_title">About the app</string>
-    <string name="about_disclaimer">Tarifni semafor – moja poraba is an unofficial app. It is not affiliated with the Energy Agency, SODO or any other operator. The data is taken from public sources (see Data sources); its accuracy is not guaranteed, and the valid data is published by the official sources.</string>
+    <string name="about_disclaimer">An unofficial app, not affiliated with the Energy Agency, SODO or the operators. The data comes from public sources (Data sources); calculations are for information.</string>
     <string name="about_developer">"Developed by: "</string>
-    <string name="about_and">" and "</string>
     <string name="about_version">Version: %1$s</string>
     <string name="about_privacy_policy">Privacy policy</string>
 

@@ -41,7 +41,7 @@ Vabljen k testiranju.
 
 - Brez registracije, računa, oglasov, piškotkov in analitike.
 - Aplikacija ne zbira osebnih podatkov. Časovne bloke, cenik in novice prenaša z uradnih javnih virov.
-- Ceniki (dobavitelji, omrežnina, dajatve) so javna statična datoteka na `tarifnisemafor.si/api/ceniki.json`. Aplikacija jo prenese samo, ko je potrebno (pred potekom cenika, sicer najpozneje vsakih 60 dni), brez kakršnih koli podatkov o uporabniku. Izbira cene energije ostane v telefonu. Strežniški del je v mapi `server/`.
+- Ceniki (dobavitelji, omrežnina, dajatve) so javna statična datoteka na `tarifnisemafor.si/api/ceniki.json`. Aplikacija jo prenese samo, ko je potrebno (pred potekom cenika, sicer najpozneje vsakih 60 dni), brez kakršnih koli podatkov o uporabniku. Ponudnik gostovanja ob prenosu samodejno zapiše IP-naslov in čas; zapis se izbriše v približno enem dnevu, statistika gostovanja pa vsakih 6 ur. Izbira cene energije ostane v telefonu. Strežniški del je v mapi `server/`.
 - Neobvezna povezava Moj Elektro: žeton API (samo branje), EIMM in meritve ostanejo samo v telefonu, šifrirani s ključem v Android Keystore (AES-256-GCM), in niso del varnostnih kopij. Aplikacija jih pošilja samo uradnemu strežniku `api.informatika.si`, nikoli razvijalcu ali tretjim. Prekinitev povezave izbriše žeton, EIMM in vse shranjene meritve.
 - Podatki Moj Elektro niso v realnem času: objavljeni so z zamikom, običajno približno en dan.
 
@@ -77,7 +77,7 @@ Kode registrov (A+, A-, A+_T0, A-_T0) se preberejo iz uradnega kataloga `GET /re
 
 Izdaje so objavljene na GitHubu: https://github.com/primus81/TarifniSemafor/releases (oznake `v<verzija>`, verzije po [SemVer](https://semver.org/)). Podrobne opombe vsake izdaje so v mapi `store_assets/` (`release_notes_<verzija>.md`), besedilo izdaje za GitHub pa v `docs/releases/`.
 
-### 2.3.0 (v pripravi, versionCode še ni določen)
+### 2.3.0 (versionCode 20)
 
 Spremembe od verzije 2.2.3 (versionCode 19):
 
@@ -92,6 +92,11 @@ Spremembe od verzije 2.2.3 (versionCode 19):
 - Obvestila: opomnik za načrtovane naprave, opozorilo pred ugodnejšim terminom, opozorila o dogovorjeni moči, spremembe cenikov; čas opozorila, tiho obdobje, brez podvajanja.
 - Pripomoček: raztegnjen na dve vrstici pokaže še priporočilo, naslednjo načrtovano napravo in zadnjo znano moč; dotik cene ali vrstice odpre ustrezen zaslon.
 - Novo ime: Tarifni semafor – moja poraba.
+- Osebna pametna pomoč v dnevnem načrtu: povzetek z največjim prihrankom in skupnim stroškom, cilj gospodinjstva (najnižji strošek, manj konic, čim prej), prednostne naprave, primerjava več vrstnih redov naprav (brez nepotrebnih konic), prej skoraj enako ugoden termin, klimatska naprava, opomba k napravi.
+- Uradni urnik časovnih blokov za leti 2026 in 2027 (uro.si) je vgrajen: cene po urah in načrt ne čakajo na prenos, načrtovanje do 7 dni vnaprej (izbira dneva: danes, jutri in naslednjih 5 dni).
+- Neobvezne navade gospodinjstva (pranje končano do, polnjenje avtomobila) in prepoznani vzorci iz potrjenih zagonov (samo v telefonu, izklopljivo, izbris po 60 dneh).
+- Opozorila o moči upoštevajo starost meritev (starejše od 3 dni ne sprožijo opozorila), ponavljajoče se konice in načrtovana prekrivanja; vsako opozorilo pove, kaj narediti.
+- Semafor porabe: pregled tedna (poraba, konica, primerjava s prejšnjim tednom, ocena spremenljivega stroška po tvojem ceniku), obdobja 7 dni / 30 dni / ta mesec / pretekli mesec, dotik dneva v grafu porabe po blokih, vklop in izklop serij pri prejeti in oddani energiji.
 
 ### 2.2.3 (versionCode 19)
 
@@ -112,4 +117,4 @@ Spremembe od verzije 2.2.2 (versionCode 18):
 
 **Tarifni semafor je neodvisen in neuraden projekt.** Aplikacija ne predstavlja nobenega državnega organa ali operaterja in ni uradni izdelek Agencije za energijo, družbe SODO d.o.o. ali portala Moj Elektro. Podatki so informativni; pravno zavezujoče podatke objavljajo izključno uradni viri.
 
-Aplikacijo razvila: primus in Claude.
+Aplikacijo razvija: primus

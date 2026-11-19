@@ -1,7 +1,34 @@
 [
-  { "name": "SODO - ceniki omrežnine", "url": "https://www.sodo.si/ceniki" },
-  { "name": "Energetika portal - prispevek za energetsko učinkovitost", "url": "https://www.energetika-portal.si/podrocja/energetika/prihranki-energije/prispevek-za-energetsko-ucinkovitost/" },
-  { "name": "Energetika portal - prispevek OVE in SPTE", "url": "https://www.energetika-portal.si/podrocja/energetika/prispevek-za-obnovljive-vire/" },
-  { "name": "AGEN-RS - novice", "url": "https://www.agen-rs.si/novice" },
-  { "name": "GEN-I - ceniki za gospodinjstva", "url": "https://gen-i.si/en/households/electricity/pricelists-and-special-offers" }
+  {
+    "name": "SODO - ceniki omrežnine",
+    "url": "https://www.sodo.si/ceniki"
+  },
+  {
+    "name": "Energetika portal - prispevek za energetsko učinkovitost",
+    "url": "https://www.energetika-portal.si/podrocja/energetika/prihranki-energije/prispevek-za-energetsko-ucinkovitost/"
+  },
+  {
+    "name": "Energetika portal - prispevek OVE in SPTE",
+    "url": "https://www.energetika-portal.si/podrocja/energetika/prispevek-za-obnovljive-vire/"
+  },
+  {
+    "name": "AGEN-RS - novice",
+    "url": "https://www.agen-rs.si/novice"
+  },
+  {
+    "name": "ZPS - mesečni pregled cen elektrike",
+    "url": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152"
+  },
+  {
+    "name": "ECE - ceniki za dom",
+    "url": "https://www.ece.si/za-dom/elektrika/ceniki-in-dokumenti/"
+  },
+  {
+    "name": "Petrol - ceniki",
+    "url": "https://www.petrol.si/znanje-in-podpora/dokumenti/ostalo/petrol-ceniki"
+  },
+  {
+    "name": "GEN-I - ceniki za dom",
+    "url": "https://gen-i.si/dom/elektricna-energija/ceniki-in-akcije/"
+  }
 ]

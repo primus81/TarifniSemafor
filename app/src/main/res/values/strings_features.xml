@@ -34,7 +34,6 @@
     <string name="settings_mojelektro_wipe_confirm">Prekini in izbriši</string>
     <string name="settings_tools">Nasveti in orodja</string>
     <string name="settings_tips_sub">Kako prestaviti porabo v cenejše bloke</string>
-    <string name="settings_prices_sub">Postavke za moč in energijo po blokih</string>
     <string name="settings_privacy">Zasebnost</string>
     <string name="settings_privacy_summary">Brez računa, brez oglasov, brez piškotkov. Analitika uporabe: %1$s.</string>
     <string name="settings_privacy_open">Nastavitve zasebnosti</string>
@@ -44,9 +43,9 @@
 
     <!-- Privacy notice -->
     <string name="privacy_title">Tvoja zasebnost</string>
-    <string name="privacy_intro">Tarifni semafor – moja poraba deluje brez računa in brez lastnega strežnika. Kar vneseš, ostane v tem telefonu.</string>
+    <string name="privacy_intro">Tarifni semafor – moja poraba deluje brez računa. Kar vneseš, ostane v tem telefonu.</string>
     <string name="privacy_local_title">Podatki ostanejo v telefonu</string>
-    <string name="privacy_local_text">Časovni bloki in cenik se prenašajo z uradnih javnih virov (uro.si, SODO, Agencija za energijo). Aplikacija pri tem ne pošilja podatkov o tebi.</string>
+    <string name="privacy_local_text">Časovni bloki, cenik omrežnine in novice se prenašajo z uradnih javnih virov (uro.si, SODO, Agencija za energijo), javna datoteka s ceniki pa s tarifnisemafor.si. Aplikacija pri tem ne pošilja podatkov o tebi. Ponudnik gostovanja tarifnisemafor.si ob vsakem prenosu samodejno zapiše IP-naslov in čas zahteve; ta zapis se izbriše v približno enem dnevu, razvijalec pa ga ne uporablja in ga ne povezuje z ničemer.</string>
     <string name="privacy_keystore_title">Moj Elektro je šifriran</string>
     <string name="privacy_keystore_text">Žeton, EIMM in meritve so šifrirani (Android Keystore, AES-256-GCM), niso del varnostnih kopij in gredo samo do uradnega strežnika Moj Elektro. Nikoli se ne pošiljajo v analitiko.</string>
     <string name="privacy_cookies_title">Brez piškotkov in oglasov</string>
@@ -90,13 +89,9 @@
     <string name="calc_title">Kalkulator</string>
     <string name="calc_subtitle">Primerjalnik stroškov oskrbe</string>
     <string name="calc_compare_heading">Primerjalnik ponudb dobaviteljev</string>
-    <string name="calc_what_title">Kaj je to?</string>
     <string name="calc_what_text">Brezplačno orodje Agencije za energijo, s katerim gospodinjski in mali poslovni odjemalci primerjajo ponudbe dobaviteljev elektrike in zemeljskega plina. Orodje obstaja od odprtja trga leta 2007, prenovljena različica pa zajema tudi ponudbe z dinamičnimi cenami elektrike.</string>
-    <string name="calc_how_title">Kako deluje?</string>
     <string name="calc_how_text">Vneseš svojo letno porabo elektrike (ali plina) v kWh in izbereš lokalno skupnost. Druga polja so neobvezna in služijo natančnejši prilagoditvi izračuna tvoji porabi. Za dinamične cene so na voljo različni urni profili odjema, ki bolje odražajo porabo po urah.</string>
-    <string name="calc_offers_title">Katere ponudbe so vključene?</string>
     <string name="calc_offers_text">V primerjavo so zajeti vsi ceniki, ki so jih dobavitelji vnesli v aplikacijo in jih je potrdila Agencija za energijo. Za ažurnost in pravilnost podatkov so odgovorni dobavitelji, Agencija pa opravi osnovno preverjanje. Seznam dobaviteljev najdeš v samem kalkulatorju (»Prikaz tržnih udeležencev«).</string>
-    <string name="calc_personal_title">Osebni podatki</string>
     <string name="calc_personal_text">Kalkulator deluje na spletni strani Agencije za energijo, ne v aplikaciji Tarifni semafor – moja poraba. Aplikacija tvojih vnosov ne vidi, ne zbira in ne shranjuje. Z vpisom letnih agregatov porabe v kalkulator soglašaš z njihovo obdelavo s strani Agencije za namen primerjave ponudb. Pred uporabo preberi pravila in pogoje uporabe; če se z njimi ne strinjaš, podatkov ne vnašaj.</string>
     <string name="calc_terms">Pravila in pogoji uporabe</string>
     <string name="calc_info">Splošne informacije o primerjalniku</string>

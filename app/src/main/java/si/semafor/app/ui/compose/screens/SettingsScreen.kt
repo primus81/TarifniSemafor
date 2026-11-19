@@ -126,7 +126,11 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions) {
         }
 
         // ---- Appearance and language ----
-        SectionHeading(stringResource(R.string.settings_appearance))
+        si.semafor.app.ui.compose.components.SectionHeadingWithInfo(
+            stringResource(R.string.settings_appearance),
+            stringResource(R.string.settings_appearance),
+            listOf(stringResource(R.string.settings_theme_note), stringResource(R.string.settings_language_note))
+        )
         InfoCard {
             Label(stringResource(R.string.settings_theme))
             ChoiceChips(
@@ -138,7 +142,6 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions) {
                 selected = state.themeMode,
                 onSelect = actions.onThemeChange
             )
-            Text(stringResource(R.string.settings_theme_note), style = note, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
             Spacer(Modifier.height(14.dp))
             Label(stringResource(R.string.settings_language))
             ChoiceChips(
@@ -149,11 +152,14 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions) {
                 selected = state.language,
                 onSelect = actions.onLanguageChange
             )
-            Text(stringResource(R.string.settings_language_note), style = note, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
         }
 
         // ---- Moj Elektro ----
-        SectionHeading(stringResource(R.string.settings_mojelektro))
+        si.semafor.app.ui.compose.components.SectionHeadingWithInfo(
+            stringResource(R.string.settings_mojelektro),
+            stringResource(R.string.settings_mojelektro),
+            listOf(stringResource(R.string.settings_mojelektro_security))
+        )
         InfoCard {
             val eimm = state.mojElektroEimm
             Text(
@@ -161,12 +167,6 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions) {
                 else stringResource(R.string.settings_mojelektro_not_connected),
                 style = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight),
                 color = colors.onSurface
-            )
-            Text(
-                stringResource(R.string.settings_mojelektro_security),
-                style = note,
-                color = colors.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp)
             )
             Spacer(Modifier.height(10.dp))
             ActionButton(
@@ -180,7 +180,15 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions) {
         }
 
         // ---- Notifications ----
-        SectionHeading(stringResource(R.string.settings_notifications))
+        si.semafor.app.ui.compose.components.SectionHeadingWithInfo(
+            stringResource(R.string.settings_notifications),
+            stringResource(R.string.settings_notifications),
+            listOf(
+                stringResource(R.string.settings_notifications_note),
+                stringResource(R.string.settings_status_note),
+                stringResource(R.string.set_rem_note)
+            )
+        )
         InfoCard {
             SwitchRow(
                 label = stringResource(R.string.settings_block_notifications),
@@ -201,14 +209,12 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions) {
                     enabled = state.blockNotifications
                 )
             }
-            Text(stringResource(R.string.settings_notifications_note), style = note, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
             Spacer(Modifier.height(10.dp))
             SwitchRow(
                 label = stringResource(R.string.settings_status_icon),
                 checked = state.statusIcon,
                 onCheckedChange = actions.onStatusIconChange
             )
-            Text(stringResource(R.string.settings_status_note), style = note, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
             state.reminders?.let { r -> ReminderSettingsBlock(r, state.priceChanges, actions) }
         }
 
@@ -218,7 +224,6 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions) {
             NavRow(stringResource(R.string.menu_tips), stringResource(R.string.settings_tips_sub), actions.onOpenTips)
             NavRow(stringResource(R.string.menu_planner), stringResource(R.string.menu_planner_sub), actions.onOpenPlanner)
             NavRow(stringResource(R.string.menu_energy_price), stringResource(R.string.menu_energy_price_sub), actions.onOpenEnergyPrice)
-            NavRow(stringResource(R.string.menu_prices), stringResource(R.string.settings_prices_sub), actions.onOpenPrices)
         }
 
         // ---- Privacy ----
@@ -338,7 +343,6 @@ private fun ReminderSettingsBlock(
     actions: SettingsActions
 ) {
     val colors = MaterialTheme.colorScheme
-    val note = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
     val change = actions.onRemindersChange
     Spacer(Modifier.height(10.dp))
     SwitchRow(stringResource(R.string.set_rem_devices), r.devices, { change(r.copy(devices = it)) })
@@ -366,5 +370,4 @@ private fun ReminderSettingsBlock(
             { change(r.copy(quietTo = it)) }
         )
     }
-    Text(stringResource(R.string.set_rem_note), style = note, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
 }

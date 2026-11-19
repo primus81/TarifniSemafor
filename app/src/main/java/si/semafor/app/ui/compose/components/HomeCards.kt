@@ -4,6 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -90,7 +93,20 @@ fun NowAdviceCard(advice: List<NowAdvice>, nowMillis: Long, onSetPrice: () -> Un
         is NowAdvice.PowerHigh -> {
             val day = SloTime.formatLocalDate(a.summary.lastDay, lang)
             (if (a.share > 1.0) stringResource(R.string.adv_power_over, day, a.summary.peakBlock ?: 0)
-            else stringResource(R.string.adv_power_near, day, String.format(locale, "%.0f", a.share * 100))) to null
+            else stringResource(R.string.adv_power_near, day, String.format(locale, "%.0f", a.share * 100))) to
+                stringResource(R.string.adv_power_fix)
+        }
+        is NowAdvice.PowerRepeated -> stringResource(R.string.adv_power_repeated, a.nearDays + a.overDays, a.days) to
+            stringResource(R.string.adv_power_repeated_fix)
+        is NowAdvice.PlanOverPower -> {
+            val (t, tomorrow) = whenText(a.startMillis, nowMillis)
+            stringResource(if (tomorrow) R.string.adv_plan_over_tomorrow else R.string.adv_plan_over, a.name, t) to
+                stringResource(R.string.adv_plan_over_fix)
+        }
+        is NowAdvice.PlanOverlap -> {
+            val (t, tomorrow) = whenText(a.startMillis, nowMillis)
+            stringResource(if (tomorrow) R.string.adv_plan_overlap_tomorrow else R.string.adv_plan_overlap, a.names.distinct().joinToString(", "), t) to
+                stringResource(R.string.adv_plan_overlap_fix)
         }
         is NowAdvice.General -> {
             val main = if (a.bestBlock != null && a.bestAtMillis != null) {
@@ -103,7 +119,8 @@ fun NowAdviceCard(advice: List<NowAdvice>, nowMillis: Long, onSetPrice: () -> Un
     @Composable
     fun tag(a: NowAdvice): String = stringResource(
         when {
-            a is NowAdvice.PowerHigh -> R.string.adv_tag_history
+            a is NowAdvice.PowerHigh || a is NowAdvice.PowerRepeated -> R.string.adv_tag_history
+            a is NowAdvice.PlanOverPower || a is NowAdvice.PlanOverlap -> R.string.adv_tag_plan
             a.personal -> R.string.adv_tag_personal
             else -> R.string.adv_tag_general
         }
@@ -118,7 +135,8 @@ fun NowAdviceCard(advice: List<NowAdvice>, nowMillis: Long, onSetPrice: () -> Un
         Tag(tag(first))
         for (a in advice.drop(1).take(2)) {
             val (m, d) = texts(a)
-            Text(m, style = body, color = if (a is NowAdvice.PowerHigh) AppColors.Warning else colors.onSurface, modifier = Modifier.padding(top = 10.dp))
+            val warn = a is NowAdvice.PowerHigh || a is NowAdvice.PlanOverPower || a is NowAdvice.PlanOverlap
+            Text(m, style = body, color = if (warn) AppColors.Warning else colors.onSurface, modifier = Modifier.padding(top = 10.dp))
             d?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }
             Tag(tag(a))
         }
@@ -146,7 +164,6 @@ fun PlannerHomeCard(next: PlannerStore.PlannedRun?, nowMillis: Long, onOpen: () 
         } else {
             Text(stringResource(R.string.home_plan_empty), style = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight), color = colors.onSurfaceVariant)
         }
-        LinkText(stringResource(R.string.home_plan_open), onOpen)
     }
 }
 
@@ -155,13 +172,23 @@ fun PlannerHomeCard(next: PlannerStore.PlannedRun?, nowMillis: Long, onOpen: () 
  * power, and a clear note that this is not a live value. Without a connection: a short invitation.
  */
 @Composable
-fun PowerHomeCard(connected: Boolean, summary: PowerSummary?, onOpen: () -> Unit) {
+fun PowerHomeCard(
+    connected: Boolean,
+    summary: PowerSummary?,
+    nowMillis: Long,
+    /** Highest planned load in the coming hours (kW, estimate) and the appliance; null = nothing planned. */
+    planned: Pair<Double, String>?,
+    onOpen: () -> Unit
+) {
     val colors = MaterialTheme.colorScheme
     val locale = currentLocale
     val lang = LocalLang.current
-    val small = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
     HomeCard(onOpen) {
-        CardTitle(stringResource(R.string.home_power_title))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { CardTitle(stringResource(R.string.home_power_title)) }
+            // Delayed data: the explanation is behind the "i" button, not on the card.
+            if (connected && summary != null) InfoButton(stringResource(R.string.home_power_title), stringResource(R.string.home_power_delay))
+        }
         if (!connected || summary == null) {
             Text(
                 stringResource(if (connected) R.string.usage_loading else R.string.home_power_connect),
@@ -193,8 +220,19 @@ fun PowerHomeCard(connected: Boolean, summary: PowerSummary?, onOpen: () -> Unit
                     color = if (peakShare > 1.0) AppColors.Warning else colors.onSurface
                 )
             }
-            Text(stringResource(R.string.home_power_delay), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+            // Three different things, each labelled: measured (above), typical for this hour, planned.
+            val today = SloTime.dateOf(nowMillis)
+            val age = summary.ageDays(today)
+            if (!summary.isFresh(today)) {
+                Text(stringResource(R.string.home_power_stale, age.toInt()), style = MaterialTheme.typography.bodyMedium, color = AppColors.Warning, modifier = Modifier.padding(top = 4.dp))
+            } else {
+                summary.typicalKwAt(nowMillis)?.let {
+                    Text(stringResource(R.string.home_power_typical, kw(it)), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+            planned?.let { (peak, name) ->
+                Text(stringResource(R.string.home_power_planned, kw(peak), name), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            }
         }
-        LinkText(stringResource(R.string.home_power_open), onOpen)
     }
 }

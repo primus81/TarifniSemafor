@@ -66,6 +66,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -82,6 +83,10 @@ import si.semafor.app.mojelektro.IntervalLabel
 import si.semafor.app.mojelektro.UsageAnalysis
 import si.semafor.app.mojelektro.UsageData
 import si.semafor.app.mojelektro.UsageInsights
+import si.semafor.app.mojelektro.UsagePeriod
+import si.semafor.app.planner.RunLogEntry
+import si.semafor.app.pricing.PriceComponents
+import si.semafor.app.ui.compose.components.LinkText
 import si.semafor.app.mojelektro.UsageUiState
 import si.semafor.app.text
 import si.semafor.app.ui.compose.LocalLang
@@ -111,7 +116,7 @@ import java.time.format.TextStyle
 private val OnBlock = Color(BlockPalette.ON_BLOCK)
 
 /** "tor 10. 11." / "Tue 10 Nov" */
-private fun shortDay(date: LocalDate, lang: String): String {
+internal fun shortDay(date: LocalDate, lang: String): String {
     val locale = AppLanguage.localeOf(lang)
     val weekday = date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale).trimEnd('.')
     val pattern = if (lang == AppSettings.LANGUAGE_EN) "d MMM" else "d. M."
@@ -131,12 +136,20 @@ private fun shortDay(date: LocalDate, lang: String): String {
 fun UsageDashboardScreen(
     connected: Boolean,
     state: UsageUiState,
-    rangeDays: Int,
-    ranges: List<Int>,
+    period: UsagePeriod,
+    periods: List<UsagePeriod>,
     refreshing: Boolean,
     onRefresh: () -> Unit,
-    onRangeChange: (Int) -> Unit,
-    onManageConnection: () -> Unit
+    onPeriodChange: (UsagePeriod) -> Unit,
+    onManageConnection: () -> Unit,
+    /** Price of one kWh in a block at a moment with the user's own prices; null = no own prices. */
+    priceAt: ((Long, Int) -> PriceComponents?)? = null,
+    /** Changes when the prices change (the weekly review is computed again). */
+    priceKey: Any? = null,
+    /** Starts confirmed in the planner (for the weekly review). */
+    runLog: List<RunLogEntry> = emptyList(),
+    onOpenPlanner: () -> Unit = {},
+    onSetPrice: () -> Unit = {}
 ) {
     val pullState = rememberPullToRefreshState()
     val listState = rememberLazyListState()
@@ -200,12 +213,13 @@ fun UsageDashboardScreen(
                             chosenDay = date.toString()
                             if (scrollToChart) scope.launch { listState.animateScrollToItem(HERO_INDEX) }
                         },
-                        rangeDays = rangeDays,
-                        ranges = ranges,
+                        period = period,
+                        periods = periods,
                         refreshing = refreshing,
                         onRefresh = onRefresh,
-                        onRangeChange = onRangeChange,
-                        onManageConnection = onManageConnection
+                        onPeriodChange = onPeriodChange,
+                        onManageConnection = onManageConnection,
+                        review = WeekReviewInputs(priceAt, priceKey, runLog, onOpenPlanner, onSetPrice)
                     )
                 }
             }
@@ -213,8 +227,9 @@ fun UsageDashboardScreen(
     }
 }
 
-/** Position of the combined chart in the list (title 0, summary 1, notices 2, chart 3). */
-private const val HERO_INDEX = 3
+/** Position of the combined chart in the list (title 0, summary 1, notices 2, weekly review 3, chart 4). */
+private const val HERO_INDEX = 4
+
 
 @Composable
 private fun contentPadding(): PaddingValues {
@@ -290,12 +305,13 @@ private fun LazyListScope.content(
     data: UsageData,
     chosenDay: LocalDate?,
     onChooseDay: (LocalDate, Boolean) -> Unit,
-    rangeDays: Int,
-    ranges: List<Int>,
+    period: UsagePeriod,
+    periods: List<UsagePeriod>,
     refreshing: Boolean,
     onRefresh: () -> Unit,
-    onRangeChange: (Int) -> Unit,
-    onManageConnection: () -> Unit
+    onPeriodChange: (UsagePeriod) -> Unit,
+    onManageConnection: () -> Unit,
+    review: WeekReviewInputs
 ) {
     val withData = data.profiles.filter { it.intervals.isNotEmpty() }
     val day = withData.firstOrNull { it.date == chosenDay }
@@ -304,6 +320,7 @@ private fun LazyListScope.content(
 
     item(key = "summary") { SummaryCard(data, onManageConnection) }
     item(key = "notices") { Notices(data) }
+    item(key = "week") { WeekCard(data, review) { onChooseDay(it, true) } }
     item(key = "hero") { HeroCard(day, withData, onChooseDay = { onChooseDay(it, false) }) }
 
     item(key = "peaks-title") { SectionHeading(stringResource(R.string.usage_peaks_heading)) }
@@ -312,13 +329,13 @@ private fun LazyListScope.content(
     item(key = "blocks-title") { SectionHeading(stringResource(R.string.usage_blocks_heading)) }
     item(key = "range") {
         ChoiceChips(
-            choices = ranges.map { Choice(it, pluralStringResource(R.plurals.usage_range_days, it, it)) },
-            selected = rangeDays,
-            onSelect = onRangeChange,
+            choices = periods.map { Choice(it, periodLabel(it)) },
+            selected = period,
+            onSelect = onPeriodChange,
             modifier = Modifier.padding(bottom = 8.dp)
         )
     }
-    item(key = "blocks") { BlocksCard(data) }
+    item(key = "blocks") { BlocksCard(data) { onChooseDay(it, true) } }
 
     data.production?.let { prod ->
         item(key = "production-title") { SectionHeading(stringResource(R.string.usage_production_heading)) }
@@ -335,20 +352,35 @@ private fun LazyListScope.content(
                     small = true
                 )
                 Spacer(Modifier.height(8.dp))
-                ProductionChart(prod, AppColors.NeutralBar)
+                var showImport by rememberSaveable { mutableStateOf(true) }
+                var showExport by rememberSaveable { mutableStateOf(true) }
+                var at by rememberSaveable(prod.date.toString()) { mutableStateOf<Int?>(null) }
+                ProductionChart(prod, AppColors.NeutralBar, showImport = showImport, showExport = showExport, selected = at, onSelect = { at = it })
                 Spacer(Modifier.height(8.dp))
-                LegendRow(
-                    listOf(
-                        AppColors.NeutralBar to stringResource(R.string.usage_legend_import),
-                        AppColors.Export to stringResource(R.string.usage_legend_export)
+                // The legend is also the switch: each series can be hidden to read the other one better.
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SeriesToggle(AppColors.NeutralBar, stringResource(R.string.usage_legend_import), showImport) { if (it || showExport) showImport = it }
+                    SeriesToggle(AppColors.Export, stringResource(R.string.usage_legend_export), showExport) { if (it || showImport) showExport = it }
+                }
+                at?.takeIf { it in prod.startMillis.indices }?.let { i ->
+                    val t = prod.startMillis[i]
+                    Body(
+                        stringResource(
+                            R.string.usage_production_at,
+                            SloTime.formatHm(t) + "–" + SloTime.formatHm(t + UsageAnalysis.INTERVAL_MS),
+                            fmt(prod.importKwh[i], 3, locale),
+                            fmt(prod.exportKwh[i], 3, locale)
+                        ),
+                        small = true,
+                        modifier = Modifier.padding(top = 6.dp)
                     )
-                )
+                }
             }
         }
     }
 
     item(key = "details-title") { SectionHeading(stringResource(R.string.usage_details_heading)) }
-    item(key = "block-table") { BlockTableCard(data.blockRows, data.currentBlockId, rangeDays) }
+    item(key = "block-table") { BlockTableCard(data.blockRows, data.currentBlockId, periodLabel(period)) }
     item(key = "registers") { RegistersCard(data) }
     item(key = "help") { HelpCard() }
     item(key = "footer") {
@@ -714,15 +746,42 @@ private fun PeaksCard(data: UsageData, selectedDate: LocalDate?, onDayClick: (Lo
 }
 
 @Composable
-private fun BlocksCard(data: UsageData) {
+private fun BlocksCard(data: UsageData, onOpenDay: (LocalDate) -> Unit) {
     val locale = currentLocale
+    val lang = LocalLang.current
     InfoCard {
         val days = data.daily
         if (days.isEmpty()) {
             Body(stringResource(R.string.usage_no_period_data))
             return@InfoCard
         }
-        DailyBlocksChart(days)
+        var picked by rememberSaveable(data.period) { mutableStateOf<String?>(null) }
+        val pickedDay = days.firstOrNull { it.date.toString() == picked }
+        DailyBlocksChart(days, selected = pickedDay?.date, onSelect = { picked = it.toString() })
+        if (pickedDay == null) {
+            Body(stringResource(R.string.usage_blocks_tap), small = true, modifier = Modifier.padding(top = 4.dp))
+        } else {
+            // The numbers of the touched day, below the bars (never on top of them).
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                    .padding(10.dp)
+                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+            ) {
+                Text(
+                    stringResource(R.string.usage_day_total, shortDay(pickedDay.date, lang), fmt(pickedDay.totalKwh, 1, locale)),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                val blockText = (1..5).map { stringResource(R.string.usage_block_kwh, it, fmt(pickedDay.kwhByBlock[it - 1], 1, locale)) }
+                val parts = (1..5).filter { pickedDay.kwhByBlock[it - 1] > 0.0005 }.joinToString(" · ") { blockText[it - 1] }
+                if (parts.isNotEmpty()) Body(parts, small = true)
+                LinkText(stringResource(R.string.usage_open_day)) { onOpenDay(pickedDay.date) }
+            }
+        }
         Spacer(Modifier.height(8.dp))
         LegendRow((1..5).map { blockColor(it) to "$it" } + (UnknownColor to stringResource(R.string.common_unknown_block)))
         Spacer(Modifier.height(8.dp))
@@ -775,13 +834,13 @@ private fun ShareBar(block: Int, kwh: Double, share: Double) {
 
 /** Per block: agreed power, highest interval in the range and its share, excesses and the power price (SODO). */
 @Composable
-private fun BlockTableCard(rows: List<BlockPowerRow>, currentBlock: Int?, rangeDays: Int) {
+private fun BlockTableCard(rows: List<BlockPowerRow>, currentBlock: Int?, periodName: String) {
     val colors = MaterialTheme.colorScheme
     val prices = PriceLists.current()
     val lang = LocalLang.current
     val locale = currentLocale
     InfoCard {
-        Text(stringResource(R.string.usage_table_title, rangeDays), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+        Text(stringResource(R.string.usage_table_title, periodName), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
         Spacer(Modifier.height(8.dp))
         for (r in rows) {
             val price = prices?.rows?.firstOrNull { it.block == r.blockId }?.powerEurPerKw
@@ -929,5 +988,39 @@ private fun ColumnScope.HelpItem(titleRes: Int, textRes: Int) {
     }
     AnimatedVisibility(visible = open) {
         Body(stringResource(textRes), small = true, modifier = Modifier.padding(bottom = 8.dp))
+    }
+}
+
+@Composable
+private fun periodLabel(p: UsagePeriod): String = when (p) {
+    UsagePeriod.LAST_7 -> pluralStringResource(R.plurals.usage_range_days, 7, 7)
+    UsagePeriod.LAST_30 -> pluralStringResource(R.plurals.usage_range_days, 30, 30)
+    UsagePeriod.THIS_MONTH -> stringResource(R.string.usage_period_month)
+    UsagePeriod.LAST_MONTH -> stringResource(R.string.usage_period_prev_month)
+}
+
+/** A legend entry that switches its series on and off. */
+@Composable
+private fun SeriesToggle(color: Color, label: String, on: Boolean, onChange: (Boolean) -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .clip(shape)
+            .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+            .clickable(role = Role.Checkbox) { onChange(!on) }
+            .semantics { selected = on }
+            .padding(horizontal = 12.dp)
+    ) {
+        Box(
+            Modifier
+                .size(12.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(if (on) color else Color.Transparent)
+                .border(1.dp, color, RoundedCornerShape(3.dp))
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (on) 1f else 0.6f))
     }
 }

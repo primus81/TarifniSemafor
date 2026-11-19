@@ -42,4 +42,7 @@ hs_err_pid*
 # OS generated files
 .DS_Store
 Thumbs.db
-debug-apk/
+# Every built APK / AAB (copied there by app/build.gradle.kts)
+izdaje/
+server/*.zip
+

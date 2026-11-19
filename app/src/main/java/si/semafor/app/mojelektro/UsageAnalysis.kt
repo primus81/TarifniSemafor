@@ -337,17 +337,22 @@ object UsageAnalysis {
     }
 
     /**
-     * Totals of the taken ([imports]) and delivered ([exports]) 15-minute readings whose interval starts on or after
-     * [from]. [hasExport] = the metering point delivers energy (otherwise the delivered total is null).
+     * Totals of the taken ([imports]) and delivered ([exports]) 15-minute readings whose interval starts on a date
+     * from [from] to [to] (null = no end). [hasExport] = the metering point delivers energy (otherwise the delivered
+     * total is null).
      */
     fun registerSummary(
         imports: List<Reading>,
         exports: List<Reading>,
         label: IntervalLabel,
         from: LocalDate,
-        hasExport: Boolean
+        hasExport: Boolean,
+        to: LocalDate? = null
     ): RegisterSummary {
-        fun inRange(r: Reading) = !SloTime.dateOf(intervalStart(r.timestampMillis, label)).isBefore(from)
+        fun inRange(r: Reading): Boolean {
+            val d = SloTime.dateOf(intervalStart(r.timestampMillis, label))
+            return !d.isBefore(from) && (to == null || !d.isAfter(to))
+        }
         val imp = imports.filter(::inRange).distinctBy { it.timestampMillis }
         val exp = exports.filter(::inRange).distinctBy { it.timestampMillis }
         return RegisterSummary(

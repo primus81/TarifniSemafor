@@ -45,6 +45,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import si.semafor.app.ui.compose.components.SectionHeadingWithInfo
+import androidx.compose.ui.graphics.graphicsLayer
 import si.semafor.app.R
 import si.semafor.app.Season
 import si.semafor.app.SloTime
@@ -93,10 +95,16 @@ data class EnergyPriceActions(
     val onOpenUrl: (String) -> Unit
 )
 
+/** The tabs of "Cene elektrike in omrežnine". */
+enum class PriceTab { MY_PRICE, SUPPLIERS, NETWORK, CALCULATOR }
+
 /**
- * "Cena elektrike": the final price of electricity now and in the coming hours, what it is made of, when to switch on
- * an appliance, the user's energy price and the price lists in use. [current] = the price of this hour (from the
- * current block of the home screen); [state] comes from [si.semafor.app.pricing.EnergyPriceViewModel].
+ * "Cene elektrike in omrežnine": one place for everything about the price, in four tabs.
+ * - Moja cena: the final price now, what it is made of, the coming hours, when to switch on an appliance.
+ * - Dobavitelji: the user's supplier / price (used for every calculation) and the comparison of offers.
+ * - Omrežnina: the official SODO network price list, the final price by block and the fixed monthly costs.
+ * - Kalkulator: the monthly estimate and the Energy Agency's comparison of offers (opens in the browser).
+ * Explanations are behind the "i" buttons. [state] comes from [si.semafor.app.pricing.EnergyPriceViewModel].
  */
 @Composable
 fun EnergyPriceScreen(
@@ -107,69 +115,141 @@ fun EnergyPriceScreen(
     /** Agreed power per block 1..5 (Moj Elektro or typed in the planner); empty = not known. */
     agreedKw: List<Double?> = emptyList(),
     /** Where [agreedKw] comes from, for the note under the fixed costs. */
-    agreedSource: String? = null
+    agreedSource: String? = null,
+    tab: PriceTab = PriceTab.MY_PRICE,
+    onTabChange: (PriceTab) -> Unit = {},
+    /** The network price list valid today and the verified current block (for the Omrežnina tab). */
+    networkList: si.semafor.app.PriceList? = null,
+    currentBlockId: Int? = null,
+    onSendMail: (String) -> Unit = {},
+    billSection: (@Composable (BillInputs) -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val small = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
     // The setup is open at first when nothing is configured yet.
     var setupOpen by rememberSaveable { mutableStateOf(!state.setup.configured) }
     val next = EnergyPriceCalculator.nextCheaper(state.hourly)
+    val data = state.data
 
     ScreenScaffold {
-        ScreenHeader(stringResource(R.string.ep_title), actions.onBack, stringResource(R.string.ep_subtitle))
-
-        CurrentTotalPriceCard(
-            price = current,
-            next = next,
-            configured = state.setup.configured,
-            hourlyKnown = state.hourly.size > 1,
-            nowMillis = nowMillis,
-            onSetup = { setupOpen = true }
+        ScreenHeader(stringResource(R.string.ep_title), actions.onBack)
+        ChoiceChips(
+            listOf(
+                Choice(PriceTab.MY_PRICE, stringResource(R.string.ep_tab_my_price)),
+                Choice(PriceTab.SUPPLIERS, stringResource(R.string.ep_tab_suppliers)),
+                Choice(PriceTab.NETWORK, stringResource(R.string.ep_tab_network)),
+                Choice(PriceTab.CALCULATOR, stringResource(R.string.ep_tab_calculator))
+            ),
+            tab,
+            onTabChange,
+            Modifier.padding(bottom = 12.dp)
         )
 
-        if (current != null) {
-            SectionHeading(stringResource(R.string.ep_breakdown_title))
-            InfoCard {
-                Text(stringResource(R.string.ep_variable_title), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
-                PriceBreakdown(current.components)
-                Text(stringResource(R.string.ep_breakdown_note), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+        when (tab) {
+            PriceTab.MY_PRICE -> {
+                CurrentTotalPriceCard(
+                    price = current,
+                    next = next,
+                    configured = state.setup.configured,
+                    hourlyKnown = state.hourly.size > 1,
+                    nowMillis = nowMillis,
+                    onSetup = {
+                        setupOpen = true
+                        onTabChange(PriceTab.SUPPLIERS)
+                    }
+                )
+                if (current != null) {
+                    SectionHeadingWithInfo(
+                        stringResource(R.string.ep_breakdown_title),
+                        stringResource(R.string.ep_breakdown_title),
+                        listOf(stringResource(R.string.ep_vat_note), stringResource(R.string.ep_breakdown_note), stringResource(R.string.ep_disclaimer))
+                    )
+                    InfoCard { PriceBreakdown(current.components) }
+                }
+                if (state.setup.configured) {
+                    val hourlyInfo = buildList {
+                        add(stringResource(R.string.ep_hourly_note))
+                        if (state.setup.meter == MeterType.DUAL && data != null) {
+                            add(stringResource(R.string.ep_tariff_rule, data.tariffTimes.vtStartHour, data.tariffTimes.vtEndHour))
+                        }
+                    }
+                    SectionHeadingWithInfo(stringResource(R.string.ep_hourly_title), stringResource(R.string.ep_hourly_title), hourlyInfo)
+                    InfoCard { HourlySection(state) }
+                    ExpandableCard(stringResource(R.string.ep_appliance_title), stringResource(R.string.ep_app_note)) {
+                        ApplianceCostCalculator(state.hourly, nowMillis)
+                    }
+                }
             }
-        }
-        val data = state.data
-        if (data != null && state.setup.configured) {
-            SectionHeading(stringResource(R.string.ep_blocks_title))
-            InfoCard { BlockPriceTable(data, state.setup) }
-            SectionHeading(stringResource(R.string.ep_fixed_title))
-            InfoCard { FixedCosts(data, state.setup, agreedKw, agreedSource) }
-        }
-        if (data != null) {
-            SectionHeading(stringResource(R.string.ep_compare_title))
-            InfoCard { OfferComparison(data, state.setup, current) }
-        }
 
-        if (state.setup.configured) {
-            SectionHeading(stringResource(R.string.ep_hourly_title))
-            InfoCard { HourlySection(state) }
-
-            SectionHeading(stringResource(R.string.ep_appliance_title))
-            InfoCard { ApplianceCostCalculator(state.hourly, nowMillis) }
-        }
-
-        SectionHeading(stringResource(R.string.ep_setup_title))
-        InfoCard {
-            if (setupOpen || !state.setup.configured) {
-                SetupForm(state, actions.onSave) { setupOpen = false }
-            } else {
-                SetupSummary(state)
-                Spacer(Modifier.size(8.dp))
-                ActionButton(stringResource(R.string.ep_setup_button)) { setupOpen = true }
+            PriceTab.SUPPLIERS -> {
+                SectionHeading(stringResource(R.string.ep_setup_title))
+                InfoCard {
+                    if (setupOpen || !state.setup.configured) {
+                        SetupForm(state, actions.onSave) { setupOpen = false }
+                    } else {
+                        SetupSummary(state)
+                        Spacer(Modifier.size(8.dp))
+                        ActionButton(stringResource(R.string.ep_change_price)) { setupOpen = true }
+                    }
+                }
+                if (data != null) {
+                    SectionHeading(stringResource(R.string.ep_compare_title))
+                    InfoCard { OfferComparison(data, state.setup, current) }
+                }
             }
+
+            PriceTab.NETWORK -> {
+                PricesContent(networkList, currentBlockId, actions.onOpenUrl)
+                if (data != null && state.setup.configured) {
+                    SectionHeadingWithInfo(
+                        stringResource(R.string.ep_blocks_title),
+                        stringResource(R.string.ep_blocks_title),
+                        listOf(stringResource(R.string.ep_blocks_note, SloTime.formatLocalDate(SloTime.today(), LocalLang.current)), stringResource(R.string.ep_vat_note))
+                    )
+                    InfoCard { BlockPriceTable(data, state.setup) }
+                }
+                if (data != null) {
+                    SectionHeadingWithInfo(
+                        stringResource(R.string.ep_fixed_title),
+                        stringResource(R.string.ep_fixed_title),
+                        listOf(
+                            if (agreedSource != null && agreedKw.any { it != null }) stringResource(R.string.ep_fixed_note, agreedSource)
+                            else stringResource(R.string.ep_fixed_note_rates)
+                        )
+                    )
+                    InfoCard { FixedCosts(data, state.setup, agreedKw, agreedSource) }
+                }
+            }
+
+            PriceTab.CALCULATOR -> CalcContent(actions.onOpenUrl, onSendMail, billSection)
         }
+        Spacer(Modifier.size(16.dp))
+    }
+}
 
-        SectionHeading(stringResource(R.string.ep_data_title))
-        InfoCard { DataSection(state, actions) }
-
-        Text(stringResource(R.string.ep_disclaimer), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
+/** A card with a title that opens on tap (secondary tools stay out of the way until they are wanted). */
+@Composable
+private fun ExpandableCard(title: String, info: String, content: @Composable () -> Unit) {
+    var open by rememberSaveable(title) { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
+    InfoCard {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(role = Role.Button) { open = !open }
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, modifier = Modifier.weight(1f))
+            si.semafor.app.ui.compose.components.InfoButton(title, info)
+            Icon(
+                painterResource(R.drawable.ic_expand_more),
+                contentDescription = null,
+                tint = colors.onSurfaceVariant,
+                modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = if (open) 180f else 0f }
+            )
+        }
+        AnimatedVisibility(open) { Column { content() } }
     }
 }
 
@@ -199,20 +279,9 @@ private fun HourlySection(state: EnergyPriceUiState) {
                     PriceColors.Vat to stringResource(R.string.ep_legend_vat)
                 )
             )
-            Text(stringResource(R.string.ep_hourly_note), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
         }
         state.hourlyLoading -> Text(stringResource(R.string.ep_hourly_loading), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         else -> Text(stringResource(R.string.ep_hourly_failed), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-    }
-    state.data?.let { d ->
-        if (state.setup.meter == MeterType.DUAL) {
-            Text(
-                stringResource(R.string.ep_tariff_rule, d.tariffTimes.vtStartHour, d.tariffTimes.vtEndHour),
-                style = small,
-                color = colors.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp)
-            )
-        }
     }
 }
 
@@ -329,7 +398,6 @@ private fun ApplianceCostCalculator(prices: List<KwhPrice>, nowMillis: Long) {
             }
         }
     }
-    Text(stringResource(R.string.ep_app_note), style = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight), color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
 }
 
 @Composable
@@ -378,9 +446,10 @@ private fun SetupForm(state: EnergyPriceUiState, onSave: (PricingSettings.Stored
     var vt by rememberSaveable { mutableStateOf(stored.custom.vt) }
     var mt by rememberSaveable { mutableStateOf(stored.custom.mt) }
     var fee by rememberSaveable { mutableStateOf(stored.custom.fee) }
+    var extras by rememberSaveable { mutableStateOf(stored.custom.extras) }
     var withVat by rememberSaveable { mutableStateOf(stored.custom.withVat) }
     var message by remember { mutableStateOf<Int?>(null) }
-    LaunchedEffect(meter, source, packageId, et, vt, mt, fee, withVat) { message = null }
+    LaunchedEffect(meter, source, packageId, et, vt, mt, fee, extras, withVat) { message = null }
 
     Text(stringResource(R.string.ep_meter_label), style = MaterialTheme.typography.titleSmall, color = colors.onSurface, modifier = Modifier.padding(bottom = 6.dp))
     ChoiceChips(
@@ -432,13 +501,15 @@ private fun SetupForm(state: EnergyPriceUiState, onSave: (PricingSettings.Stored
                 NumberRow(stringResource(R.string.ep_custom_mt), stringResource(R.string.ep_custom_mt), mt) { mt = it }
             }
             NumberRow(stringResource(R.string.ep_custom_fee), stringResource(R.string.ep_custom_fee), fee) { fee = it }
+            NumberRow(stringResource(R.string.ep_custom_extras), stringResource(R.string.ep_custom_extras), extras, allowNegative = true) { extras = it }
+            Text(stringResource(R.string.ep_custom_extras_note), style = small, color = colors.onSurfaceVariant)
             SwitchRow(stringResource(R.string.ep_custom_vat), withVat, { withVat = it }, fontSize = 14.sp)
         }
     }
 
     Spacer(Modifier.size(8.dp))
     PrimaryButton(stringResource(R.string.ep_save)) {
-        val candidate = PricingSettings.Stored(meter, source, packageId, PricingSettings.CustomInput(et, vt, mt, fee, withVat))
+        val candidate = PricingSettings.Stored(meter, source, packageId, PricingSettings.CustomInput(et, vt, mt, fee, withVat, extras))
         val setup = PricingSettings.toSetup(candidate)
         val today = SloTime.today()
         message = when {
@@ -471,14 +542,12 @@ private fun packageUsable(data: PriceData, setup: PricingSetup, today: java.time
 }
 
 @Composable
-private fun DataSection(state: EnergyPriceUiState, actions: EnergyPriceActions) {
+fun PriceListsSection(state: EnergyPriceUiState, actions: EnergyPriceActions) {
     val colors = MaterialTheme.colorScheme
     val lang = LocalLang.current
-    val locale = currentLocale
     val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
     val small = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight)
     val data = state.data
-    val today = SloTime.today()
 
     if (data != null) {
         Text(stringResource(R.string.ep_data_updated, SloTime.formatDate(data.updatedAtMillis, lang)), style = body, color = colors.onSurface)
@@ -494,55 +563,22 @@ private fun DataSection(state: EnergyPriceUiState, actions: EnergyPriceActions) 
     ActionButton(stringResource(if (state.checking) R.string.ep_checking else R.string.ep_check_now)) { if (!state.checking) actions.onCheckNow() }
     AnimatedVisibility(state.syncMessage != null) {
         val m = state.syncMessage
+        val failed = m == SyncMessage.NO_CONNECTION || m == SyncMessage.SERVER_ERROR || m == SyncMessage.INVALID_DATA
         Text(
-            stringResource(
-                when (m) {
-                    SyncMessage.UPDATED -> R.string.ep_sync_updated
-                    SyncMessage.FAILED -> R.string.ep_sync_failed
-                    else -> R.string.ep_sync_unchanged
-                }
-            ),
+            when (m) {
+                SyncMessage.UPDATED -> stringResource(R.string.ep_sync_updated)
+                SyncMessage.SAME_AS_BUILT_IN -> stringResource(R.string.ep_sync_same)
+                SyncMessage.NO_CONNECTION -> stringResource(R.string.ep_sync_no_connection)
+                SyncMessage.SERVER_ERROR -> stringResource(R.string.ep_sync_server_error, state.syncHttpCode)
+                SyncMessage.INVALID_DATA -> stringResource(R.string.ep_sync_invalid)
+                else -> stringResource(R.string.ep_sync_unchanged)
+            },
             style = body,
-            color = if (m == SyncMessage.FAILED) colors.error else colors.onSurface,
+            color = if (failed) colors.error else colors.onSurface,
             modifier = Modifier.padding(top = 6.dp).semantics { liveRegion = LiveRegionMode.Polite }
         )
     }
     SwitchRow(stringResource(R.string.ep_notify_switch), state.notifyChanges, actions.onNotifyChange, fontSize = 14.sp)
-
-    if (data != null) {
-        Spacer(Modifier.size(4.dp))
-        val labels = mapOf(
-            ChargeId.URE to R.string.ep_item_ure,
-            ChargeId.MARKET_OPERATOR to R.string.ep_item_market,
-            ChargeId.EXCISE to R.string.ep_item_excise,
-            ChargeId.RES_SUPPORT to R.string.ep_item_res
-        )
-        for (id in ChargeId.entries) {
-            val c = data.charge(id, today) ?: continue
-            val unit = stringResource(
-                when (c.unit) {
-                    ChargeUnit.PER_KWH -> R.string.ep_unit_kwh
-                    ChargeUnit.PER_KW_MONTH -> R.string.ep_unit_kw_month
-                    ChargeUnit.PER_MONTH -> R.string.ep_unit_month
-                }
-            )
-            Text(stringResource(labels.getValue(id)), style = MaterialTheme.typography.titleSmall, color = colors.onSurface, modifier = Modifier.padding(top = 8.dp))
-            Text(
-                stringResource(R.string.ep_charge_value, String.format(locale, "%.5f", c.value), unit, SloTime.formatLocalDate(c.validFrom, lang)),
-                style = small,
-                color = colors.onSurfaceVariant
-            )
-            c.note?.let { Text(it, style = small, color = colors.onSurfaceVariant) }
-            LinkText(stringResource(R.string.ep_open_source)) { actions.onOpenUrl(c.sourceUrl) }
-        }
-        Text(stringResource(R.string.ep_vat_value, String.format(locale, "%.0f", data.vatRate * 100)), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
-        si.semafor.app.PriceLists.forDate(today)?.let { list ->
-            val values = list.rows.joinToString(" · ") { "${it.block}: " + String.format(locale, "%.5f", it.energyEurPerKwh) }
-            Text(stringResource(R.string.ep_network_value, values), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
-            LinkText(stringResource(R.string.ep_open_source)) { actions.onOpenUrl(list.sourceUrl) }
-        }
-    }
-    Text(stringResource(R.string.ep_privacy), style = small, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
 }
 
 /**
@@ -630,12 +666,6 @@ private fun BlockPriceTable(data: PriceData, setup: PricingSetup) {
             }
         }
     }
-    Text(
-        stringResource(R.string.ep_blocks_note, SloTime.formatLocalDate(today, lang)) + " " + stringResource(R.string.ep_vat_note),
-        style = MaterialTheme.typography.bodySmall.copy(lineHeight = BodyLineHeight),
-        color = colors.onSurfaceVariant,
-        modifier = Modifier.padding(top = 6.dp)
-    )
 }
 
 /** Monthly items that do not depend on the kWh used: rates, and amounts with VAT when the agreed power is known. */
@@ -662,7 +692,8 @@ private fun FixedCosts(data: PriceData, setup: PricingSetup, agreedKw: List<Doub
     }
 
     if (network != null) {
-        for (r in network.rows) {
+        // Block 1 exists only in the higher season (November to February).
+        for (r in network.rows.filter { it.block != 1 || Season.of(today) == Season.HIGH }) {
             val kw = agreedKw.getOrNull(r.block - 1)
             val amount = kw?.let { it * r.powerEurPerKw * vat }
             if (amount == null) complete = false else total += amount
@@ -681,19 +712,17 @@ private fun FixedCosts(data: PriceData, setup: PricingSetup, agreedKw: List<Doub
         total += fee * vat
         row(stringResource(R.string.ep_fixed_fee), stringResource(R.string.ep_unit_month), fee * vat)
     }
+    val extras = EnergyPriceCalculator.supplierExtrasNet(data, setup, today)
+    if (extras != 0.0) {
+        total += extras * vat
+        row(stringResource(R.string.ep_item_extras), stringResource(R.string.ep_unit_month), extras * vat)
+    }
     if (complete && total > 0) {
         Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
             Text(stringResource(R.string.ep_fixed_total), style = MaterialTheme.typography.titleSmall, color = colors.onSurface, modifier = Modifier.weight(1f))
             Text(PriceNow.formatEur(total, locale), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
         }
     }
-    Text(
-        if (agreedSource != null && agreedKw.any { it != null }) stringResource(R.string.ep_fixed_note, agreedSource)
-        else stringResource(R.string.ep_fixed_note_rates),
-        style = small,
-        color = colors.onSurfaceVariant,
-        modifier = Modifier.padding(top = 6.dp)
-    )
 }
 
 /** Final price of every published package for the current block and tariff (EUR/kWh with VAT), fee shown apart. */
@@ -718,6 +747,7 @@ private fun OfferComparison(data: PriceData, setup: PricingSetup, current: KwhPr
             Column(Modifier.weight(1f)) {
                 Text(s.name + ", " + p.name + if (p.id == mine) " (" + stringResource(R.string.ep_compare_yours) + ")" else "", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
                 p.monthlyFee?.let { Text(stringResource(R.string.ep_compare_fee, PriceNow.formatEur(it * (1 + data.vatRate), locale)), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }
+                p.monthlyExtras?.let { Text(stringResource(R.string.ep_compare_extras, PriceNow.formatEur(it * (1 + data.vatRate), locale)), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }
             }
             Text(total?.let { PriceNow.formatKwh(it, locale) } ?: stringResource(R.string.ep_compare_na), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
         }

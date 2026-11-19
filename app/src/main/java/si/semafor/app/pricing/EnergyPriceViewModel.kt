@@ -21,7 +21,7 @@ enum class PriceGapReason { NO_SCHEDULE, NO_NETWORK_LIST, NO_ENERGY_PRICE }
 data class PriceGap(val date: java.time.LocalDate, val reason: PriceGapReason)
 
 /** Result of the "Preveri zdaj" button, shown once under it. */
-enum class SyncMessage { UPDATED, UNCHANGED, FAILED }
+enum class SyncMessage { UPDATED, UNCHANGED, SAME_AS_BUILT_IN, NO_CONNECTION, SERVER_ERROR, INVALID_DATA }
 
 data class EnergyPriceUiState(
     val data: PriceData? = null,
@@ -29,6 +29,8 @@ data class EnergyPriceUiState(
     val setup: PricingSetup = PricingSetup(MeterType.DUAL, null),
     /** Prices hour by hour from the current hour on (as far as the block schedule is known). */
     val hourly: List<KwhPrice> = emptyList(),
+    /** The same prices for the planner: from this hour to the end of the day after the last plannable day (stops at the first gap). */
+    val weekHourly: List<KwhPrice> = emptyList(),
     val hourlyLoading: Boolean = false,
     /** The block schedule could not be loaded (no connection): the chart and the appliance comparison are missing. */
     val hourlyFailed: Boolean = false,
@@ -38,6 +40,8 @@ data class EnergyPriceUiState(
     val lastSuccessMillis: Long = 0L,
     val checking: Boolean = false,
     val syncMessage: SyncMessage? = null,
+    /** HTTP status of a failed check (shown with SERVER_ERROR). */
+    val syncHttpCode: Int = 0,
     val notifyChanges: Boolean = true
 )
 
@@ -113,9 +117,14 @@ class EnergyPriceViewModel(app: Application) : AndroidViewModel(app) {
                     checking = false,
                     syncMessage = when (r) {
                         is PriceSync.Result.Updated -> SyncMessage.UPDATED
-                        PriceSync.Result.Unchanged -> SyncMessage.UNCHANGED
-                        PriceSync.Result.Failed -> SyncMessage.FAILED
+                        is PriceSync.Result.Unchanged -> if (r.sameAsBuiltIn) SyncMessage.SAME_AS_BUILT_IN else SyncMessage.UNCHANGED
+                        is PriceSync.Result.Failed -> when (r.reason) {
+                            PriceSync.FailReason.NO_CONNECTION -> SyncMessage.NO_CONNECTION
+                            PriceSync.FailReason.HTTP_ERROR -> SyncMessage.SERVER_ERROR
+                            PriceSync.FailReason.INVALID_DATA -> SyncMessage.INVALID_DATA
+                        }
                     },
+                    syncHttpCode = (r as? PriceSync.Result.Failed)?.httpCode ?: 0,
                     lastCheckMillis = PriceSync.lastCheck(ctx),
                     lastSuccessMillis = PriceSync.lastSuccess(ctx)
                 )
@@ -135,7 +144,8 @@ class EnergyPriceViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(hourlyLoading = true) }
             val today = SloTime.today()
             val loaded = withContext(Dispatchers.IO) {
-                BlockSchedules(getApplication()).forDates(listOf(today, today.plusDays(1)))
+                // Today and the planner's week (built-in official tables: no requests for 2026 and 2027).
+                BlockSchedules(getApplication()).forDates((0..PLAN_DAYS + 1L).map { today.plusDays(it) })
             }
             schedules = loaded
             schedulesAt = System.currentTimeMillis()
@@ -148,13 +158,14 @@ class EnergyPriceViewModel(app: Application) : AndroidViewModel(app) {
         val s = _state.value
         val data = s.data
         val now = System.currentTimeMillis()
-        val hourly = if (data == null || !s.setup.configured || schedules.isEmpty()) emptyList() else {
+        val week = if (data == null || !s.setup.configured || schedules.isEmpty()) emptyList() else {
             EnergyPriceCalculator.hourly(
-                data, s.setup, now, HOURS,
+                data, s.setup, now, (PLAN_DAYS + 2) * 24,
                 scheduleOf = { schedules[it] },
                 networkOf = { PriceLists.forDate(it) }
             )
         }
+        val hourly = week.take(HOURS)
         val gap = if (data == null || !s.setup.configured || schedules.isEmpty()) null else {
             val end = hourly.lastOrNull()?.endMillis ?: SloTime.previousStartAtOrBefore(now, SloTime.hourOfDay(now))
             val date = SloTime.dateOf(end)
@@ -166,7 +177,7 @@ class EnergyPriceViewModel(app: Application) : AndroidViewModel(app) {
                 else -> PriceGap(date, PriceGapReason.NO_ENERGY_PRICE)
             }
         }
-        _state.update { it.copy(hourly = hourly, gap = gap) }
+        _state.update { it.copy(hourly = hourly, weekHourly = week, gap = gap) }
     }
 
     /** The clock moved to a new hour: the list starts with the current hour again. */
@@ -182,6 +193,9 @@ class EnergyPriceViewModel(app: Application) : AndroidViewModel(app) {
     companion object {
         /** Up to the end of tomorrow (the block schedule is known for today and tomorrow). */
         const val HOURS = 48
+
+        /** The planner plans up to this many days after today. */
+        const val PLAN_DAYS = 6
         private const val SCHEDULE_TTL_MS = 3600 * 1000L
     }
 }

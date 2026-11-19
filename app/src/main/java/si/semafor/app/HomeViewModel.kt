@@ -154,7 +154,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                         HomeUiState.Content(fresh, memBest, offlineFailure = false)
                     }
                     // Downloaded, but the block does not match the Slovenian clock: never shown as current.
-                    lagging -> HomeUiState.Error(fresh?.time)
+                    lagging -> HomeUiState.Error(fresh.time)
                     // Stored data is shown only while it can still be trusted; otherwise say so.
                     cached != null && Repo.dataState(cached) != DataState.UNVERIFIED ->
                         HomeUiState.Content(cached, memBest, offlineFailure = true)
@@ -167,7 +167,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             // Phase 2: best block, widget, alarm and status bar icon.
-            val result = phase1 ?: return@launch
+            val result = phase1
             val best = withContext(Dispatchers.IO + NonCancellable) {
                 val target = result.fresh ?: Repo.cached(appCtx)
                 val best = if (target != null) Repo.findBestUpcoming(appCtx, target) else null

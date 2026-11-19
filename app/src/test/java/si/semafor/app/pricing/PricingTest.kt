@@ -195,8 +195,11 @@ class PricingTest {
         val day = 24 * 3600 * 1000L
         // First start: never answered yet.
         assertTrue(PriceSyncPolicy.shouldCheck(now, today, 0L, 0L, data))
-        // Checked a few hours ago: wait.
-        assertFalse(PriceSyncPolicy.shouldCheck(now, today, now - 3600_000L, 0L, data))
+        // The last attempt failed half an hour ago: wait; after an hour: try again.
+        assertFalse(PriceSyncPolicy.shouldCheck(now, today, now - 1800_000L, 0L, data))
+        assertTrue(PriceSyncPolicy.shouldCheck(now, today, now - 2 * 3600_000L, 0L, data))
+        // The last attempt succeeded a few hours ago: wait (20 hours).
+        assertFalse(PriceSyncPolicy.shouldCheck(now, today, now - 5 * 3600_000L, now - 5 * 3600_000L, data))
         // The file ends on 31 Dec: from 10 Dec on it is checked (21 days before).
         assertFalse(PriceSyncPolicy.shouldCheck(now, today, now - 2 * day, now - 2 * day, data))
         val dec10 = LocalDate.of(2026, 12, 10)
@@ -226,5 +229,88 @@ class PricingTest {
         assertEquals(setOf(PriceChange.CHARGES), PriceDiff.between(data, changed, today, null))
         assertTrue(PriceDiff.between(data, data, today, null).isEmpty())
         assertTrue(PriceDiff.between(null, data, today, null).isEmpty())
+    }
+
+    /**
+     * The user's bill for October 2026 (lower season, VT/MT metering): the items the app calculates from the official
+     * rates must give the same amounts as the bill. Network energy is not compared: the bill shows it by VT/MT
+     * (0.02004 / 0.01741 EUR/kWh), the app by time block.
+     */
+    @Test
+    fun octoberBill_fixedAndLevyItemsMatch() {
+        val oct = LocalDate.of(2026, 10, 15)
+        val setup = PricingSetup(MeterType.DUAL, EnergySource.Custom(EnergyPrices(null, 0.1199, 0.0979), false, 1.99))
+        // 390 kWh, of it 197 kWh in MT; power 3.3 kW in block 2, 3.6 kW in blocks 3-5 (block 1 typed, must be ignored).
+        val bill = EnergyPriceCalculator.monthlyBill(
+            data, setup, PriceLists.ALL.first(), oct,
+            powerKw = listOf(9.9, 3.3, 3.6, 3.6, 3.6), energyKwh = listOf(0.0, 193.0, 197.0, 0.0, 0.0), mtShare = 197.0 / 390.0
+        )!!
+        val by = bill.items.associate { it.kind to it.net }
+        assertEquals(193 * 0.1199 + 197 * 0.0979, by.getValue(BillItemKind.ENERGY), 1e-9) // 42.43
+        assertEquals(4.741578, by.getValue(BillItemKind.NETWORK_POWER), 1e-9) // 3.60 + 1.04 + 0.09 + 0.01
+        assertEquals(2.559546, by.getValue(BillItemKind.RES_SUPPORT), 1e-9) // 3.3 kW (block 2) x 0.77562
+        assertEquals(0.3120, by.getValue(BillItemKind.URE), 1e-9)
+        assertEquals(0.0507, by.getValue(BillItemKind.MARKET_OPERATOR), 1e-9)
+        assertEquals(0.5967, by.getValue(BillItemKind.EXCISE), 1e-9)
+        assertEquals(1.99, by.getValue(BillItemKind.SUPPLIER_FEE), 1e-9)
+    }
+
+    @Test
+    fun lowSeason_block1PowerIsNotCharged() {
+        val low = si.semafor.app.TariffCalculator.estimate(
+            si.semafor.app.Season.LOW, LocalDate.of(2026, 10, 15), true, "3", List(5) { "" }, List(5) { "0" },
+            // Test list in the lower season (same rates as the official November list).
+            listOf(PriceLists.ALL.first().copy(validFrom = LocalDate.of(2026, 3, 1), validTo = LocalDate.of(2026, 10, 31)))
+        ) as si.semafor.app.Estimate.Ready
+        // 3 kW in blocks 2-5 only.
+        val expected = java.math.BigDecimal.valueOf(3 * (1.09230 + 0.28902 + 0.02436 + 0.00245)).setScale(2, java.math.RoundingMode.HALF_UP)
+        assertEquals(expected, low.cost.powerNet)
+    }
+
+    @Test
+    fun servicesAndDiscounts_areAFixedMonthlyItem() {
+        assertEquals(-0.18, si.semafor.app.TariffCalculator.parseSignedAmount("-0,18")!!, 1e-12)
+        assertEquals(0.82, si.semafor.app.TariffCalculator.parseSignedAmount("0,82")!!, 1e-12)
+        assertNull(si.semafor.app.TariffCalculator.parseSignedAmount("--1"))
+        // Typed for a custom contract (without VAT), as on the October bill: 0.82 - 1.00.
+        val stored = PricingSettings.Stored(
+            MeterType.DUAL, PricingSettings.SOURCE_CUSTOM, null,
+            PricingSettings.CustomInput("", "0,1199", "0,0979", "1,99", false, "-0,18")
+        )
+        val setup = PricingSettings.toSetup(stored)
+        val bill = EnergyPriceCalculator.monthlyBill(
+            data, setup, PriceLists.ALL.first(), LocalDate.of(2026, 10, 15),
+            listOf(0.0, 3.3, 3.6, 3.6, 3.6), listOf(0.0, 193.0, 197.0, 0.0, 0.0), 197.0 / 390.0
+        )!!
+        val extras = bill.items.single { it.kind == BillItemKind.SUPPLIER_EXTRAS }
+        assertEquals(-0.18, extras.net, 1e-12)
+        assertTrue(extras.fixed)
+        // A package can carry them too.
+        val supplier = JSONObject(
+            """{"id":"d","name":"D","packages":[{"id":"d-1","name":"P","validFrom":"2026-10-01","validTo":null,
+            "sourceUrl":"https://example.si","pricesWithoutVat":{"VT":0.1199,"MT":0.0979},"monthlyFeeWithoutVat":1.99,
+            "monthlyExtrasWithoutVat":-0.18}]}"""
+        )
+        val d = PriceDataParser.parse(mutated { it.getJSONArray("suppliers").put(supplier) })!!
+        assertEquals(-0.18, d.findPackage("d-1")!!.monthlyExtras!!, 1e-12)
+        val pkg = PricingSetup(MeterType.DUAL, EnergySource.Package("d-1"))
+        assertEquals(-0.18, EnergyPriceCalculator.supplierExtrasNet(d, pkg, LocalDate.of(2026, 11, 18)), 1e-12)
+    }
+
+    @Test
+    fun publishedSuppliers_areReadAndPriced() {
+        assertTrue(data.suppliers.size >= 9)
+        val geni = data.findPackage("gen-i-redni")!!
+        assertEquals(0.1199, geni.prices.vt!!, 0.0)
+        assertEquals(1.99, geni.monthlyFee!!, 0.0)
+        // Every package gives a price for both kinds of metering on 18 Nov 2026.
+        val day = LocalDate.of(2026, 11, 18)
+        for (s in data.suppliers) for (p in s.packages) {
+            for (meter in MeterType.entries) {
+                val setup = PricingSetup(meter, EnergySource.Package(p.id))
+                val t = if (meter == MeterType.SINGLE) EnergyTariff.ET else EnergyTariff.VT
+                assertNotNull(p.id, EnergyPriceCalculator.energyNet(data, setup, day, t))
+            }
+        }
     }
 }

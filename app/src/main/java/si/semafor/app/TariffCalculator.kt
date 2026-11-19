@@ -110,8 +110,10 @@ object TariffCalculator {
         lists: List<PriceList> = PriceLists.ALL
     ): Estimate {
         val energy = energyTexts.map { parseAmount(it) }
-        val power: List<Double?> =
+        val typed: List<Double?> =
             if (samePower) List(BLOCKS) { parseAmount(powerAllText) } else powerBlockTexts.map { parseAmount(it) }
+        // Block 1 exists only on working days of the higher season: in the lower season no power is billed for it.
+        val power = if (season == Season.LOW) typed.mapIndexed { i, v -> if (i == 0 && v != null) 0.0 else v } else typed
         if (energy.size != BLOCKS || power.size != BLOCKS || energy.any { it == null } || power.any { it == null }) {
             return Estimate.InvalidInput
         }
@@ -130,6 +132,15 @@ object TariffCalculator {
         if (!NUMBER.matches(t)) return null
         val v = t.toDoubleOrNull() ?: return null
         return if (v.isFinite() && v <= MAX_INPUT) v else null
+    }
+
+    /**
+     * Like [parseAmount], but a leading minus is allowed (discounts, for example "-0,18"). Empty text is 0.
+     * Returns null for anything that is not a plain number.
+     */
+    fun parseSignedAmount(text: String): Double? {
+        val t = text.trim()
+        return if (t.startsWith("-")) parseAmount(t.drop(1))?.let { -it } else parseAmount(t)
     }
 
     /** "1.234,56 €" in Slovenian formatting ([locale] for other languages). */

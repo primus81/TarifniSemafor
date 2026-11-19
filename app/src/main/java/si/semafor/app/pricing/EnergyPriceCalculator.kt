@@ -12,7 +12,13 @@ sealed interface EnergySource {
     data class Package(val id: String) : EnergySource
 
     /** Prices of the user's own contract, as typed. [includesVat] = the typed prices already contain VAT. */
-    data class Custom(val prices: EnergyPrices, val includesVat: Boolean, val monthlyFee: Double?) : EnergySource
+    data class Custom(
+        val prices: EnergyPrices,
+        val includesVat: Boolean,
+        val monthlyFee: Double?,
+        /** Monthly services and discounts of the contract (may be negative); null = none. */
+        val monthlyExtras: Double? = null
+    ) : EnergySource
 }
 
 /** The user's choice: how the meter measures and where the energy price comes from. */
@@ -48,7 +54,7 @@ data class KwhPrice(
 }
 
 /** Kinds of items of a monthly bill, in the order they are shown. */
-enum class BillItemKind { ENERGY, SUPPLIER_FEE, NETWORK_POWER, NETWORK_ENERGY, RES_SUPPORT, URE, MARKET_OPERATOR, EXCISE }
+enum class BillItemKind { ENERGY, SUPPLIER_FEE, SUPPLIER_EXTRAS, NETWORK_POWER, NETWORK_ENERGY, RES_SUPPORT, URE, MARKET_OPERATOR, EXCISE }
 
 /** One item of a bill; [fixed] = paid per month regardless of the kWh used (power, fees). */
 data class BillItem(val kind: BillItemKind, val net: Double, val fixed: Boolean = false)
@@ -82,6 +88,13 @@ object EnergyPriceCalculator {
         null -> 0.0
         is EnergySource.Package -> data.findPackage(source.id)?.takeIf { it.appliesOn(date) }?.monthlyFee ?: 0.0
         is EnergySource.Custom -> source.monthlyFee?.let { if (source.includesVat) it / (1 + data.vatRate) else it } ?: 0.0
+    }
+
+    /** Supplier's monthly services and discounts without VAT (0 if none; may be negative). */
+    fun supplierExtrasNet(data: PriceData, setup: PricingSetup, date: LocalDate): Double = when (val source = setup.source) {
+        null -> 0.0
+        is EnergySource.Package -> data.findPackage(source.id)?.takeIf { it.appliesOn(date) }?.monthlyExtras ?: 0.0
+        is EnergySource.Custom -> source.monthlyExtras?.let { if (source.includesVat) it / (1 + data.vatRate) else it } ?: 0.0
     }
 
     private fun perKwhCharge(data: PriceData, id: ChargeId, date: LocalDate): Double =
@@ -220,15 +233,19 @@ object EnergyPriceCalculator {
         }
         var networkPower = 0.0
         var networkEnergy = 0.0
+        val lowSeason = Season.of(date) == Season.LOW
         for (b in 1..5) {
             val row = network.rows.firstOrNull { it.block == b } ?: return null
-            networkPower += powerKw[b - 1] * row.powerEurPerKw
+            // Block 1 exists only in the higher season: no power charge for it from March to October.
+            if (!(b == 1 && lowSeason)) networkPower += powerKw[b - 1] * row.powerEurPerKw
             networkEnergy += energyKwh[b - 1] * row.energyEurPerKwh
         }
         val items = ArrayList<BillItem>()
         items += BillItem(BillItemKind.ENERGY, energy)
         val fee = supplierFeeNet(data, setup, date)
         if (fee > 0) items += BillItem(BillItemKind.SUPPLIER_FEE, fee, fixed = true)
+        val extras = supplierExtrasNet(data, setup, date)
+        if (extras != 0.0) items += BillItem(BillItemKind.SUPPLIER_EXTRAS, extras, fixed = true)
         items += BillItem(BillItemKind.NETWORK_POWER, networkPower, fixed = true)
         items += BillItem(BillItemKind.NETWORK_ENERGY, networkEnergy)
         data.charge(ChargeId.RES_SUPPORT, date)?.let { c ->

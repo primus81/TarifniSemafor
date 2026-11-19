@@ -28,7 +28,7 @@ android {
         applicationId = "si.semafor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 19
+        versionCode = 20
         versionName = "2.3.0"
     }
     signingConfigs {
@@ -48,8 +48,8 @@ android {
             // The bundle contains native code of the AndroidX graphics library that Compose uses
             // (libandroidx.graphics.path.so). If a native library carries symbols, they are put into the bundle so
             // that Google Play can read native crashes. AndroidX ships this particular library already stripped
-            // (no symbol table), so nothing can be extracted from it: for the Play Console warning upload
-            // app/release/native-debug-symbols.zip by hand (same libraries, same build IDs).
+            // (no symbol table), so nothing can be extracted from it; the task nativeSymbolsToIzdaje below packs the
+            // libraries themselves (same build IDs) for the Play Console warning.
             ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -90,3 +90,36 @@ dependencies {
 kotlin {
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
+
+// Every build leaves its result in ONE folder, izdaje/ in the project root, named by version: from Android Studio
+// (Build menu and the "Generate Signed App Bundle" wizard) and from the terminal alike. Gradle's own outputs in
+// app/build/outputs are its working copies and are overwritten by the next build.
+//   TarifniSemafor-<versionName>-vc<versionCode>-debug.apk   debug build for the phone
+//   TarifniSemafor-<versionName>-vc<versionCode>.aab         signed bundle for Google Play
+//   ...-mapping.txt, ...-native-debug-symbols.zip            to upload with it in Play Console
+// A release bundle built without a signing key is named ...-NEPODPISAN.aab, so it can never be uploaded by mistake.
+val izdaje = rootProject.layout.projectDirectory.dir("izdaje")
+val releaseSigned = hasReleaseSigning || project.hasProperty("android.injected.signing.store.file")
+fun buildBaseName() = "TarifniSemafor-${android.defaultConfig.versionName}-vc${android.defaultConfig.versionCode}"
+
+val copyDebugApkToIzdaje = tasks.register<Copy>("copyDebugApkToIzdaje") {
+    from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk")) { rename { "${buildBaseName()}-debug.apk" } }
+    into(izdaje)
+}
+val copyReleaseBundleToIzdaje = tasks.register<Copy>("copyReleaseBundleToIzdaje") {
+    from(layout.buildDirectory.file("outputs/bundle/release/app-release.aab")) {
+        rename { buildBaseName() + (if (releaseSigned) "" else "-NEPODPISAN") + ".aab" }
+    }
+    from(layout.buildDirectory.file("outputs/mapping/release/mapping.txt")) { rename { "${buildBaseName()}-mapping.txt" } }
+    into(izdaje)
+}
+// Play Console asks for native debug symbols because the bundle contains a native library. The only one,
+// libandroidx.graphics.path.so (AndroidX, used by Compose), is shipped already stripped, so AGP writes no symbols
+// file. Play accepts the libraries themselves: <abi>/<library>.so in a zip, byte-identical to those in the bundle.
+val nativeSymbolsToIzdaje = tasks.register<Zip>("nativeSymbolsToIzdaje") {
+    from(layout.buildDirectory.dir("intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib"))
+    destinationDirectory.set(izdaje)
+    archiveFileName.set(provider { "${buildBaseName()}-native-debug-symbols.zip" })
+}
+tasks.matching { it.name == "assembleDebug" }.configureEach { finalizedBy(copyDebugApkToIzdaje) }
+tasks.matching { it.name == "bundleRelease" }.configureEach { finalizedBy(copyReleaseBundleToIzdaje, nativeSymbolsToIzdaje) }

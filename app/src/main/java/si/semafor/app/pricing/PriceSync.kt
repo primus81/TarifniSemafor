@@ -27,8 +27,11 @@ import java.util.concurrent.TimeUnit
  * contacted a few times a year. Pure Kotlin, unit tested.
  */
 object PriceSyncPolicy {
-    /** Never more than one check per this interval (also on repeated failures). */
+    /** Never more than one check per this interval after a successful answer. */
     const val MIN_INTERVAL_MS = 20 * 3600 * 1000L
+
+    /** After a failed attempt (no connection, server error) the next try comes sooner. */
+    const val RETRY_AFTER_FAILURE_MS = 3600 * 1000L
 
     /** Start checking this many days before something in use stops being valid. */
     const val LEAD_DAYS = 21L
@@ -43,14 +46,15 @@ object PriceSyncPolicy {
         lastSuccessMillis: Long,
         data: PriceData?
     ): Boolean {
-        if (lastCheckMillis > 0 && nowMillis - lastCheckMillis in 0 until MIN_INTERVAL_MS) return false
+        val lastFailed = lastCheckMillis > lastSuccessMillis
+        val wait = if (lastFailed) RETRY_AFTER_FAILURE_MS else MIN_INTERVAL_MS
+        if (lastCheckMillis > 0 && nowMillis - lastCheckMillis in 0 until wait) return false
         // Never answered by the server yet (first start), or no usable data at all.
         if (lastSuccessMillis <= 0 || data == null) return true
         val fileEnd = data.validTo
         if (fileEnd != null && today.isAfter(fileEnd)) return true
         val expiry = data.earliestExpiry(today)
-        if (expiry != null && !today.isBefore(expiry.minusDays(LEAD_DAYS))) return true
-        return nowMillis - lastSuccessMillis !in 0 until ROUTINE_MS
+        return expiry != null && !today.isBefore(expiry.minusDays(LEAD_DAYS)) || nowMillis - lastSuccessMillis !in 0 until ROUTINE_MS
     }
 }
 
@@ -70,7 +74,7 @@ internal object PriceDiff {
         if (packageId != null) {
             val a = old.findPackage(packageId)
             val b = new.findPackage(packageId)
-            if (a?.prices != b?.prices || a?.monthlyFee != b?.monthlyFee || a?.validTo != b?.validTo) changes += PriceChange.YOUR_PACKAGE
+            if (a?.prices != b?.prices || a?.monthlyFee != b?.monthlyFee || a?.monthlyExtras != b?.monthlyExtras || a?.validTo != b?.validTo) changes += PriceChange.YOUR_PACKAGE
         }
         val oldPackages = old.suppliers.flatMap { s -> s.packages.map { it.id to it.prices } }.toSet()
         val newPackages = new.suppliers.flatMap { s -> s.packages.map { it.id to it.prices } }.toSet()
@@ -95,8 +99,18 @@ object PriceSync {
     sealed interface Result {
         /** Newer data was stored; [changes] = what differs from before (for the notification). */
         data class Updated(val changes: Set<PriceChange>) : Result
-        data object Unchanged : Result
-        data object Failed : Result
+        /** The server answered; [sameAsBuiltIn] = its file is the one built into the app. */
+        data class Unchanged(val sameAsBuiltIn: Boolean) : Result
+
+        /** No usable answer, with the reason (shown to the user). */
+        data class Failed(val reason: FailReason, val httpCode: Int = 0) : Result
+    }
+
+    enum class FailReason { NO_CONNECTION, HTTP_ERROR, INVALID_DATA }
+
+    private sealed interface Download {
+        data class Ok(val text: String) : Download
+        data class Error(val reason: FailReason, val code: Int = 0) : Download
     }
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -113,17 +127,21 @@ object PriceSync {
     fun syncNow(ctx: Context): Result {
         val now = System.currentTimeMillis()
         prefs(ctx).edit { putLong(KEY_LAST_CHECK, now) }
-        val text = download() ?: return Result.Failed
-        val parsed = PriceDataParser.parse(text) ?: return Result.Failed
+        val text = when (val d = download()) {
+            is Download.Ok -> d.text
+            is Download.Error -> return Result.Failed(d.reason, d.code)
+        }
+        val parsed = PriceDataParser.parse(text) ?: return Result.Failed(FailReason.INVALID_DATA)
         prefs(ctx).edit { putLong(KEY_LAST_SUCCESS, now) }
         val before = PriceRepository.get(ctx)
-        if (before != null && parsed.updatedAtMillis <= before.updatedAtMillis) return Result.Unchanged
-        if (!PriceRepository.storeIfNewer(ctx, text, parsed)) return Result.Unchanged
+        val same = !PriceRepository.hasDownloaded(ctx) && before != null && parsed.updatedAtMillis == before.updatedAtMillis
+        if (before != null && parsed.updatedAtMillis <= before.updatedAtMillis) return Result.Unchanged(same)
+        if (!PriceRepository.storeIfNewer(ctx, text, parsed)) return Result.Unchanged(false)
         val packageId = (PricingSettings.setup(ctx).source as? EnergySource.Package)?.id
         return Result.Updated(PriceDiff.between(before, parsed, SloTime.today(), packageId))
     }
 
-    private fun download(): String? {
+    private fun download(): Download {
         var conn: HttpURLConnection? = null
         return try {
             conn = (URL(URL_PRICES).openConnection() as HttpURLConnection).apply {
@@ -135,7 +153,8 @@ object PriceSync {
                 setRequestProperty("User-Agent", USER_AGENT)
                 setRequestProperty("Accept", "application/json")
             }
-            if (conn.responseCode != HttpURLConnection.HTTP_OK) return null
+            val code = conn.responseCode
+            if (code != HttpURLConnection.HTTP_OK) return Download.Error(FailReason.HTTP_ERROR, code)
             conn.inputStream.use { input ->
                 val out = ByteArrayOutputStream()
                 val buf = ByteArray(8192)
@@ -143,14 +162,15 @@ object PriceSync {
                     val n = input.read(buf)
                     if (n < 0) break
                     out.write(buf, 0, n)
-                    if (out.size() > MAX_BYTES) return null
+                    if (out.size() > MAX_BYTES) return Download.Error(FailReason.INVALID_DATA)
                 }
-                out.toString(Charsets.UTF_8.name()).takeIf { it.isNotBlank() }
+                val text = out.toString(Charsets.UTF_8.name())
+                if (text.isBlank()) Download.Error(FailReason.INVALID_DATA) else Download.Ok(text)
             }
         } catch (e: IOException) {
-            null
+            Download.Error(FailReason.NO_CONNECTION)
         } catch (e: RuntimeException) {
-            null
+            Download.Error(FailReason.NO_CONNECTION)
         } finally {
             conn?.disconnect()
         }
@@ -202,9 +222,9 @@ class PriceSyncWorker(appContext: Context, params: WorkerParameters) : Coroutine
                 if (r.changes.isNotEmpty() && PricingSettings.notifyChanges(ctx)) PriceNotifier.notifyChanges(ctx, r.changes)
                 Result.success()
             }
-            PriceSync.Result.Unchanged -> Result.success()
+            is PriceSync.Result.Unchanged -> Result.success()
             // A manual check retries a few times with back-off; the daily one simply tries again later.
-            PriceSync.Result.Failed -> if (manual && runAttemptCount < 2) Result.retry() else Result.success()
+            is PriceSync.Result.Failed -> if (manual && runAttemptCount < 2) Result.retry() else Result.success()
         }
     }
 

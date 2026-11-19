@@ -339,7 +339,7 @@ fun PriceBreakdown(c: PriceComponents) {
 
 private fun billColor(kind: BillItemKind): Color = when (kind) {
     BillItemKind.ENERGY -> PriceColors.Energy
-    BillItemKind.SUPPLIER_FEE -> PriceColors.Fee
+    BillItemKind.SUPPLIER_FEE, BillItemKind.SUPPLIER_EXTRAS -> PriceColors.Fee
     BillItemKind.NETWORK_POWER -> PriceColors.NetworkPower
     BillItemKind.NETWORK_ENERGY -> PriceColors.Network
     BillItemKind.RES_SUPPORT -> PriceColors.Res
@@ -349,6 +349,7 @@ private fun billColor(kind: BillItemKind): Color = when (kind) {
 private fun billLabel(kind: BillItemKind): Int = when (kind) {
     BillItemKind.ENERGY -> R.string.ep_item_energy
     BillItemKind.SUPPLIER_FEE -> R.string.ep_item_fee
+    BillItemKind.SUPPLIER_EXTRAS -> R.string.ep_item_extras
     BillItemKind.NETWORK_POWER -> R.string.ep_item_network_power
     BillItemKind.NETWORK_ENERGY -> R.string.ep_item_network_energy
     BillItemKind.RES_SUPPORT -> R.string.ep_item_res
@@ -367,7 +368,8 @@ fun BillBreakdown(bill: MonthlyBill, totalKwh: Double) {
     val description = stringResource(R.string.calc_bill_chart_spoken, spoken)
     Box(Modifier.clearAndSetSemantics { contentDescription = description }) {
         StackedBar(
-            bill.items.map { BarPart(it.net, billColor(it.kind)) } + BarPart(bill.vat, PriceColors.Vat),
+            // A discount (negative item) has no part in the bar; it is in the rows below.
+            bill.items.filter { it.net > 0 }.map { BarPart(it.net, billColor(it.kind)) } + BarPart(bill.vat, PriceColors.Vat),
             Modifier.padding(vertical = 8.dp)
         )
     }

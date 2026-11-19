@@ -243,9 +243,15 @@ private fun ResultRow(label: String, value: String, emphasis: Boolean = false, l
 
 /** A label on the left, a number field on the right; an invalid text turns the border red and says what to do. */
 @Composable
-internal fun NumberRow(label: String, description: String, value: String, onValueChange: (String) -> Unit) {
+internal fun NumberRow(
+    label: String,
+    description: String,
+    value: String,
+    allowNegative: Boolean = false,
+    onValueChange: (String) -> Unit
+) {
     val colors = MaterialTheme.colorScheme
-    val invalid = TariffCalculator.parseAmount(value) == null
+    val invalid = (if (allowNegative) TariffCalculator.parseSignedAmount(value) else TariffCalculator.parseAmount(value)) == null
     Column(modifier = Modifier.padding(vertical = 3.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -254,7 +260,8 @@ internal fun NumberRow(label: String, description: String, value: String, onValu
                 color = colors.onSurface,
                 modifier = Modifier.weight(1f)
             )
-            NumberField(value, onValueChange, description, invalid)
+            // A minus is not on every decimal keyboard: fields that allow negative values use the text keyboard.
+            NumberField(value, onValueChange, description, invalid, if (allowNegative) KeyboardType.Text else KeyboardType.Decimal)
         }
         if (invalid) {
             Text(
@@ -273,7 +280,13 @@ internal fun NumberRow(label: String, description: String, value: String, onValu
  * the whole text, so a new value can simply be typed over the old one.
  */
 @Composable
-private fun NumberField(value: String, onValueChange: (String) -> Unit, description: String, invalid: Boolean) {
+private fun NumberField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    description: String,
+    invalid: Boolean,
+    keyboardType: KeyboardType = KeyboardType.Decimal
+) {
     val colors = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(12.dp)
     val textStyle = TextStyle(fontSize = 15.sp, color = colors.onSurface, textAlign = TextAlign.End)
@@ -296,7 +309,7 @@ private fun NumberField(value: String, onValueChange: (String) -> Unit, descript
         singleLine = true,
         textStyle = textStyle,
         cursorBrush = SolidColor(colors.onSurface),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Next),
         decorationBox = { inner ->
             Box(
                 modifier = Modifier

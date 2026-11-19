@@ -115,7 +115,7 @@
     <string name="usage_legend_import">taken (A+)</string>
     <string name="usage_legend_export">delivered (A-)</string>
     <string name="usage_details_heading">Moj Elektro details</string>
-    <string name="usage_table_title">Power by time block (last %1$d days)</string>
+    <string name="usage_table_title">Power by time block (%1$s)</string>
     <string name="usage_table_agreed">Agreed %1$s</string>
     <string name="usage_table_now">" · in force now"</string>
     <string name="usage_table_peak">Highest %1$s kW (%2$s at %3$s)</string>

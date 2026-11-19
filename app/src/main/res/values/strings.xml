@@ -27,11 +27,7 @@
     <string name="top_menu">Meni</string>
     <string name="top_title_block">Tarifni semafor – moja poraba. Trenutni blok: %1$d</string>
     <string name="top_title_no_data">Tarifni semafor – moja poraba. Ni podatkov</string>
-    <string name="menu_calculator">Kalkulator</string>
-    <string name="menu_calculator_sub">Primerjalnik stroškov oskrbe</string>
-    <string name="menu_prices">Cenik omrežnine</string>
     <string name="menu_tips">Nasveti</string>
-    <string name="menu_tariff_info">Vse o tarifnem sistemu</string>
     <string name="menu_news">Novice</string>
     <string name="menu_sources">Viri podatkov</string>
     <string name="menu_about">O aplikaciji</string>
@@ -64,10 +60,10 @@
     <string name="home_advice_mid">Vmes</string>
     <string name="home_advice_bad">Manj ugodno</string>
     <string name="home_advice_source_note">Priporočila objavlja uro.si.</string>
-    <string name="home_donation_title">☕ Podpri razvoj aplikacije</string>
+    <string name="home_donation_title">Podpri razvoj aplikacije</string>
     <string name="home_donation_title_spoken">Podpri razvoj aplikacije</string>
-    <string name="home_donation_text">Če ti je aplikacija všeč in ti koristi, lahko s prostovoljno donacijo podpreš njen nadaljnji razvoj. Hvala za tvojo podporo!</string>
-    <string name="home_donation_custom">Poljuben znesek</string>
+    <string name="home_donation_text">Neobvezno. Prostovoljna donacija pomaga pri nadaljnjem razvoju.</string>
+    <string name="home_donation_custom">Drugo</string>
     <string name="home_donation_1">Podpri razvoj z donacijo v višini 1 evra</string>
     <string name="home_donation_3">Podpri razvoj z donacijo v višini 3 evrov</string>
     <string name="home_donation_5">Podpri razvoj z donacijo v višini 5 evrov</string>
@@ -103,25 +99,9 @@
     <string name="prices_official">Uradni cenik (SODO)</string>
 
     <!-- Dialogs -->
-    <string name="sources_title">Viri podatkov</string>
-    <string name="sources_blocks">Tarifni semafor in časovni bloki:</string>
-    <string name="sources_blocks_link">Agencija za energijo, uro.si (API)</string>
-    <string name="sources_news">Novice:</string>
-    <string name="sources_news_link">Agencija za energijo (RSS)</string>
-    <string name="sources_calc">Kalkulator (Primerjalnik stroškov oskrbe), povzetek in povezava:</string>
-    <string name="sources_calc_link">Agencija za energijo</string>
-    <string name="sources_tariff">Informacije o tarifnem sistemu:</string>
-    <string name="sources_tariff_link">MojElektro</string>
-    <string name="sources_colors">Barve časovnih blokov:</string>
-    <string name="sources_colors_link">uradna tabela uro.si</string>
-    <string name="sources_icons">Ikone (prosta licenca Apache 2.0):</string>
-    <string name="sources_icons_link">Material Symbols (Google)</string>
-    <string name="sources_usage">Tvoje meritve (neobvezno):</string>
-    <string name="sources_usage_link">Moj Elektro API</string>
     <string name="about_title">O aplikaciji</string>
-    <string name="about_disclaimer">Tarifni semafor – moja poraba je neuradna aplikacija. Ni povezana z Agencijo za energijo, SODO ali drugimi operaterji. Podatki so povzeti iz javnih virov (glej Viri podatkov); njihova točnost ni zagotovljena, veljavne podatke objavljajo uradni viri.</string>
-    <string name="about_developer">"Aplikacijo razvila: "</string>
-    <string name="about_and">" in "</string>
+    <string name="about_disclaimer">Neuradna aplikacija, ni povezana z Agencijo za energijo, SODO ali operaterji. Podatki so iz javnih virov (Viri podatkov); izračuni so informativni.</string>
+    <string name="about_developer">"Aplikacijo razvija: "</string>
     <string name="about_version">Verzija: %1$s</string>
     <string name="about_privacy_policy">Politika zasebnosti</string>
 

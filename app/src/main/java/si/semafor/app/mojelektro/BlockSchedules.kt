@@ -2,6 +2,7 @@ package si.semafor.app.mojelektro
 
 import android.content.Context
 import si.semafor.app.Block
+import si.semafor.app.OfficialBlocks
 import si.semafor.app.Repo
 import si.semafor.app.SloTime
 import java.time.LocalDate
@@ -10,10 +11,10 @@ import java.time.ZonedDateTime
 import java.util.Date
 
 /**
- * Tariff block of every hour of a given day, taken from the official URO API (the same source as the rest of the app).
- * No block rule (seasons, working days, holidays) is written into the app: for each day the URO API is asked at the
- * start of every block, which also gives the hour the block ends, until the whole day is covered (about 5-7 requests
- * per day). Schedules of past days do not change, so each day is requested once and then kept.
+ * Tariff block of every hour of a given day. For the years the Energy Agency has published a table for
+ * ([OfficialBlocks], 2026 and 2027) the built-in official table is used: no request, and future days are known as
+ * well. For any other year the URO API is asked at the start of every block, which also gives the hour the block
+ * ends, until the whole day is covered (about 5-7 requests per day); such schedules of past days are kept.
  *
  * Public data only (no personal data): stored in plain private preferences.
  */
@@ -28,6 +29,10 @@ internal class BlockSchedules(context: Context) {
         val result = HashMap<LocalDate, IntArray?>()
         val missing = ArrayList<LocalDate>()
         for (d in dates) {
+            OfficialBlocks.scheduleFor(d)?.let {
+                result[d] = it
+                continue
+            }
             val cached = prefs.getString(d.toString(), null)?.let(::decode)
             if (cached != null) result[d] = cached else missing += d
         }

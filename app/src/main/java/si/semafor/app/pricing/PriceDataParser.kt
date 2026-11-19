@@ -76,7 +76,12 @@ object PriceDataParser {
                 val to = date(p, "validTo")
                 require(to == null || !to.isBefore(from))
                 val fee = if (p.isNull("monthlyFeeWithoutVat")) null else amount(p, "monthlyFeeWithoutVat", MAX_PER_MONTH)
-                SupplierPackage(pid, text(p, "name"), prices, fee, from, to, url(p))
+                val extras = if (!p.has("monthlyExtrasWithoutVat") || p.isNull("monthlyExtrasWithoutVat")) null else {
+                    val v = p.getDouble("monthlyExtrasWithoutVat")
+                    require(v.isFinite() && v >= -MAX_PER_MONTH && v <= MAX_PER_MONTH) { "monthlyExtrasWithoutVat out of range" }
+                    v
+                }
+                SupplierPackage(pid, text(p, "name"), prices, fee, from, to, url(p), extras)
             }
             require(packages.isNotEmpty()) { "Supplier without packages" }
             Supplier(id, text(s, "name"), packages)

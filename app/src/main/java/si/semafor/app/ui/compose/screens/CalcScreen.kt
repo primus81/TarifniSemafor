@@ -2,6 +2,9 @@ package si.semafor.app.ui.compose.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,55 +47,48 @@ fun CalcScreen(
     onSendMail: (String) -> Unit,
     billSection: (@Composable (si.semafor.app.ui.compose.components.BillInputs) -> Unit)? = null
 ) {
-    val colors = MaterialTheme.colorScheme
-    val body = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight)
-    val small = MaterialTheme.typography.bodySmall
-
-    @Composable
-    fun InfoSection(title: String, text: String, extra: @Composable () -> Unit = {}) {
-        InfoCard {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onSurface,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
-            Text(text = text, style = body, color = colors.onSurface)
-            extra()
-        }
-    }
-
     ScreenScaffold {
         ScreenHeader(
             title = stringResource(R.string.calc_title),
             subtitle = stringResource(R.string.calc_subtitle),
             onBack = onNavigateHome
         )
+        CalcContent(onOpenUrl, onSendMail, billSection)
+    }
+}
 
-        // Native quick estimate first; the existing Energy Agency comparison stays below it.
-        NetworkCalculator(billSection)
+/**
+ * The calculator part of "Cene elektrike in omrežnine": the in-app network charge and whole-bill estimate, then the
+ * Energy Agency's comparison of offers (electricity and gas), which opens in the browser. Its description is behind
+ * the "i" button.
+ */
+@Composable
+fun ColumnScope.CalcContent(
+    onOpenUrl: (String) -> Unit,
+    onSendMail: (String) -> Unit,
+    billSection: (@Composable (si.semafor.app.ui.compose.components.BillInputs) -> Unit)? = null
+) {
+    val colors = MaterialTheme.colorScheme
+    val small = MaterialTheme.typography.bodySmall
 
-        Text(
-            text = stringResource(R.string.calc_compare_heading),
-            style = MaterialTheme.typography.titleMedium,
-            color = colors.onBackground,
-            modifier = Modifier
-                .padding(top = 12.dp, bottom = 6.dp)
-                .semantics { heading() }
+    // Native quick estimate first; the Energy Agency comparison stays below it.
+    NetworkCalculator(billSection)
+
+    si.semafor.app.ui.compose.components.SectionHeadingWithInfo(
+        stringResource(R.string.calc_compare_heading),
+        stringResource(R.string.calc_compare_heading),
+        listOf(
+            stringResource(R.string.calc_what_text),
+            stringResource(R.string.calc_how_text),
+            stringResource(R.string.calc_offers_text),
+            stringResource(R.string.calc_personal_text),
+            stringResource(R.string.calc_summary_note)
         )
-
-        InfoSection(stringResource(R.string.calc_what_title), stringResource(R.string.calc_what_text))
-        InfoSection(stringResource(R.string.calc_how_title), stringResource(R.string.calc_how_text))
-        InfoSection(stringResource(R.string.calc_offers_title), stringResource(R.string.calc_offers_text))
-        InfoSection(stringResource(R.string.calc_personal_title), stringResource(R.string.calc_personal_text)) {
-            Column(modifier = Modifier.padding(top = 10.dp)) {
-                LinkText(stringResource(R.string.calc_terms)) { onOpenUrl(Links.CALC_TERMS) }
-                LinkText(stringResource(R.string.calc_info)) { onOpenUrl(Links.CALC_INFO) }
-            }
-        }
-
+    )
+    InfoCard {
+        Text(stringResource(R.string.calc_compare_short), style = MaterialTheme.typography.bodyMedium.copy(lineHeight = BodyLineHeight), color = colors.onSurface)
+        Spacer(Modifier.height(10.dp))
         PrimaryButton(stringResource(R.string.calc_open)) { onOpenUrl(Links.CALC_URL) }
-
         Text(
             text = stringResource(R.string.calc_opens_in_browser),
             style = small,
@@ -100,7 +96,8 @@ fun CalcScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
-
+        LinkText(stringResource(R.string.calc_terms)) { onOpenUrl(Links.CALC_TERMS) }
+        LinkText(stringResource(R.string.calc_info)) { onOpenUrl(Links.CALC_INFO) }
         val helpLabel = stringResource(R.string.calc_help)
         Text(
             text = buildAnnotatedString {
@@ -116,20 +113,7 @@ fun CalcScreen(
             },
             style = small,
             color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp, bottom = 12.dp)
-        )
-
-        Text(
-            text = stringResource(R.string.calc_summary_note),
-            style = small,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp, bottom = 16.dp)
+            modifier = Modifier.padding(top = 4.dp)
         )
     }
 }

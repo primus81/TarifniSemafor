@@ -17,6 +17,15 @@ server/
 
 Kopija `ceniki.json` je vgrajena tudi v aplikacijo (`app/src/main/assets/ceniki_fallback.json`). Tako aplikacija deluje že ob prvem zagonu brez interneta. Ob novi verziji aplikacije jo prepiši z zadnjim objavljenim `ceniki.json`.
 
+## Trenutna namestitev (18. 11. 2026, Spaceship, cPanel)
+
+- Koren spletnega mesta je `~/tarifnisemafor.si` (ne `public_html`). Javna datoteka: `~/tarifnisemafor.si/api/ceniki.json` in `.htaccess`.
+- Zasebna mapa: `~/tarifni-private/` (zunaj javne mape) s skripto, `ceniki_vir.json`, `watch.json`, `config.php` (obvestila na info@primush.online; `public_file` kaže na `../tarifnisemafor.si/api/ceniki.json`), `state.json`.
+- Cron: vsak dan ob 6.15 `/usr/local/bin/php /home/puaumxjcoi/tarifni-private/update_prices.php > /dev/null 2>&1` (PHP 8.4 CLI).
+- Dnevniki: arhiviranje dnevnikov dostopov je izklopljeno (Raw Access). Surovi dnevnik strežnika hrani ponudnik ~24 ur (podpora Spaceship: na skupnem gostovanju ga ni mogoče izklopiti ali anonimizirati, AWStats ostaja vklopljen).
+- Cron vsakih 6 ur (`40 */6 * * *`): `purge_stats.php` izbriše podatkovne datoteke AWStats za tarifnisemafor.si (notranji imeni gostovanja `28afe26b…` in `e1d07f40…` v `~/tmp/awstats` in `~/tmp/awstats/ssl`). Če gostovanje imena spremeni, popravi seznam v skripti.
+- Preverjeno: `ceniki.json` vrne 200, `application/json`, brez piškotkov; vse drugo v `/api/` vrne 403.
+
 ## Namestitev na gostovanje
 
 1. Vsebino `public_html/api/` naloži v mapo `api` v korenu spletnega mesta (tam, kjer je WordPress). WordPress statičnih datotek, ki obstajajo, ne preusmerja, zato se `ceniki.json` streže neposredno, brez WordPressa in brez Google Analytics.
@@ -77,7 +86,7 @@ Vsi zneski so **brez DDV**, v evrih. Vsaka postavka ima `validFrom`, neobvezni `
 | `taxes.exciseDuty` | trošarina (I. stopnja), `EUR/kWh` (1,53 EUR/MWh = 0.00153) |
 | `taxes.oveSpteContribution` | prispevek OVE in SPTE: `EUR/kW/month` z `powerBlockHighSeason` in `powerBlockLowSeason`, ali `EUR/kWh` |
 | `network` | ceniki omrežnine SODO, bloki 1-5: `powerEurPerKwMonth`, `energyEurPerKwh` |
-| `suppliers` | dobavitelji, vsak s `packages`: `pricesWithoutVat` (`ET` in/ali `VT` + `MT`), `monthlyFeeWithoutVat` |
+| `suppliers` | dobavitelji, vsak s `packages`: `pricesWithoutVat` (`ET` in/ali `VT` + `MT`), `monthlyFeeWithoutVat`, neobvezno `monthlyExtrasWithoutVat` (ugodnosti in storitve na mesec, popust negativen, npr. -0.18) |
 
 Vsaka dajatev je seznam obdobij. Ko se vrednost spremeni, staremu obdobju dodaj `validTo` in dodaj novo obdobje z novim `validFrom`. Tako aplikacija pravilno računa tudi za pretekle in prihodnje datume.
 

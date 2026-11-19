@@ -169,9 +169,8 @@ private fun TopBar(nowMillis: Long, blockId: Int?, menuEntries: () -> List<MenuE
                     },
                 contentAlignment = Alignment.Center
             ) {
-                // Icon glyph: dp, not sp, so it cannot outgrow its 48 dp box with a large system font.
-                val glyphSize = with(LocalDensity.current) { 28.dp.toSp() }
-                Text("☰", fontSize = glyphSize, color = AppColors.TextPrimary)
+                // Material "menu" icon (vector, not a text character).
+                Icon(painterResource(R.drawable.ic_menu), contentDescription = null, tint = AppColors.TextPrimary, modifier = Modifier.size(26.dp))
             }
             MainMenu(expanded = menuOpen, onDismiss = { menuOpen = false }, entries = menuEntries)
         }

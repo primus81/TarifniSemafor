@@ -1,6 +1,8 @@
 package si.semafor.app.ui.compose.charts
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -28,6 +31,8 @@ import si.semafor.app.Repo
 import si.semafor.app.SloTime
 import si.semafor.app.mojelektro.DailyBlocks
 import si.semafor.app.mojelektro.ProductionDay
+import si.semafor.app.mojelektro.UsageAnalysis
+import java.time.LocalDate
 import si.semafor.app.ui.compose.LocalLang
 import si.semafor.app.ui.compose.currentLocale
 import si.semafor.app.ui.compose.theme.AppColors
@@ -81,9 +86,19 @@ fun AgreedPowerGauge(agreedKw: Double, peakKw: Double, color: Color, modifier: M
     }
 }
 
-/** Energy per day, stacked by tariff block (block colours of the app, block 1 on top); unassigned energy apart. */
+/**
+ * Energy per day, stacked by tariff block (block colours of the app, block 1 on top); unassigned energy apart.
+ * Tapping or sliding over the bars selects a day ([onSelect]); the selected day is outlined, the others dimmed a little.
+ * The numbers of the selected day are shown by the caller below the chart, so nothing covers the bars.
+ */
 @Composable
-fun DailyBlocksChart(days: List<DailyBlocks>, modifier: Modifier = Modifier) {
+fun DailyBlocksChart(
+    days: List<DailyBlocks>,
+    modifier: Modifier = Modifier,
+    selected: LocalDate? = null,
+    onSelect: ((LocalDate) -> Unit)? = null
+) {
+    val ink = MaterialTheme.colorScheme.onSurface
     val measurer = rememberTextMeasurer()
     val axis = MaterialTheme.colorScheme.onSurfaceVariant
     val labelStyle = TextStyle(fontSize = 10.sp, color = axis)
@@ -91,10 +106,22 @@ fun DailyBlocksChart(days: List<DailyBlocks>, modifier: Modifier = Modifier) {
     val total = days.sumOf { it.totalKwh }
     val dear = days.sumOf { it.kwhByBlock[0] + it.kwhByBlock[1] }
     val summary = stringResource(R.string.chart_daily_blocks, days.size, fmt(total, 1, locale), fmt(dear, 1, locale))
+    // Same geometry as in the draw phase: the touch maps to the bar under the finger.
+    val leftPx = with(androidx.compose.ui.platform.LocalDensity.current) { 34.dp.toPx() }
+    val touch = if (onSelect == null || days.isEmpty()) Modifier else Modifier
+        .pointerInput(days) {
+            detectTapGestures { pos -> onSelect(days[UsageAnalysis.indexAt(pos.x, leftPx, size.width - leftPx, days.size)].date) }
+        }
+        .pointerInput(days) {
+            detectHorizontalDragGestures { change, _ ->
+                onSelect(days[UsageAnalysis.indexAt(change.position.x, leftPx, size.width - leftPx, days.size)].date)
+            }
+        }
     Canvas(
         modifier
             .fillMaxWidth()
             .height(200.dp)
+            .then(touch)
             .semantics { contentDescription = summary }
     ) {
         if (days.isEmpty()) return@Canvas
@@ -113,16 +140,21 @@ fun DailyBlocksChart(days: List<DailyBlocks>, modifier: Modifier = Modifier) {
             val x = left + i * slot + slot * 0.15f
             val w = slot * 0.7f
             var y = bottom
+            val alpha = if (selected == null || selected == d.date) 1f else 0.45f
             // From the cheapest block at the bottom to the most expensive on top.
             for (block in 5 downTo 1) {
                 val seg = h(d.kwhByBlock[block - 1])
                 if (seg > 0f) {
-                    drawRect(blockColor(block), Offset(x, y - seg), Size(w, seg))
+                    drawRect(blockColor(block).copy(alpha = alpha), Offset(x, y - seg), Size(w, seg))
                     y -= seg
                 }
             }
             val un = h(d.unassignedKwh)
-            if (un > 0f) drawRect(UnknownColor, Offset(x, y - un), Size(w, un))
+            if (un > 0f) drawRect(UnknownColor.copy(alpha = alpha), Offset(x, y - un), Size(w, un))
+            if (selected == d.date) {
+                val stroke = 2.dp.toPx()
+                drawRect(ink, Offset(x - stroke, y - un - stroke), Size(w + 2 * stroke, bottom - (y - un) + stroke), style = Stroke(stroke))
+            }
             if (i % labelEvery == 0 || i == days.lastIndex) {
                 drawLabel(measurer, "${d.date.dayOfMonth}.", labelStyle, Offset(left + i * slot + slot / 2, bottom + 3.dp.toPx()))
             }
@@ -132,7 +164,16 @@ fun DailyBlocksChart(days: List<DailyBlocks>, modifier: Modifier = Modifier) {
 
 /** Taken (A+) and delivered (A-) energy per 15 minutes of one day, as two filled areas. */
 @Composable
-fun ProductionChart(day: ProductionDay, importColor: Color, modifier: Modifier = Modifier) {
+fun ProductionChart(
+    day: ProductionDay,
+    importColor: Color,
+    modifier: Modifier = Modifier,
+    showImport: Boolean = true,
+    showExport: Boolean = true,
+    selected: Int? = null,
+    onSelect: ((Int) -> Unit)? = null
+) {
+    val ink = MaterialTheme.colorScheme.onSurface
     val measurer = rememberTextMeasurer()
     val axis = MaterialTheme.colorScheme.onSurfaceVariant
     val labelStyle = TextStyle(fontSize = 10.sp, color = axis)
@@ -143,10 +184,18 @@ fun ProductionChart(day: ProductionDay, importColor: Color, modifier: Modifier =
         fmt(day.totalExport, 2, locale),
         SloTime.formatDate(day.startMillis.firstOrNull() ?: 0L, LocalLang.current)
     )
+    val leftPx = with(androidx.compose.ui.platform.LocalDensity.current) { 34.dp.toPx() }
+    val count = day.startMillis.size
+    val touch = if (onSelect == null || count < 2) Modifier else Modifier
+        .pointerInput(day) { detectTapGestures { onSelect(UsageAnalysis.indexAt(it.x, leftPx, size.width - leftPx, count)) } }
+        .pointerInput(day) {
+            detectHorizontalDragGestures { change, _ -> onSelect(UsageAnalysis.indexAt(change.position.x, leftPx, size.width - leftPx, count)) }
+        }
     Canvas(
         modifier
             .fillMaxWidth()
             .height(180.dp)
+            .then(touch)
             .semantics { contentDescription = summary }
     ) {
         val n = day.startMillis.size
@@ -155,13 +204,16 @@ fun ProductionChart(day: ProductionDay, importColor: Color, modifier: Modifier =
         val bottom = size.height - 18.dp.toPx()
         val top = 8.dp.toPx()
         val width = size.width - left
-        val max = maxOf(day.importKwh.max(), day.exportKwh.max(), 0.01) * 1.1
+        val max = maxOf(if (showImport) day.importKwh.max() else 0.0, if (showExport) day.exportKwh.max() else 0.0, 0.01) * 1.1
         fun x(i: Int) = left + width * i / (n - 1)
         fun y(v: Double) = (bottom - (v / max) * (bottom - top)).toFloat()
 
         yAxis(measurer, labelStyle, max, left, top, bottom, "kWh", locale)
-        area(day.importKwh, importColor, ::x, ::y, bottom)
-        area(day.exportKwh, AppColors.Export, ::x, ::y, bottom)
+        if (showImport) area(day.importKwh, importColor, ::x, ::y, bottom)
+        if (showExport) area(day.exportKwh, AppColors.Export, ::x, ::y, bottom)
+        selected?.takeIf { it in 0 until n }?.let { i ->
+            drawLine(ink.copy(alpha = 0.6f), Offset(x(i), top), Offset(x(i), bottom), strokeWidth = 1.dp.toPx())
+        }
         day.startMillis.forEachIndexed { i, t ->
             val hour = SloTime.hourOfDay(t)
             if (hour % 6 == 0 && SloTime.formatHm(t).endsWith(":00")) {
@@ -212,4 +264,67 @@ private fun DrawScope.drawLabel(measurer: TextMeasurer, text: String, style: Tex
     val layout = measurer.measure(text, style)
     val x = (center.x - layout.size.width / 2f).coerceIn(0f, (size.width - layout.size.width).coerceAtLeast(0f))
     drawText(layout, topLeft = Offset(x, center.y))
+}
+
+/**
+ * This week against the week before, day by day: two bars per weekday (this week in the app's primary colour, the
+ * previous week muted). Tapping a pair selects it; the caller shows the numbers below the chart.
+ */
+@Composable
+fun WeekCompareChart(
+    week: List<Pair<LocalDate, Double>>,
+    previous: List<Pair<LocalDate, Double>>,
+    selected: Int?,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val measurer = rememberTextMeasurer()
+    val axis = MaterialTheme.colorScheme.onSurfaceVariant
+    val labelStyle = TextStyle(fontSize = 10.sp, color = axis)
+    val now = MaterialTheme.colorScheme.primary
+    val before = MaterialTheme.colorScheme.outline
+    val ink = MaterialTheme.colorScheme.onSurface
+    val locale = currentLocale
+    val lang = LocalLang.current
+    val summary = stringResource(
+        R.string.chart_week_compare,
+        fmt(week.sumOf { it.second }, 1, locale),
+        fmt(previous.sumOf { it.second }, 1, locale)
+    )
+    val n = week.size
+    val leftPx = with(androidx.compose.ui.platform.LocalDensity.current) { 34.dp.toPx() }
+    Canvas(
+        modifier
+            .fillMaxWidth()
+            .height(170.dp)
+            .pointerInput(week) { detectTapGestures { onSelect(UsageAnalysis.indexAt(it.x, leftPx, size.width - leftPx, n)) } }
+            .pointerInput(week) {
+                detectHorizontalDragGestures { change, _ -> onSelect(UsageAnalysis.indexAt(change.position.x, leftPx, size.width - leftPx, n)) }
+            }
+            .semantics { contentDescription = summary }
+    ) {
+        if (n == 0) return@Canvas
+        val left = 34.dp.toPx()
+        val bottom = size.height - 18.dp.toPx()
+        val top = 8.dp.toPx()
+        val width = size.width - left
+        val max = maxOf(week.maxOf { it.second }, previous.maxOfOrNull { it.second } ?: 0.0, 0.1) * 1.1
+        fun h(v: Double) = ((v / max) * (bottom - top)).toFloat()
+        yAxis(measurer, labelStyle, max, left, top, bottom, "kWh", locale)
+        val slot = width / n
+        for (i in 0 until n) {
+            val x0 = left + i * slot
+            val bw = slot * 0.32f
+            val prev = previous.getOrNull(i)?.second ?: 0.0
+            val cur = week[i].second
+            val dim = selected != null && selected != i
+            drawRoundRect(before.copy(alpha = if (dim) 0.5f else 1f), Offset(x0 + slot * 0.14f, bottom - h(prev)), Size(bw, h(prev)), CornerRadius(3f))
+            drawRoundRect(now.copy(alpha = if (dim) 0.45f else 1f), Offset(x0 + slot * 0.54f, bottom - h(cur)), Size(bw, h(cur)), CornerRadius(3f))
+            if (selected == i) {
+                drawRect(ink.copy(alpha = 0.08f), Offset(x0, top), Size(slot, bottom - top))
+            }
+            val day = week[i].first.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, si.semafor.app.AppLanguage.localeOf(lang)).trimEnd('.')
+            drawLabel(measurer, day, labelStyle, Offset(x0 + slot / 2, bottom + 3.dp.toPx()))
+        }
+    }
 }

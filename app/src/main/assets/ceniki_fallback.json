@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-18T12:00:00+01:00",
+  "updatedAt": "2026-11-18T20:00:00+01:00",
   "validFrom": "2026-11-01",
   "validTo": "2026-12-31",
   "tariffTimes": {
@@ -62,13 +62,383 @@
       "note": "V višji sezoni 2026/27 se za blok 1 obračuna 70 % ciljne vrednosti postavke za moč (postopno uvajanje).",
       "noteEn": "In the 2026/27 higher season, 70 % of the target power rate is charged for block 1 (gradual introduction).",
       "blocks": [
-        { "block": 1, "powerEurPerKwMonth": 2.67611, "energyEurPerKwh": 0.02217 },
-        { "block": 2, "powerEurPerKwMonth": 1.09230, "energyEurPerKwh": 0.01998 },
-        { "block": 3, "powerEurPerKwMonth": 0.28902, "energyEurPerKwh": 0.01717 },
-        { "block": 4, "powerEurPerKwMonth": 0.02436, "energyEurPerKwh": 0.01805 },
-        { "block": 5, "powerEurPerKwMonth": 0.00245, "energyEurPerKwh": 0.01299 }
+        {
+          "block": 1,
+          "powerEurPerKwMonth": 2.67611,
+          "energyEurPerKwh": 0.02217
+        },
+        {
+          "block": 2,
+          "powerEurPerKwMonth": 1.0923,
+          "energyEurPerKwh": 0.01998
+        },
+        {
+          "block": 3,
+          "powerEurPerKwMonth": 0.28902,
+          "energyEurPerKwh": 0.01717
+        },
+        {
+          "block": 4,
+          "powerEurPerKwMonth": 0.02436,
+          "energyEurPerKwh": 0.01805
+        },
+        {
+          "block": 5,
+          "powerEurPerKwMonth": 0.00245,
+          "energyEurPerKwh": 0.01299
+        }
       ]
     }
   ],
-  "suppliers": []
+  "suppliers": [
+    {
+      "id": "bisol",
+      "name": "BISOL Energija",
+      "packages": [
+        {
+          "id": "bisol-fiksni",
+          "name": "Fiksni",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.117,
+            "VT": 0.127,
+            "MT": 0.107
+          },
+          "monthlyFeeWithoutVat": 1.63115,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Naročnina 1,99 € z DDV na mesec. Datum začetka veljavnosti ni naveden; cena preverjena 3. 11. 2026."
+        }
+      ]
+    },
+    {
+      "id": "ece",
+      "name": "ECE",
+      "packages": [
+        {
+          "id": "ece-elektrika",
+          "name": "ECE Elektrika",
+          "validFrom": "2025-10-01",
+          "validTo": null,
+          "sourceUrl": "https://www.ece.si/app/uploads/2025/10/Cenik-Vrsta-dobave_GO_09_2025.pdf",
+          "pricesWithoutVat": {
+            "ET": 0.11395,
+            "VT": 0.12459,
+            "MT": 0.10295
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Uradni cenik ECE. Pri e-računu popust 1,00 € brez DDV na mesec (neobvezno)."
+        },
+        {
+          "id": "ece-fiks-gos",
+          "name": "FIKS GOS",
+          "validFrom": "2026-03-23",
+          "validTo": null,
+          "sourceUrl": "https://www.ece.si/app/uploads/2026/03/Cenik-EE_FIKS-GOS_03_2026.pdf",
+          "pricesWithoutVat": {
+            "ET": 0.11385,
+            "VT": 0.12485,
+            "MT": 0.10285
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Uradni cenik ECE. Cene fiksne 12 mesecev; pri e-računu popust 1,00 € brez DDV na mesec (neobvezno)."
+        },
+        {
+          "id": "ece-akcija-fiks-b25-12",
+          "name": "Akcija ECE FIKS B25/12",
+          "validFrom": "2025-10-01",
+          "validTo": null,
+          "sourceUrl": "https://www.ece.si/app/uploads/2025/10/Cenik-Akcija-ECE-FIKS-B25-12_09_2025.pdf",
+          "pricesWithoutVat": {
+            "ET": 0.10778,
+            "VT": 0.11876,
+            "MT": 0.09679
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Uradni cenik ECE. Akcija, cene fiksne 12 mesecev."
+        }
+      ]
+    },
+    {
+      "id": "elektro-energija",
+      "name": "Elektro energija",
+      "packages": [
+        {
+          "id": "elektro-energija-zanesljiva",
+          "name": "Zanesljiva oskrba",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.1139,
+            "VT": 0.1249,
+            "MT": 0.1029
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Pavšalni strošek 2,43 € z DDV; popust za e-račun 0,99 € z DDV (neobvezno)."
+        },
+        {
+          "id": "elektro-energija-zanesljiva-fiksni",
+          "name": "Zanesljiva oskrba – fiksni",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.1189,
+            "VT": 0.1299,
+            "MT": 0.1079
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Cena velja 1 leto od sklenitve aneksa."
+        }
+      ]
+    },
+    {
+      "id": "energetika-ljubljana",
+      "name": "Energetika Ljubljana",
+      "packages": [
+        {
+          "id": "energetika-ljubljana-redna",
+          "name": "Redna ponudba",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.11389,
+            "VT": 0.12489,
+            "MT": 0.10289
+          },
+          "monthlyFeeWithoutVat": null,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Brez mesečnega stroška."
+        }
+      ]
+    },
+    {
+      "id": "energija-plus",
+      "name": "Energija plus",
+      "packages": [
+        {
+          "id": "energija-plus-osnovna",
+          "name": "Osnovna oskrba",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.11378,
+            "VT": 0.12479,
+            "MT": 0.10285
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Pri e-računu pavšal 1,22 € z DDV (neobvezno)."
+        },
+        {
+          "id": "energija-plus-osnovna-ove",
+          "name": "Osnovna oskrba OVE",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.11678,
+            "VT": 0.12779,
+            "MT": 0.10585
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). V ceni je dodatek za energijo iz OVE 0,003 €/kWh."
+        },
+        {
+          "id": "energija-plus-dvojni-plus",
+          "name": "Dvojni plus",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.11378,
+            "VT": 0.12479,
+            "MT": 0.10285
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026)."
+        },
+        {
+          "id": "energija-plus-fiks-gos",
+          "name": "Fiks GOS",
+          "validFrom": "2026-03-24",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.11385,
+            "VT": 0.12485,
+            "MT": 0.10285
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Vezava 1 leto."
+        },
+        {
+          "id": "energija-plus-akcija-gos-2025-3",
+          "name": "Akcija GOS 2025/3",
+          "validFrom": "2025-10-01",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.10778,
+            "VT": 0.11876,
+            "MT": 0.09679
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Cene fiksne 12 mesecev."
+        },
+        {
+          "id": "energija-plus-toplotna-crpalka",
+          "name": "Toplotna črpalka",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.11378,
+            "VT": 0.12479,
+            "MT": 0.10285
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Paket za toplotne črpalke."
+        }
+      ]
+    },
+    {
+      "id": "gen-i",
+      "name": "GEN-I",
+      "packages": [
+        {
+          "id": "gen-i-redni",
+          "name": "Redni cenik",
+          "validFrom": "2025-03-01",
+          "validTo": null,
+          "sourceUrl": "https://gen-i.si/dom/elektricna-energija/ceniki-in-akcije/redni-cenik-elektricne-energije-za-gospodinjske-odjemalce/",
+          "pricesWithoutVat": {
+            "ET": 0.1089,
+            "VT": 0.1199,
+            "MT": 0.0979
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Uradni cenik GEN-I; cene zagotovljene do 31. 12. 2027. EKO popust za e-račun −1,00 € brez DDV, dodatek 100 % Sonce ali Voda 0,82 € brez DDV na mesec (neobvezno)."
+        },
+        {
+          "id": "gen-i-fiksni",
+          "name": "GEN-I Fiksni",
+          "validFrom": "2025-10-23",
+          "validTo": null,
+          "sourceUrl": "https://gen-i.si/dom/elektricna-energija/ceniki-in-akcije/gen-i-fiksni-gospodinjski-odjemalci/",
+          "pricesWithoutVat": {
+            "ET": 0.1139,
+            "VT": 0.1249,
+            "MT": 0.1029
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Uradni cenik GEN-I; cene fiksne 12 mesecev; obvezen e-račun (EKO popust).",
+          "monthlyExtrasWithoutVat": -1.0
+        }
+      ]
+    },
+    {
+      "id": "ngen",
+      "name": "NGEN",
+      "packages": [
+        {
+          "id": "ngen-redni",
+          "name": "Redni cenik",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.1088,
+            "VT": 0.11958,
+            "MT": 0.098
+          },
+          "monthlyFeeWithoutVat": null,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Brez nadomestila; ločen račun za dobavo."
+        },
+        {
+          "id": "ngen-moonelektrika",
+          "name": "MOONelektrika",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.11453,
+            "VT": 0.12587,
+            "MT": 0.10316
+          },
+          "monthlyFeeWithoutVat": null,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Brez nadomestila; ločen račun za dobavo."
+        }
+      ]
+    },
+    {
+      "id": "petrol",
+      "name": "Petrol",
+      "packages": [
+        {
+          "id": "petrol-redni",
+          "name": "Redni cenik",
+          "validFrom": "2025-03-01",
+          "validTo": null,
+          "sourceUrl": "https://www.petrol.si/binaries/content/assets/www/2025/dokumenti-in-obrazci/ee/go/cenik-elektricne-energije-za-gospodinjske-odjemalce_8_-9_2025.pdf",
+          "pricesWithoutVat": {
+            "ET": 0.11795,
+            "VT": 0.12795,
+            "MT": 0.10795
+          },
+          "monthlyFeeWithoutVat": 1.98,
+          "note": "Uradni cenik Petrol."
+        },
+        {
+          "id": "petrol-fiks-2026",
+          "name": "Akcijski cenik FIKS 2026",
+          "validFrom": "2026-05-09",
+          "validTo": null,
+          "sourceUrl": "https://www.petrol.si/binaries/content/assets/www/2026/dokumenti/ee/akcijski-cenik-elektricne-energije-za-gospodinjske-odjemalce-fiks-2026-9.-05.-2026.pdf",
+          "pricesWithoutVat": {
+            "ET": 0.11295,
+            "VT": 0.12395,
+            "MT": 0.10195
+          },
+          "monthlyFeeWithoutVat": 1.98,
+          "note": "Uradni cenik Petrol. Akcijska cena velja 1 leto, vezava 1 leto."
+        }
+      ]
+    },
+    {
+      "id": "suncontract",
+      "name": "SunContract",
+      "packages": [
+        {
+          "id": "suncontract-redni",
+          "name": "Redni cenik",
+          "validFrom": "2026-11-03",
+          "validTo": null,
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.1299,
+            "VT": 0.1319,
+            "MT": 0.1279
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Plača se pristopnina ali varščina."
+        },
+        {
+          "id": "suncontract-vezava-2026",
+          "name": "Akcijski paket Vezava 2026",
+          "validFrom": "2026-01-01",
+          "validTo": "2026-12-31",
+          "sourceUrl": "https://www.zps.si/aktualne-vsebine/trzni-pregledi/pregled-cen-elektricne-energije-in-zemeljskega-plina-152",
+          "pricesWithoutVat": {
+            "ET": 0.1129,
+            "VT": 0.1149,
+            "MT": 0.1109
+          },
+          "monthlyFeeWithoutVat": 1.99,
+          "note": "Vir: Zveza potrošnikov Slovenije, pregled cen elektrike (preverjeno 3. 11. 2026, objavljeno 5. 11. 2026). Akcija traja do 31. 12. 2026."
+        }
+      ]
+    }
+  ]
 }

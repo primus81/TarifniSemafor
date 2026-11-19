@@ -119,7 +119,7 @@
     <string name="usage_legend_import">prejeto (A+)</string>
     <string name="usage_legend_export">oddano (A-)</string>
     <string name="usage_details_heading">Podrobnosti Moj Elektro</string>
-    <string name="usage_table_title">Moč po časovnih blokih (zadnjih %1$d dni)</string>
+    <string name="usage_table_title">Moč po časovnih blokih (%1$s)</string>
     <string name="usage_table_agreed">Dogovorjena %1$s</string>
     <string name="usage_table_now">" · velja zdaj"</string>
     <string name="usage_table_peak">Najvišja %1$s kW (%2$s ob %3$s)</string>

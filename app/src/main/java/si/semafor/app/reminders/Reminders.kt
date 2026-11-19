@@ -224,6 +224,8 @@ object Reminders {
         val v = ReminderSettings.get(ctx)
         val share = s.peakShare ?: return
         if (!v.power || share < 0.9) return
+        // Old readings (for example after a long time without opening the app) never cause a warning.
+        if (!s.isFresh(SloTime.today())) return
         val key = "pow:${s.lastDay}:${s.peakStartMillis}"
         if (key in sentKeys(ctx)) return
         val now = System.currentTimeMillis()

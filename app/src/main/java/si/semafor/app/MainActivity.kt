@@ -55,12 +55,9 @@ import si.semafor.app.ui.compose.MenuEntry
 import si.semafor.app.ui.compose.components.AboutDialog
 import si.semafor.app.ui.compose.components.NotificationIntroDialog
 import si.semafor.app.ui.compose.components.PrivacySheet
-import si.semafor.app.ui.compose.components.SourcesDialog
-import si.semafor.app.ui.compose.screens.CalcScreen
 import si.semafor.app.ui.compose.screens.HomeScreen
 import si.semafor.app.ui.compose.screens.MojElektroScreen
 import si.semafor.app.ui.compose.screens.NewsScreen
-import si.semafor.app.ui.compose.screens.PricesScreen
 import si.semafor.app.ui.compose.screens.SettingsActions
 import si.semafor.app.ui.compose.screens.SettingsScreen
 import si.semafor.app.ui.compose.screens.SettingsUiState
@@ -78,10 +75,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.res.stringResource
 
 /** MAIN = the three tabs (Domov, Semafor porabe, Nastavitve); the others are detail screens opened from them. */
-enum class Screen { MAIN, CALC, NEWS, PRICES, TIPS, MOJELEKTRO, ENERGY_PRICE, PLANNER }
+// CALC and PRICES are kept for saved state of older versions; they open the matching tab of ENERGY_PRICE.
+enum class Screen { MAIN, CALC, NEWS, PRICES, TIPS, MOJELEKTRO, ENERGY_PRICE, PLANNER, SOURCES }
 
 /** Dialogs opened from the menu or from Settings. */
-private enum class AppDialog { SOURCES, ABOUT }
+private enum class AppDialog { ABOUT }
 
 /**
  * The only Activity. It hosts the Compose UI, navigates between the screens and does what needs an Activity
@@ -107,6 +105,9 @@ class MainActivity : AppCompatActivity() {
     private val plannerVm: si.semafor.app.planner.PlannerViewModel by viewModels()
 
     private val screen = mutableStateOf(Screen.MAIN)
+
+    // The open tab of "Cene elektrike in omrežnine" (kept across rotation).
+    private val priceTab = mutableStateOf(si.semafor.app.ui.compose.screens.PriceTab.MY_PRICE)
     private val dialog = mutableStateOf<AppDialog?>(null)
 
     // A tab the main pager should go to (menu, Moj Elektro screen, notification); null = none.
@@ -161,6 +162,7 @@ class MainActivity : AppCompatActivity() {
         // Saved instance state: the screen that was open (rotation, language change, process death) and a pending
         // permission request.
         const val KEY_SCREEN = "screen"
+        const val KEY_PRICE_TAB = "price_tab"
         const val KEY_PERMISSION_REQUEST = "permission_request"
 
         // Material "fast out, slow in" easing of the screen transitions.
@@ -208,6 +210,9 @@ class MainActivity : AppCompatActivity() {
         if (!showPrivacy.value) maybeAskNotificationPermissionOnFirstRun()
 
         // Back to the screen that was open before the Activity was recreated.
+        savedInstanceState?.getString(KEY_PRICE_TAB)
+            ?.let { name -> si.semafor.app.ui.compose.screens.PriceTab.entries.firstOrNull { it.name == name } }
+            ?.let { priceTab.value = it }
         savedInstanceState?.getString(KEY_SCREEN)
             ?.let { name -> Screen.entries.firstOrNull { it.name == name } }
             ?.let { showScreen(it) }
@@ -218,6 +223,7 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_SCREEN, screen.value.name)
+        outState.putString(KEY_PRICE_TAB, priceTab.value.name)
         pendingPermissionRequest?.let { outState.putString(KEY_PERMISSION_REQUEST, it.name) }
     }
 
@@ -272,8 +278,8 @@ class MainActivity : AppCompatActivity() {
         val blockId = (homeState as? HomeUiState.Content)?.info?.now?.id
         // The planner and the reminders use the same hourly prices as the price screen.
         val priceState by priceVm.state.collectAsStateWithLifecycle()
-        LaunchedEffect(priceState.hourly) {
-            plannerVm.onPrices(priceState.hourly)
+        LaunchedEffect(priceState.weekHourly) {
+            plannerVm.onPrices(priceState.weekHourly)
             val cheaper = si.semafor.app.pricing.EnergyPriceCalculator.nextCheaper(priceState.hourly)
             val ctx = applicationContext
             withContext(Dispatchers.IO) {
@@ -373,7 +379,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         when (dialog.value) {
-            AppDialog.SOURCES -> SourcesDialog(onDismiss = { dialog.value = null }, onOpenUrl = ::openUrl)
             AppDialog.ABOUT -> AboutDialog(appVersion(), onDismiss = { dialog.value = null }, onOpenUrl = ::openUrl)
             null -> Unit
         }
@@ -444,7 +449,8 @@ class MainActivity : AppCompatActivity() {
             power = plan.power,
             currentBlock = block,
             bestBlock = best?.id,
-            bestAtMillis = best?.startMillis
+            bestAtMillis = best?.startMillis,
+            plan = plan.results
         )
         si.semafor.app.ui.compose.components.NowAdviceCard(
             advice, now,
@@ -460,16 +466,13 @@ class MainActivity : AppCompatActivity() {
             hourlyKnown = price.hourly.size > 1,
             nowMillis = now,
             onSetup = { showScreen(Screen.ENERGY_PRICE) },
-            onClick = { showScreen(Screen.ENERGY_PRICE) },
+            onClick = {
+                priceTab.value = si.semafor.app.ui.compose.screens.PriceTab.MY_PRICE
+                showScreen(Screen.ENERGY_PRICE)
+            },
             title = getString(R.string.home_price_title),
             extra = {
                 val locale = si.semafor.app.ui.compose.currentLocale
-                Text(
-                    priceSourceLine(price),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
                 if (upcoming.size > 1) {
                     Text(
                         stringResource(
@@ -482,11 +485,27 @@ class MainActivity : AppCompatActivity() {
                         color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                si.semafor.app.ui.compose.components.LinkText(stringResource(R.string.home_price_details)) { showScreen(Screen.ENERGY_PRICE) }
             }
         )
-        si.semafor.app.ui.compose.components.PowerHomeCard(connection.connectedEimm != null, plan.power) { openTab(PAGE_USAGE) }
+        val plannedPeak = plan.results
+            .filter { it.status == si.semafor.app.planner.PlanStatus.OK && it.endMillis > now && it.startMillis < now + 24 * 3_600_000L }
+            .maxByOrNull { it.peakKw }
+            ?.let { it.peakKw to it.device.name }
+        si.semafor.app.ui.compose.components.PowerHomeCard(connection.connectedEimm != null, plan.power, now, plannedPeak) { openTab(PAGE_USAGE) }
     }
+
+    /** What the price and sources screens can ask for (one instance of the logic for both). */
+    private fun priceActions(back: () -> Unit) = si.semafor.app.ui.compose.screens.EnergyPriceActions(
+        onBack = back,
+        onSave = { stored ->
+            priceVm.save(stored)
+            // The widget shows the total price as well.
+            SemaforWidget.refreshNow(this)
+        },
+        onCheckNow = priceVm::checkNow,
+        onNotifyChange = priceVm::setNotifyChanges,
+        onOpenUrl = ::openUrl
+    )
 
     /** Agreed power per block for the fixed costs: Moj Elektro first, otherwise the value typed in the planner. */
     private fun agreedForPrices(): List<Double?> {
@@ -514,33 +533,36 @@ class MainActivity : AppCompatActivity() {
         return vt != null && mt != null && kotlin.math.abs(vt - mt) < 1e-9
     }
 
-    /** "Cenik: GEN-I, Redni · velja od 1. 12. 2026" or "Lastna cena iz pogodbe". */
-    private fun priceSourceLine(price: si.semafor.app.pricing.EnergyPriceUiState): String {
-        val lang = AppLanguage.current(this)
-        val stored = price.stored ?: return ""
-        val pkg = if (stored.sourceType == si.semafor.app.pricing.PricingSettings.SOURCE_PACKAGE) price.data?.findPackage(stored.packageId) else null
-        if (pkg == null) return getString(R.string.home_price_custom) + ". " + getString(R.string.ep_vat_note)
-        val supplier = price.data?.supplierOf(pkg)?.name
-        val name = listOfNotNull(supplier, pkg.name).joinToString(", ")
-        val valid = pkg.validTo?.let { getString(R.string.ep_validity_to, SloTime.formatLocalDate(pkg.validFrom, lang), SloTime.formatLocalDate(it, lang)) }
-            ?: getString(R.string.ep_validity, SloTime.formatLocalDate(pkg.validFrom, lang))
-        return getString(R.string.ep_package_line, name) + ". " + valid + ". " + getString(R.string.ep_vat_note)
-    }
 
     @Composable
     private fun UsagePage(connected: Boolean) {
         val state by usageVm.state.collectAsStateWithLifecycle()
-        val range by usageVm.rangeDays.collectAsStateWithLifecycle()
+        val period by usageVm.period.collectAsStateWithLifecycle()
         val refreshing by usageVm.refreshing.collectAsStateWithLifecycle()
+        val price by priceVm.state.collectAsStateWithLifecycle()
+        val plan by plannerVm.state.collectAsStateWithLifecycle()
+        // The same price calculation as everywhere else, for the cost of the weekly review (null = no own prices).
+        val data = price.data
+        val setup = price.setup
+        val priceAt: ((Long, Int) -> si.semafor.app.pricing.PriceComponents?)? = if (data == null || !setup.configured) null else { millis, block ->
+            val date = SloTime.dateOf(millis)
+            val tariff = si.semafor.app.pricing.EnergyTariffs.tariffAt(millis, setup.meter, data.tariffTimes)
+            si.semafor.app.pricing.EnergyPriceCalculator.components(data, setup, PriceLists.forDate(date), date, block, tariff)
+        }
         UsageDashboardScreen(
             connected = connected,
             state = state,
-            rangeDays = range,
-            ranges = UsageViewModel.RANGES,
+            period = period,
+            periods = si.semafor.app.mojelektro.UsagePeriod.available(SloTime.today()),
             refreshing = refreshing,
             onRefresh = usageVm::refresh,
-            onRangeChange = usageVm::setRange,
-            onManageConnection = { showScreen(Screen.MOJELEKTRO) }
+            onPeriodChange = usageVm::setPeriod,
+            onManageConnection = { showScreen(Screen.MOJELEKTRO) },
+            priceAt = priceAt,
+            priceKey = setup to data?.updatedAtMillis,
+            runLog = plan.log,
+            onOpenPlanner = { showScreen(Screen.PLANNER) },
+            onSetPrice = { showScreen(Screen.ENERGY_PRICE) }
         )
     }
 
@@ -573,7 +595,7 @@ class MainActivity : AppCompatActivity() {
                 },
                 onOpenPrivacy = { showPrivacy.value = true },
                 onOpenPrivacyPolicy = { openUrl(Links.privacyPolicy(AppLanguage.current(this))) },
-                onOpenSources = { dialog.value = AppDialog.SOURCES },
+                onOpenSources = { showScreen(Screen.SOURCES) },
                 onOpenAbout = { dialog.value = AppDialog.ABOUT }
             )
         )
@@ -583,21 +605,8 @@ class MainActivity : AppCompatActivity() {
     private fun DetailScreen(s: Screen, homeState: HomeUiState) {
         val back = { showScreen(Screen.MAIN) }
         when (s) {
-            Screen.CALC -> {
-                val price by priceVm.state.collectAsStateWithLifecycle()
-                CalcScreen(
-                    onNavigateHome = back,
-                    onOpenUrl = ::openUrl,
-                    onSendMail = ::openMail,
-                    billSection = { inputs ->
-                        si.semafor.app.ui.compose.screens.WholeBillSection(inputs, price.data, price.setup) {
-                            showScreen(Screen.ENERGY_PRICE)
-                        }
-                    }
-                )
-            }
-
-            Screen.ENERGY_PRICE -> {
+            // Older entries: shown as tabs of the price screen (showScreen redirects them).
+            Screen.CALC, Screen.PRICES, Screen.ENERGY_PRICE -> {
                 val price by priceVm.state.collectAsStateWithLifecycle()
                 val now = nowMillis.longValue
                 val info = (homeState as? HomeUiState.Content)?.info
@@ -607,21 +616,37 @@ class MainActivity : AppCompatActivity() {
                     state = price,
                     current = current,
                     nowMillis = now,
-                    actions = si.semafor.app.ui.compose.screens.EnergyPriceActions(
-                        onBack = back,
-                        onSave = { stored ->
-                            priceVm.save(stored)
-                            // The widget shows the total price as well.
-                            SemaforWidget.refreshNow(this)
-                        },
-                        onCheckNow = priceVm::checkNow,
-                        onNotifyChange = priceVm::setNotifyChanges,
-                        onOpenUrl = ::openUrl
-                    ),
+                    actions = priceActions(back),
                     agreedKw = agreedForPrices(),
-                    agreedSource = agreedSourceLabel()
+                    agreedSource = agreedSourceLabel(),
+                    tab = priceTab.value,
+                    onTabChange = { priceTab.value = it },
+                    networkList = PriceLists.current(),
+                    currentBlockId = block,
+                    onSendMail = ::openMail,
+                    billSection = { inputs ->
+                        si.semafor.app.ui.compose.screens.WholeBillSection(inputs, price.data, price.setup) {
+                            priceTab.value = si.semafor.app.ui.compose.screens.PriceTab.MY_PRICE
+                        }
+                    }
                 )
             }
+
+            Screen.SOURCES -> {
+                val price by priceVm.state.collectAsStateWithLifecycle()
+                val connection by mojElektroVm.state.collectAsStateWithLifecycle()
+                val usage by usageVm.state.collectAsStateWithLifecycle()
+                si.semafor.app.ui.compose.screens.SourcesScreen(
+                    price = price,
+                    priceActions = priceActions(back),
+                    blocksUpdatedMillis = (homeState as? HomeUiState.Content)?.info?.time ?: 0L,
+                    mojElektroConnected = connection.connectedEimm != null,
+                    readingsFetchedMillis = (usage as? UsageUiState.Content)?.data?.fetchedAtMillis ?: 0L,
+                    onBack = back,
+                    onOpenUrl = ::openUrl
+                )
+            }
+
             Screen.NEWS -> {
                 val news by newsVm.state.collectAsStateWithLifecycle()
                 val pulling by newsVm.pullRefreshing.collectAsStateWithLifecycle()
@@ -634,13 +659,6 @@ class MainActivity : AppCompatActivity() {
                     onOpenUrl = ::openUrl
                 )
             }
-
-            Screen.PRICES -> PricesScreen(
-                list = PriceLists.current(),
-                currentBlockId = (homeState as? HomeUiState.Content)?.info?.now?.id,
-                onBack = back,
-                onOpenUrl = ::openUrl
-            )
 
             Screen.TIPS -> TipsScreen(onNavigateHome = back, onOpenUrl = ::openUrl)
             Screen.MOJELEKTRO -> {
@@ -673,7 +691,12 @@ class MainActivity : AppCompatActivity() {
                         onUpdate = plannerVm::updateDevice,
                         onRemove = plannerVm::removeDevice,
                         onLoad = plannerVm::setLoad,
-                        onOpenPrice = { showScreen(Screen.ENERGY_PRICE) }
+                        onOpenPrice = { showScreen(Screen.ENERGY_PRICE) },
+                        onProfile = plannerVm::setProfile,
+                        onConfirmStart = plannerVm::confirmStart,
+                        onApplyHabit = plannerVm::applyHabit,
+                        onClearLog = plannerVm::clearLog,
+                        onDay = plannerVm::setDay
                     )
                 )
             }
@@ -686,12 +709,9 @@ class MainActivity : AppCompatActivity() {
     private fun menuEntries(): List<MenuEntry> = buildList {
         add(MenuEntry(getString(R.string.menu_planner), getString(R.string.menu_planner_sub)) { showScreen(Screen.PLANNER) })
         add(MenuEntry(getString(R.string.menu_energy_price), getString(R.string.menu_energy_price_sub)) { showScreen(Screen.ENERGY_PRICE) })
-        add(MenuEntry(getString(R.string.menu_calculator), getString(R.string.menu_calculator_sub)) { showScreen(Screen.CALC) })
-        add(MenuEntry(getString(R.string.menu_prices)) { showScreen(Screen.PRICES) })
         add(MenuEntry(getString(R.string.menu_tips)) { showScreen(Screen.TIPS) })
-        add(MenuEntry(getString(R.string.menu_tariff_info)) { openUrl(Links.TARIFF_INFO) })
         add(MenuEntry(getString(R.string.menu_news)) { showScreen(Screen.NEWS) })
-        add(MenuEntry(getString(R.string.menu_sources), dividerBefore = true) { dialog.value = AppDialog.SOURCES })
+        add(MenuEntry(getString(R.string.menu_sources), dividerBefore = true) { showScreen(Screen.SOURCES) })
         add(MenuEntry(getString(R.string.menu_about)) { dialog.value = AppDialog.ABOUT })
     }
 
@@ -717,10 +737,22 @@ class MainActivity : AppCompatActivity() {
 
     /** Switches to [s] and runs what that screen needs on every visit. */
     private fun showScreen(s: Screen) {
-        screen.value = s
-        if (s == Screen.NEWS) newsVm.load()
-        if (s == Screen.ENERGY_PRICE || s == Screen.CALC || s == Screen.PLANNER) priceVm.onShown()
-        if (s == Screen.MAIN) tick()
+        // The calculator and the network price list are tabs of "Cene elektrike in omrežnine".
+        val target = when (s) {
+            Screen.CALC -> {
+                priceTab.value = si.semafor.app.ui.compose.screens.PriceTab.CALCULATOR
+                Screen.ENERGY_PRICE
+            }
+            Screen.PRICES -> {
+                priceTab.value = si.semafor.app.ui.compose.screens.PriceTab.NETWORK
+                Screen.ENERGY_PRICE
+            }
+            else -> s
+        }
+        screen.value = target
+        if (target == Screen.NEWS) newsVm.load()
+        if (target == Screen.ENERGY_PRICE || target == Screen.PLANNER || target == Screen.SOURCES) priceVm.onShown()
+        if (target == Screen.MAIN) tick()
     }
 
     private fun onThemeChange(mode: Int) {

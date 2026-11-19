@@ -14,6 +14,8 @@ import java.time.LocalDate
 data class UsageData(
     /** The connected metering point. */
     val eimm: String,
+    val period: UsagePeriod,
+    /** Calendar days of [period] (for texts like "in 7 days"). */
     val rangeDays: Int,
     /** When the readings were downloaded from Moj Elektro. */
     val fetchedAtMillis: Long,
@@ -39,7 +41,12 @@ data class UsageData(
     /** Energy per day and block in the chosen range. */
     val daily: List<DailyBlocks>,
     /** Taken vs delivered energy of [lastDay]; null if the metering point delivers no energy. */
-    val production: ProductionDay?
+    val production: ProductionDay?,
+    /**
+     * Every downloaded day (at least the last [UsagePeriod.REVIEW_DAYS] days, whatever [period] is): the weekly review,
+     * the last known power and the typical load of the planner use these.
+     */
+    val recentProfiles: List<DayProfile> = profiles
 ) {
     /** 15-minute intervals of [lastDay] (the latest complete day). */
     val peakDay: DayProfile? get() = lastDay?.let { d -> profiles.firstOrNull { it.date == d } }
@@ -58,11 +65,13 @@ class UsageRepository(context: Context) {
 
     fun isConnected(): Boolean = repository.isConnected()
 
-    fun load(rangeDays: Int, force: Boolean, onProgress: (UiText) -> Unit): MojElektroResult<UsageData> {
+    fun load(period: UsagePeriod, force: Boolean, onProgress: (UiText) -> Unit): MojElektroResult<UsageData> {
         val eimm = repository.connectedEimm() ?: return MojElektroResult.Failure(MojElektroError.NotConnected)
         val now = System.currentTimeMillis()
         val end = SloTime.today()
-        val start = end.minusDays(rangeDays.toLong())
+        val (from, to) = period.range(end)
+        // The weekly review always needs the last two weeks, whatever period is shown.
+        val start = minOf(from, end.minusDays(UsagePeriod.REVIEW_DAYS))
 
         val cached = cache.load()?.takeIf { it.eimm == eimm }
         val covers = cached != null && !cached.start.isAfter(start) && !cached.end.isBefore(end.minusDays(1))
@@ -103,12 +112,14 @@ class UsageRepository(context: Context) {
             }
         }
 
-        return MojElektroResult.Success(analyse(snapshot, rangeDays, start, fromCacheAfterError, onProgress))
+        return MojElektroResult.Success(analyse(snapshot, period, from, to, start, fromCacheAfterError, onProgress))
     }
 
     private fun analyse(
         s: UsageCache.Snapshot,
-        rangeDays: Int,
+        period: UsagePeriod,
+        from: LocalDate,
+        to: LocalDate,
         start: LocalDate,
         fromCacheAfterError: Boolean,
         onProgress: (UiText) -> Unit
@@ -122,32 +133,36 @@ class UsageRepository(context: Context) {
         val dailyStates = series(s.daily, ReadingRegister.IMPORT_DAILY_STATE)
 
         val label = UsageAnalysis.detectLabel(imports, dailyStates, s.start)
-        val byDate = UsageAnalysis.groupByDate(imports, label).filterKeys { !it.isBefore(start) }
+        val allByDate = UsageAnalysis.groupByDate(imports, label).filterKeys { !it.isBefore(start) }
+        val byDate = allByDate.filterKeys { !it.isBefore(from) && !it.isAfter(to) }
         val exportByDate = UsageAnalysis.groupByDate(exports, label)
 
         val scheduleMap = if (label == IntervalLabel.UNKNOWN) emptyMap() else {
-            schedules.forDates(byDate.keys) { done, total ->
+            schedules.forDates(allByDate.keys) { done, total ->
                 onProgress(UiText.res(R.string.usage_loading_blocks, done + 1, total))
             }
         }
-        val lastDay = UsageAnalysis.lastCompleteDay(byDate)
-        val profiles = byDate.keys.sorted().map { date ->
-            UsageAnalysis.dayProfile(date, byDate.getValue(date), scheduleMap[date], s.agreed, label)
+        // The latest complete day of all readings (the period "last month" does not contain it).
+        val lastDay = UsageAnalysis.lastCompleteDay(allByDate)
+        val allProfiles = allByDate.keys.sorted().map { date ->
+            UsageAnalysis.dayProfile(date, allByDate.getValue(date), scheduleMap[date], s.agreed, label)
         }
+        val profiles = allProfiles.filter { !it.date.isBefore(from) && !it.date.isAfter(to) }
         val hasExport = exportByDate.values.any { day -> day.any { it.second > 0.0 } }
         val production = if (hasExport && lastDay != null) {
-            UsageAnalysis.productionDay(lastDay, byDate.getValue(lastDay), exportByDate[lastDay].orEmpty())
+            UsageAnalysis.productionDay(lastDay, allByDate.getValue(lastDay), exportByDate[lastDay].orEmpty())
         } else {
             null
         }
-        val registers = UsageAnalysis.registerSummary(imports, exports, label, start, hasExport)
+        val registers = UsageAnalysis.registerSummary(imports, exports, label, from, hasExport, to)
         val currentBlock = Repo.cached(appContext)
             ?.takeIf { Repo.dataState(it) != DataState.UNVERIFIED }
             ?.now?.id
 
         return UsageData(
             eimm = s.eimm,
-            rangeDays = rangeDays,
+            period = period,
+            rangeDays = (java.time.temporal.ChronoUnit.DAYS.between(from, to) + 1).toInt(),
             fetchedAtMillis = s.fetchedAtMillis,
             fromCacheAfterError = fromCacheAfterError,
             label = label,
@@ -161,7 +176,8 @@ class UsageRepository(context: Context) {
             registers = registers,
             qualityDescriptions = if (registers.flaggedCount > 0) repository.qualityDescriptions() else emptyMap(),
             daily = UsageAnalysis.dailyByBlocks(byDate, scheduleMap, label),
-            production = production
+            production = production,
+            recentProfiles = allProfiles
         )
     }
 

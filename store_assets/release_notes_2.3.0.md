@@ -1,4 +1,4 @@
-# Tarifni semafor – moja poraba 2.3.0 (versionCode še ni določen; pred nalaganjem v Play mora biti višji od 19)
+# Tarifni semafor – moja poraba 2.3.0 (versionCode 20)
 
 Spremembe od verzije 2.2.3 (versionCode 19). Osnutek: besedilo potrdi pred objavo.
 

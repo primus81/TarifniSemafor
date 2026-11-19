@@ -10,12 +10,11 @@
     <string name="price_change_suppliers">Supplier price lists have changed.</string>
 
     <!-- Menu and settings -->
-    <string name="menu_energy_price">Electricity price</string>
-    <string name="menu_energy_price_sub">Total price with network charge and VAT</string>
+    <string name="menu_energy_price">Electricity and network prices</string>
+    <string name="menu_energy_price_sub">My price, suppliers, network charge, calculator</string>
 
     <!-- Energy price screen: header and current price -->
-    <string name="ep_title">Electricity price</string>
-    <string name="ep_subtitle">Energy, network charge, levies and VAT</string>
+    <string name="ep_title">Electricity and network prices</string>
     <string name="ep_now_badge">NOW</string>
     <string name="ep_now_line">Now: %1$s</string>
     <string name="ep_now_suffix">including network charge and VAT</string>
@@ -104,7 +103,6 @@
     <string name="ep_pick_package">Choose a package.</string>
 
     <!-- Price data and sources -->
-    <string name="ep_data_title">Price lists and sources</string>
     <string name="ep_data_updated">Price lists of %1$s</string>
     <string name="ep_data_checked">Last check on the server: %1$s</string>
     <string name="ep_data_never">The price lists have not been checked on the server yet; the data built into the app is used.</string>
@@ -112,16 +110,10 @@
     <string name="ep_checking">Checking …</string>
     <string name="ep_sync_updated">The price lists have been updated.</string>
     <string name="ep_sync_unchanged">No new price lists.</string>
-    <string name="ep_sync_failed">The server cannot be reached. Try again later.</string>
     <string name="ep_notify_switch">Notify me about price changes</string>
-    <string name="ep_charge_value">%1$s %2$s, from %3$s</string>
-    <string name="ep_unit_kwh">€/kWh</string>
     <string name="ep_unit_kw_month">€/kW per month</string>
     <string name="ep_unit_month">€ per month</string>
-    <string name="ep_network_value">Network charge for energy by block: %1$s €/kWh</string>
-    <string name="ep_vat_value">VAT: %1$s %%</string>
-    <string name="ep_open_source">Open source</string>
-    <string name="ep_privacy">The app downloads the public price file from tarifnisemafor.si only when needed: a few days or weeks before the valid price list expires and occasionally during the year. It sends only the request for the file, without any data about you or your phone. Your price choice stays on the phone.</string>
+    <string name="ep_privacy">The app downloads the public price file from tarifnisemafor.si only when needed: a few days or weeks before the valid price list expires and occasionally during the year. It sends only the request for the file, without data about you or your phone. The hosting provider automatically records the IP address and time of the request; this record is deleted within about one day and the developer does not use it. Your price choice stays on the phone.</string>
     <string name="ep_disclaimer">The price is for information. The exact amount is on the bill of the supplier and of the distribution system operator.</string>
 
     <!-- Monthly bill in the calculator -->
@@ -139,4 +131,14 @@
 
     <!-- Widget -->
     <string name="widget_total_price">Now %1$s</string>
+    <!-- Price list check results -->
+    <string name="ep_sync_same">The server can be reached. Its price lists are the same as the ones already in the app.</string>
+    <string name="ep_sync_no_connection">Could not connect to tarifnisemafor.si. Check your internet connection; the app will try again in an hour.</string>
+    <string name="ep_sync_server_error">The server returned error %1$d. The app uses the last valid price lists and will try again in an hour.</string>
+    <string name="ep_sync_invalid">The downloaded price file is not valid, so the app did not use it. The last valid price lists stay in use.</string>
+    <!-- Supplier services and discounts -->
+    <string name="ep_item_extras">Services and discounts</string>
+    <string name="ep_custom_extras">Services and discounts (€ per month)</string>
+    <string name="ep_custom_extras_note">The sum of the "services and discounts" lines of your bill, for example 0.82 for a service and −1.00 for a discount give −0.18. Enter a discount with a minus.</string>
+    <string name="ep_compare_extras">services and discounts %1$s per month</string>
 </resources>

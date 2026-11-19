@@ -17,6 +17,7 @@ object PricingSettings {
     private const val KEY_VT = "custom_vt"
     private const val KEY_MT = "custom_mt"
     private const val KEY_FEE = "custom_fee"
+    private const val KEY_EXTRAS = "custom_extras"
     private const val KEY_WITH_VAT = "custom_with_vat"
     private const val KEY_NOTIFY = "notify_changes"
 
@@ -27,7 +28,15 @@ object PricingSettings {
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     /** What the user typed for a custom contract (texts, so the form shows exactly what was typed). */
-    data class CustomInput(val et: String, val vt: String, val mt: String, val fee: String, val withVat: Boolean)
+    data class CustomInput(
+        val et: String,
+        val vt: String,
+        val mt: String,
+        val fee: String,
+        val withVat: Boolean,
+        /** Monthly services and discounts, may be negative ("-0,18"). */
+        val extras: String = ""
+    )
 
     data class Stored(val meter: MeterType, val sourceType: String, val packageId: String?, val custom: CustomInput)
 
@@ -42,7 +51,8 @@ object PricingSettings {
                 p.getString(KEY_VT, "") ?: "",
                 p.getString(KEY_MT, "") ?: "",
                 p.getString(KEY_FEE, "") ?: "",
-                p.getBoolean(KEY_WITH_VAT, true)
+                p.getBoolean(KEY_WITH_VAT, true),
+                p.getString(KEY_EXTRAS, "") ?: ""
             )
         )
     }
@@ -57,6 +67,7 @@ object PricingSettings {
             putString(KEY_MT, s.custom.mt)
             putString(KEY_FEE, s.custom.fee)
             putBoolean(KEY_WITH_VAT, s.custom.withVat)
+            putString(KEY_EXTRAS, s.custom.extras)
         }
     }
 
@@ -73,7 +84,8 @@ object PricingSettings {
             val prices = EnergyPrices(price(s.custom.et), price(s.custom.vt), price(s.custom.mt))
             val complete = if (s.meter == MeterType.SINGLE) prices.hasSingle else prices.hasDual
             val fee = s.custom.fee.takeIf { it.isNotBlank() }?.let { TariffCalculator.parseAmount(it) }
-            if (complete) EnergySource.Custom(prices, s.custom.withVat, fee) else null
+            val extras = s.custom.extras.takeIf { it.isNotBlank() }?.let { TariffCalculator.parseSignedAmount(it) }?.takeIf { it != 0.0 }
+            if (complete) EnergySource.Custom(prices, s.custom.withVat, fee, extras) else null
         }
         else -> null
     }

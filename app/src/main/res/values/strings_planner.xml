@@ -104,18 +104,14 @@
     <string name="home_plan_title">Pametni dnevni načrt</string>
     <string name="home_plan_next">Naslednja: %1$s, %2$s (%3$s)</string>
     <string name="home_plan_empty">Povej, katere naprave želiš uporabiti, in predlagam najugodnejši začetek.</string>
-    <string name="home_plan_open">Odpri načrtovalnik</string>
     <string name="home_price_title">Moja cena elektrike</string>
-    <string name="home_price_custom">Lastna cena iz pogodbe</string>
     <string name="home_price_range">V naslednjih %1$d urah od %2$s do %3$s, odvisno od bloka in tarife.</string>
-    <string name="home_price_details">Postavke in primerjava</string>
     <string name="home_power_title">Moja moč in poraba</string>
     <string name="home_power_last">Zadnja znana četrtura: %1$s kW (%2$s)</string>
     <string name="home_power_agreed">Dogovorjena moč v %1$d. bloku: %2$s kW, doseženo %3$s %%</string>
     <string name="home_power_peak">Najvišja četrtura tega dne: %1$s kW ob %2$s (%3$s %% dogovorjene moči)</string>
     <string name="home_power_delay">Podatki Moj Elektro zamujajo približno en dan. To ni trenutna moč.</string>
     <string name="home_power_connect">Poveži Moj Elektro za pregled svoje moči in porabe.</string>
-    <string name="home_power_open">Odpri Semafor porabe</string>
     <string name="home_power_no_agreed">Dogovorjena moč ni znana.</string>
 
     <!-- Reminders -->
@@ -127,7 +123,7 @@
     <string name="rem_cheaper_text">Od %1$s velja %2$d. blok: %3$s z omrežnino in DDV.</string>
     <string name="rem_power_over_title">Preseganje dogovorjene moči</string>
     <string name="rem_power_near_title">Visoka obremenitev</string>
-    <string name="rem_power_text">Meritev %1$s: %2$s kW pri dogovorjeni moči %3$s kW v %4$d. bloku. Podatek je iz Moj Elektro z zamikom.</string>
+    <string name="rem_power_text">Meritev %1$s: %2$s kW pri dogovorjeni moči %3$s kW v %4$d. bloku (podatek Moj Elektro z zamikom). Preveri, ali takrat deluje več večjih naprav hkrati, in jih razporedi v dnevnem načrtu.</string>
 
     <!-- Settings: reminders -->
     <string name="set_rem_devices">Opomnik za načrtovane naprave</string>
@@ -144,7 +140,6 @@
 
     <!-- Price screen: blocks, comparison, fixed costs -->
     <string name="ep_vat_note">Vse cene v €/kWh vključujejo omrežnino za energijo, prispevke, trošarino in DDV.</string>
-    <string name="ep_package_line">Cenik: %1$s</string>
     <string name="ep_validity">Velja od %1$s</string>
     <string name="ep_validity_to">Velja od %1$s do %2$s</string>
     <string name="ep_blocks_title">Cena po časovnih blokih</string>
@@ -172,4 +167,48 @@
     <string name="widget_plan">Načrt: %1$s ob %2$s</string>
     <string name="widget_plan_none">Načrt: dodaj napravo v aplikaciji</string>
     <string name="widget_power">Zadnja meritev: %1$s kW (%2$s)</string>
+    <!-- Info sheets -->
+    <string name="info_more">Več o: %1$s</string>
+    <string name="info_close">Zapri</string>
+    <string name="calc_compare_short">Primerjaj ponudbe vseh dobaviteljev elektrike in plina z orodjem Agencije za energijo.</string>
+    <!-- Price screen tabs -->
+    <string name="ep_tab_my_price">Moja cena</string>
+    <string name="ep_tab_suppliers">Dobavitelji</string>
+    <string name="ep_tab_network">Omrežnina</string>
+    <string name="ep_tab_calculator">Kalkulator</string>
+    <string name="ep_change_price">Spremeni dobavitelja ali ceno</string>
+    <!-- Data sources screen -->
+    <string name="src_title">Viri podatkov</string>
+    <string name="src_open">Odpri vir</string>
+    <string name="src_updated">Zadnja posodobitev: %1$s</string>
+    <string name="src_group_official">Uradni energetski podatki</string>
+    <string name="src_blocks">Časovni bloki (Agencija za energijo, uro.si)</string>
+    <string name="src_blocks_what">Trenutni in naslednji blok, priporočila in urnik blokov po urah. Domov, pripomoček, obvestila, cene po urah, načrt.</string>
+    <string name="src_colors">Barve časovnih blokov (uro.si)</string>
+    <string name="src_colors_what">Uradna tabela barv blokov za tekoče leto.</string>
+    <string name="src_network">Cenik omrežnine (SODO)</string>
+    <string name="src_network_what">Postavke za moč in energijo po blokih, skupina 0. Omrežnina, cena, kalkulator.</string>
+    <string name="src_network_missing">Za danes v aplikaciji ni veljavnega cenika.</string>
+    <string name="src_charge_what">Del skupne cene in ocene računa.</string>
+    <string name="src_tariff_hours">Ure VT in MT</string>
+    <string name="src_tariff_hours_what">VT ob delavnikih od %1$d. do %2$d. ure, sicer MT. Cena energije po urah.</string>
+    <string name="src_holidays">Dela prosti dnevi (gov.si)</string>
+    <string name="src_holidays_what">Po zakonu o praznikih; ob dela prostih dnevih velja MT ves dan.</string>
+    <string name="src_group_prices">Ceniki dobaviteljev in dajatve</string>
+    <string name="src_prices_file">Datoteka s ceniki (tarifnisemafor.si)</string>
+    <string name="src_supplier_what">Javni cenik dobavitelja.</string>
+    <string name="src_group_usage">Meritve in poraba</string>
+    <string name="src_moj">Moj Elektro (api.informatika.si)</string>
+    <string name="src_moj_what">Tvoje 15-minutne meritve in dogovorjena moč, z zamikom približno en dan. Semafor porabe, moja moč, načrt.</string>
+    <string name="src_moj_off">Ni povezano.</string>
+    <string name="src_group_other">Drugi viri</string>
+    <string name="src_news">Novice (Agencija za energijo)</string>
+    <string name="src_news_what">Novice iz vira RSS.</string>
+    <string name="src_icons">Ikone (Material Symbols)</string>
+    <string name="src_icons_what">Prosta licenca Apache 2.0.</string>
+    <string name="src_group_links">Povezave (odprejo se v brskalniku)</string>
+    <string name="src_link_calc">Primerjalnik ponudb elektrike in plina (Agencija za energijo)</string>
+    <string name="src_link_tariff">Vse o tarifnem sistemu (Moj Elektro)</string>
+    <string name="about_terms">Pogoji uporabe</string>
+    <string name="about_disclaimer_link">Izjava o omejitvi odgovornosti</string>
 </resources>

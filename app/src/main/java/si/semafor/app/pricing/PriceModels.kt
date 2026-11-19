@@ -135,7 +135,12 @@ data class SupplierPackage(
     val monthlyFee: Double?,
     val validFrom: LocalDate,
     val validTo: LocalDate?,
-    val sourceUrl: String
+    val sourceUrl: String,
+    /**
+     * Monthly services and discounts of the package without VAT ("ugodnosti in storitve", for example a green energy
+     * service +0.82 and an eco discount -1.00 give -0.18); null = none stated. May be negative.
+     */
+    val monthlyExtras: Double? = null
 ) {
     fun appliesOn(date: LocalDate): Boolean = !date.isBefore(validFrom) && (validTo == null || !date.isAfter(validTo))
 }
